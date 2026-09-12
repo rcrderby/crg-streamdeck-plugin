@@ -129,3 +129,14 @@ stalled connection is one press from recovery in the middle of a bout.
 
 Comments, docstrings, documentation, commit messages, and pull request
 descriptions are written in U.S. English and use no en or em dashes.
+
+## D18: TypeScript stays on 5
+
+TypeScript 7 falls outside the peer range `@typescript-eslint` 8
+accepts, so installing it fails to resolve. The Elgato plugin template
+is also still on TypeScript 5.
+
+Dependabot is told to skip the major, along with the majors of the
+linting packages D13 holds to Super Linter's versions. Both are
+revisited when the surrounding packages catch up, not ignored forever.
+

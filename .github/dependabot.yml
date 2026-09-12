@@ -28,6 +28,24 @@ updates:
         dependency-type: development
       runtime:
         dependency-type: production
+    ignore:
+      # The linting packages track the versions Super Linter bundles, so
+      # the editor and CI evaluate the same rules (see D13). Raise these
+      # when Super Linter ships the next major.
+      - dependency-name: eslint
+        update-types: [version-update:semver-major]
+      - dependency-name: '@eslint/*'
+        update-types: [version-update:semver-major]
+      - dependency-name: '@typescript-eslint/*'
+        update-types: [version-update:semver-major]
+      - dependency-name: eslint-plugin-jsonc
+        update-types: [version-update:semver-major]
+      - dependency-name: globals
+        update-types: [version-update:semver-major]
+      # TypeScript 7 is outside the peer range @typescript-eslint 8
+      # accepts, and the Elgato plugin template is still on 5 (see D18)
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
 
   # The base image the development container builds on
   - package-ecosystem: docker
