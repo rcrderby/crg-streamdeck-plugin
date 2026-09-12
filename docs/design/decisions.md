@@ -114,3 +114,18 @@ type check, test, and build, and `streamdeck` runs on the host.
 
 The icons and key images are plain shapes. The design pass replaces
 them, and the tokens it produces are what `src/render/` draws from.
+
+## D16: The connection state has a key of its own
+
+A key that has quietly stopped updating looks the same as a key whose
+value has not changed. The `connection` action shows the CRG connection
+state on a dedicated key, in all four states the client reports:
+connected, connecting, disconnected, and unauthorized.
+
+Pressing it reconnects at once rather than waiting out the backoff, so a
+stalled connection is one press from recovery in the middle of a bout.
+
+## D17: U.S. English, and no en or em dashes
+
+Comments, docstrings, documentation, commit messages, and pull request
+descriptions are written in U.S. English and use no en or em dashes.

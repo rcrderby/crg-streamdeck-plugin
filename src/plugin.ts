@@ -9,6 +9,7 @@
 import streamDeck from '@elgato/streamdeck';
 
 import { Clock } from './actions/clock.ts';
+import { Connection } from './actions/connection.ts';
 import { CrgClient } from './crg/client.ts';
 import { JamControl } from './actions/jam-control.ts';
 import { RenderScheduler } from './render/scheduler.ts';
@@ -75,6 +76,7 @@ async function applySettings(settings: GlobalSettings): Promise<void> {
   }
 }
 
+streamDeck.actions.registerAction(new Connection(context));
 streamDeck.actions.registerAction(new JamControl(context));
 streamDeck.actions.registerAction(new Clock(context));
 streamDeck.actions.registerAction(new TripScore(context));

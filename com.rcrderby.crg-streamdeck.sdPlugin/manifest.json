@@ -30,6 +30,22 @@
   "UUID": "com.rcrderby.crg-streamdeck",
   "Actions": [
     {
+      "Name": "CRG Connection",
+      "UUID": "com.rcrderby.crg-streamdeck.connection",
+      "Icon": "imgs/actions/connection/icon",
+      "PropertyInspectorPath": "ui/connection.html",
+      "Tooltip": "Shows whether the plugin is connected to CRG. Press to reconnect.",
+      "Controllers": ["Keypad"],
+      "States": [
+        {
+          "Image": "imgs/actions/connection/key",
+          "TitleAlignment": "middle"
+        }
+      ],
+      "SupportedInMultiActions": false,
+      "UserTitleEnabled": false
+    },
+    {
       "Name": "Jam Control",
       "UUID": "com.rcrderby.crg-streamdeck.jam-control",
       "Icon": "imgs/actions/jam-control/icon",

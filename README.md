@@ -47,6 +47,7 @@ Reads and writes share one connection, so a full Stream Deck XL costs CRG a sing
 
 | Action | Description |
 | ------ | ----------- |
+| CRG Connection | Shows whether the plugin is talking to CRG: connected, connecting, offline, or not allowed to write.  Pressing it reconnects at once. |
 | Jam Control | Starts or stops a jam.  The key reads `InJam` to decide which, and takes its wording from the same `Label` paths CRG shows on its own Start and Stop buttons. |
 | Clock | Displays a CRG clock: period, jam, lineup, timeout, or intermission, with its number and whether it is running. |
 | Trip Score | Sets a team's trip score to a fixed number of points, drawn in that team's `operator` colors from CRG. |

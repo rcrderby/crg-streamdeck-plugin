@@ -95,6 +95,22 @@ export class CrgClient extends EventEmitter<CrgClientEvents> {
     }
   }
 
+  /**
+   * Reconnects now, without waiting out the backoff delay.
+   *
+   * The status key offers this so a stalled connection is one press
+   * from recovery in the middle of a bout.
+   */
+  reconnect(): void {
+    if (this.#connection === undefined) {
+      return;
+    }
+
+    this.#closing = false;
+    this.#reconnectDelayMs = RECONNECT_MIN_MS;
+    this.#open();
+  }
+
   /** Closes the connection and stops reconnecting. */
   disconnect(): void {
     this.#closing = true;
