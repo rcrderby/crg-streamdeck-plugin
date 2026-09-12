@@ -19,7 +19,8 @@
     "prose": "python3 scripts/check_prose.py src scripts",
     "validate": "streamdeck validate com.rcrderby.crg-streamdeck.sdPlugin",
     "pack": "streamdeck pack com.rcrderby.crg-streamdeck.sdPlugin --output dist --force",
-    "probe": "node scripts/probe-crg.mjs"
+    "probe": "node scripts/probe-crg.mjs",
+    "install-plugin": "scripts/install-plugin.sh"
   },
   "dependencies": {
     "@elgato/streamdeck": "^2.1.2",

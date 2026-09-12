@@ -173,3 +173,20 @@ color, then a default.
 Checked against a live game: both teams came out in their real colors
 from `preset` alone.
 
+## D22: The plugin is copied to Stream Deck, never symlinked
+
+This repository lives under `~/Library/CloudStorage/`. A symlink from
+the Stream Deck plugins folder into it hangs the Stream Deck
+application: its startup scan calls `open()` on the files it finds, the
+sync provider has to materialize each one first, and the main thread
+waits on a file provider that may never answer.
+
+Observed on Stream Deck 7.4.2. The application sat idle with no plugin
+loaded and nothing in its log past `Start Stream Deck App`. A process
+sample put every sample in `fopen` and `open$NOCANCEL`. Nothing
+reported an error.
+
+`scripts/install-plugin.sh` copies the bundle to local disk. It also
+removes an existing symlink, so a repository that was linked once
+recovers.
+

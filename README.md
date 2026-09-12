@@ -85,6 +85,7 @@ Then:
 | `npm run prose` | Holds comments to the house style |
 | `npm run validate` | Validates the plugin against the Elgato schema |
 | `npm run probe` | Reports what a live CRG instance holds, for checking paths against a new CRG release |
+| `npm run install-plugin` | Copies the built bundle into the Stream Deck plugins folder, from the host |
 
 The probe reads only, and never writes.  From inside the container, CRG running on the host is at `http://host.docker.internal:8000`:
 
@@ -94,7 +95,25 @@ CRG_ORIGIN=http://host.docker.internal:8000 npm run probe
 
 ### Testing On Hardware
 
-The Stream Deck application runs on the host, not in the container, so the container covers install, lint, type check, test, and build, and the `streamdeck` commands run on the host.
+The Stream Deck application runs on the host, not in the container, so the container covers install, lint, type check, test, and build, and installing to the hardware happens on the host.
+
+1. Build in the container:
+
+    ```bash
+    npm run build
+    ```
+
+2. Install to Stream Deck, from the host:
+
+    ```bash
+    scripts/install-plugin.sh
+    ```
+
+3. Restart the Stream Deck application.
+
+**Do not use `streamdeck link`, or any symlink, when the repository lives in a cloud storage folder.**  `~/Library/CloudStorage/...` covers iCloud Drive, Dropbox, OneDrive, and Google Drive on macOS.  Stream Deck's startup scan calls `open()` on the files it finds, the sync provider has to materialize each one first, and the application hangs on its main thread before it loads any plugin at all.  It looks like a frozen Stream Deck, with no error anywhere.
+
+`scripts/install-plugin.sh` copies the bundle to local disk instead, which avoids the problem entirely.
 
 ## Design Decisions
 
