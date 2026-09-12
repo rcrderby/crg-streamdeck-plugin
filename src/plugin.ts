@@ -18,8 +18,8 @@ import { TripScore } from './actions/trip-score.ts';
 import { type PluginContext } from './context.ts';
 
 type GlobalSettings = ConnectionSettings & {
-  /** The CRG session this device is known by, kept so it stays one device. */
-  sessionId?: string;
+  /** The CRG cookies this device is known by, kept so it stays one device. */
+  session?: string;
 };
 
 const logger = streamDeck.logger.createScope('plugin');
@@ -34,7 +34,9 @@ context.client.on('status', (status) => {
 });
 
 context.client.on('unauthorized', (message) => {
-  logger.warn(`CRG refused a write: ${message}. Authorize this device in CRG's client list.`);
+  const device = context.client.deviceName ?? 'this device';
+
+  logger.warn(`CRG refused a write: ${message}. Authorize '${device}' in CRG's client list.`);
 });
 
 context.client.on('error', (cause) => {
@@ -44,27 +46,27 @@ context.client.on('error', (cause) => {
 /**
  * Stores the session CRG issued.
  *
- * The identifier is a credential for this device, so it is written to
+ * The cookies identify this device to CRG, so they are written to
  * settings and never to the log.
  */
 async function rememberSession(): Promise<void> {
-  const sessionId = context.client.sessionId;
+  const session = context.client.session;
 
-  if (sessionId === undefined) {
+  if (session === undefined) {
     return;
   }
 
   const settings = await streamDeck.settings.getGlobalSettings<GlobalSettings>();
 
-  if (settings.sessionId !== sessionId) {
-    await streamDeck.settings.setGlobalSettings({ ...settings, sessionId });
+  if (settings.session !== session) {
+    await streamDeck.settings.setGlobalSettings({ ...settings, session });
   }
 }
 
 /** Opens or re-points the CRG connection from the stored settings. */
 async function applySettings(settings: GlobalSettings): Promise<void> {
   try {
-    context.client.connect(resolveConnection(settings), settings.sessionId);
+    context.client.connect(resolveConnection(settings), settings.session);
   } catch (cause) {
     if (cause instanceof SettingsError) {
       logger.warn(`CRG connection settings are not usable: ${cause.message}`);

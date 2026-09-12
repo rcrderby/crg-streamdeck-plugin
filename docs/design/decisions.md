@@ -140,3 +140,36 @@ Dependabot is told to skip the major, along with the majors of the
 linting packages D13 holds to Super Linter's versions. Both are
 revisited when the surrounding packages catch up, not ignored forever.
 
+## D19: Whatever cookie CRG sets is the session
+
+CRG 2027 names its session cookie `CRG_SCOREBOARD`. Earlier builds used
+the servlet container's own name. The client keeps every cookie a
+response sets, minus the attributes, rather than looking for one name,
+so a rename in CRG does not silently turn the plugin into a new device
+on every reconnect.
+
+CRG also sends `WS.Device.Name` on connecting, which is the name it
+lists the device under. That name goes in the message telling an
+operator which device to authorize.
+
+## D20: A label decides what a control key does
+
+CRG writes `---` into a Label when its own button cannot be used. In an
+official timeout, `Label(Start)` holds `---` while `Label(Stop)` reads
+`End Timeout`.
+
+`jam-control` reads both labels and does whichever is available, rather
+than reading `InJam` alone. Reading `InJam` alone would have shown
+`---` and sent `StartJam` during a timeout, when the useful action is
+ending the timeout.
+
+## D21: Colors fall back through the preset set
+
+A game where nobody set the operator colors holds no `operator` set at
+all, only `preset` and `whiteboard`. CRG's own team editor copies from
+`preset`, so the keys read `operator`, then `preset`, then the uniform
+color, then a default.
+
+Checked against a live game: both teams came out in their real colors
+from `preset` alone.
+

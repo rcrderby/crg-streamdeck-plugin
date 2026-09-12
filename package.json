@@ -18,7 +18,8 @@
     "format:write": "prettier --write .",
     "prose": "python3 scripts/check_prose.py src scripts",
     "validate": "streamdeck validate com.rcrderby.crg-streamdeck.sdPlugin",
-    "pack": "streamdeck pack com.rcrderby.crg-streamdeck.sdPlugin --output dist --force"
+    "pack": "streamdeck pack com.rcrderby.crg-streamdeck.sdPlugin --output dist --force",
+    "probe": "node scripts/probe-crg.mjs"
   },
   "dependencies": {
     "@elgato/streamdeck": "^2.1.2",

@@ -20,6 +20,33 @@ export type LabelName = 'Start' | 'Stop' | 'Timeout' | 'Undo' | 'Replaced';
 /** A slot in a team's color set. CRG names them '<set>.<slot>'. */
 export type ColorSlot = 'fg' | 'bg' | 'glow';
 
+/**
+ * The color sets a key reads, in the order it prefers them.
+ *
+ * 'operator' is the set CRG's own operator console uses. A game where
+ * nobody set it holds only 'preset', which is the set CRG's team editor
+ * copies from, so it stands in.
+ */
+export const COLOR_SETS = ['operator', 'preset'] as const;
+
+export type ColorSet = (typeof COLOR_SETS)[number];
+
+/**
+ * What CRG puts in a Label when the control is unavailable.
+ *
+ * A key showing this has nothing to do: during a timeout, for example,
+ * Label(Start) holds it while Label(Stop) reads 'End Timeout'.
+ */
+export const NO_ACTION = ['---', 'No Action'];
+
+/** The name CRG lists this device under, which it sends on connecting. */
+export const DEVICE_NAME = 'WS.Device.Name';
+
+/** True when a CRG label means the control cannot be used now. */
+export function isUnavailable(labelText: string): boolean {
+  return labelText === '' || NO_ACTION.includes(labelText);
+}
+
 /** Reads or writes a field on the current game. */
 export function game(field: string): string {
   return `${CURRENT_GAME}.${field}`;
@@ -35,9 +62,9 @@ export function clock(name: ClockName, field: string): string {
   return `${CURRENT_GAME}.Clock(${name}).${field}`;
 }
 
-/** Reads one slot of a team's 'operator' color set. */
-export function teamColor(number: TeamNumber, slot: ColorSlot): string {
-  return team(number, `Color(operator.${slot})`);
+/** Reads one slot of one of a team's color sets. */
+export function teamColor(number: TeamNumber, slot: ColorSlot, set: ColorSet = 'operator'): string {
+  return team(number, `Color(${set}.${slot})`);
 }
 
 /** Reads the label CRG shows on the matching operator button. */
@@ -83,5 +110,7 @@ export const REGISTERED_PATHS: readonly string[] = [
   `${CURRENT_GAME}.Team(*).Name`,
   `${CURRENT_GAME}.Team(*).UniformColor`,
   `${CURRENT_GAME}.Team(*).AlternateName(operator)`,
-  `${CURRENT_GAME}.Team(*).Color(operator.*)`
+  `${CURRENT_GAME}.Team(*).Color(operator.*)`,
+  `${CURRENT_GAME}.Team(*).Color(preset.*)`,
+  DEVICE_NAME
 ];

@@ -84,6 +84,13 @@ Then:
 | `npm run format` | Checks formatting with Prettier |
 | `npm run prose` | Holds comments to the house style |
 | `npm run validate` | Validates the plugin against the Elgato schema |
+| `npm run probe` | Reports what a live CRG instance holds, for checking paths against a new CRG release |
+
+The probe reads only, and never writes.  From inside the container, CRG running on the host is at `http://host.docker.internal:8000`:
+
+```bash
+CRG_ORIGIN=http://host.docker.internal:8000 npm run probe
+```
 
 ### Testing On Hardware
 

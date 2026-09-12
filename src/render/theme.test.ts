@@ -102,6 +102,29 @@ describe('teamTheme', () => {
     assert.equal(theme.name, 'WOJ');
   });
 
+  it('falls back to the preset set, which is all a fresh game holds', () => {
+    const state = new StateStore();
+
+    state.apply({
+      [path(2, 'Color(preset.bg)')]: '#38205b',
+      [path(2, 'Color(preset.fg)')]: '#ffffff'
+    });
+
+    assert.equal(teamTheme(state, 2).background, '#38205b');
+    assert.equal(teamTheme(state, 2).foreground, '#ffffff');
+  });
+
+  it('prefers the operator set over the preset set', () => {
+    const state = new StateStore();
+
+    state.apply({
+      [path(1, 'Color(operator.bg)')]: '#b3122e',
+      [path(1, 'Color(preset.bg)')]: '#38205b'
+    });
+
+    assert.equal(teamTheme(state, 1).background, '#b3122e');
+  });
+
   it('falls back to the uniform color, then to the default', () => {
     const state = new StateStore();
 

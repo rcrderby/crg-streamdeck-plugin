@@ -1,18 +1,18 @@
 /**
- * Starts and stops a jam.
+ * Runs the jam and timeout controls from one key.
  *
  * Stream Deck cannot reassign a key's action while a game runs, so the
- * key decides on press instead: a jam in progress stops, and anything
- * else starts. The wording comes from CRG's own Label paths, which is
- * the same answer its operator console shows on its Start and Stop
- * buttons.
+ * key reads what CRG says is available and does that. CRG writes '---'
+ * into a Label when its own button cannot be used, which is how a
+ * timeout shows up: Label(Start) holds '---' while Label(Stop) reads
+ * 'End Timeout'.
  */
 
 import { action, type KeyDownEvent } from '@elgato/streamdeck';
 
 import { type KeySpec } from '../render/key.ts';
 import { CrgKeyAction } from './key-action.ts';
-import { game, label } from '../crg/paths.ts';
+import { game, isUnavailable, label } from '../crg/paths.ts';
 
 const IN_JAM = game('InJam');
 
@@ -20,11 +20,18 @@ const START = label('Start');
 
 const STOP = label('Stop');
 
-const RUNNING_BACKGROUND = '#8c1d1d';
+/** What the key does when pressed, and what it says. */
+type Choice = {
+  readonly text: string;
+  readonly path: string | undefined;
+  readonly stopping: boolean;
+};
 
-const READY_BACKGROUND = '#14532d';
+const STOPPING_BACKGROUND = '#8c1d1d';
 
-const DISCONNECTED_BACKGROUND = '#26262b';
+const STARTING_BACKGROUND = '#14532d';
+
+const IDLE_BACKGROUND = '#26262b';
 
 @action({ UUID: 'com.rcrderby.crg-streamdeck.jam-control' })
 export class JamControl extends CrgKeyAction {
@@ -34,33 +41,70 @@ export class JamControl extends CrgKeyAction {
 
   protected override describe(): KeySpec {
     const connected = this.context.client.status === 'connected';
-    const inJam = this.context.client.state.getBoolean(IN_JAM);
+    const choice = this.#choose();
+    const available = connected && choice.path !== undefined;
 
-    const text = inJam
-      ? this.context.client.state.getString(STOP, 'Stop Jam')
-      : this.context.client.state.getString(START, 'Start Jam');
+    const background = !available ? IDLE_BACKGROUND : choice.stopping ? STOPPING_BACKGROUND : STARTING_BACKGROUND;
 
-    const background = !connected ? DISCONNECTED_BACKGROUND : inJam ? RUNNING_BACKGROUND : READY_BACKGROUND;
+    const lines = wrap(connected ? choice.text : 'No CRG');
 
     return {
       background,
       foreground: '#ffffff',
-      texts: wrap(text).map((line, index, lines) => ({
+      texts: lines.map((line, index) => ({
         text: line,
         y: 56 + (index - (lines.length - 1) / 2) * 20,
         size: 17,
         weight: 'bold' as const,
-        opacity: connected ? 1 : 0.45
+        opacity: available ? 1 : 0.45
       }))
     };
   }
 
   override onKeyDown(event: KeyDownEvent): void | Promise<void> {
-    const inJam = this.context.client.state.getBoolean(IN_JAM);
+    const choice = this.#choose();
 
-    this.context.client.trigger(game(inJam ? 'StopJam' : 'StartJam'));
+    if (choice.path === undefined) {
+      return event.action.showAlert();
+    }
+
+    this.context.client.trigger(choice.path);
 
     return event.action.showOk();
+  }
+
+  /**
+   * Decides what the key does from the labels CRG computes.
+   *
+   * When both controls are available, the jam clock decides, which is
+   * what CRG's own jam timer page shows.
+   */
+  #choose(): Choice {
+    const state = this.context.client.state;
+
+    const startText = state.getString(START);
+    const stopText = state.getString(STOP);
+
+    const canStart = !isUnavailable(startText);
+    const canStop = !isUnavailable(stopText);
+
+    if (canStart && canStop) {
+      const inJam = state.getBoolean(IN_JAM);
+
+      return inJam
+        ? { text: stopText, path: game('StopJam'), stopping: true }
+        : { text: startText, path: game('StartJam'), stopping: false };
+    }
+
+    if (canStop) {
+      return { text: stopText, path: game('StopJam'), stopping: true };
+    }
+
+    if (canStart) {
+      return { text: startText, path: game('StartJam'), stopping: false };
+    }
+
+    return { text: 'Wait', path: undefined, stopping: false };
   }
 }
 

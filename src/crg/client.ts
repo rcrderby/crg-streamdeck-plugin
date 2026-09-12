@@ -13,7 +13,7 @@
 import { EventEmitter } from 'node:events';
 import { WebSocket, type RawData } from 'ws';
 
-import { REGISTERED_PATHS } from './paths.ts';
+import { DEVICE_NAME, REGISTERED_PATHS } from './paths.ts';
 import { type Connection } from './settings.ts';
 import { StateStore, type StateValue } from './state.ts';
 
@@ -35,19 +35,36 @@ const RECONNECT_MIN_MS = 1_000;
 
 const RECONNECT_MAX_MS = 30_000;
 
-const SESSION_COOKIE = 'JSESSIONID';
+/** Names that carry a cookie's attributes rather than its value. */
+const COOKIE_ATTRIBUTES = new Set([
+  'domain',
+  'expires',
+  'httponly',
+  'max-age',
+  'partitioned',
+  'path',
+  'priority',
+  'samesite',
+  'secure'
+]);
 
-/** Reads the session cookie out of a response, ignoring its attributes. */
-export function readSessionCookie(setCookie: readonly string[]): string | undefined {
-  for (const header of setCookie) {
-    const match = /(?:^|;\s*)JSESSIONID=([^;]+)/i.exec(header);
+/**
+ * Reads the cookies a response sets, dropping their attributes.
+ *
+ * CRG 2027 names its session cookie 'CRG_SCOREBOARD' and earlier
+ * builds used the servlet container's own name, so whatever it sets is
+ * kept rather than one name being looked for.
+ */
+export function readSessionCookies(setCookie: readonly string[]): string | undefined {
+  const pairs = setCookie
+    .map((header) => header.split(';')[0]?.trim() ?? '')
+    .filter((pair) => {
+      const name = pair.split('=')[0]?.trim().toLowerCase() ?? '';
 
-    if (match?.[1]) {
-      return match[1];
-    }
-  }
+      return name !== '' && pair.includes('=') && !COOKIE_ATTRIBUTES.has(name);
+    });
 
-  return undefined;
+  return pairs.length > 0 ? pairs.join('; ') : undefined;
 }
 
 export class CrgClient extends EventEmitter<CrgClientEvents> {
@@ -55,7 +72,7 @@ export class CrgClient extends EventEmitter<CrgClientEvents> {
 
   #connection: Connection | undefined;
   #socket: WebSocket | undefined;
-  #sessionId: string | undefined;
+  #session: string | undefined;
   #ping: NodeJS.Timeout | undefined;
   #reconnect: NodeJS.Timeout | undefined;
   #reconnectDelayMs = RECONNECT_MIN_MS;
@@ -66,9 +83,20 @@ export class CrgClient extends EventEmitter<CrgClientEvents> {
     return this.#status;
   }
 
-  /** The session this device is known by, to be stored between runs. */
-  get sessionId(): string | undefined {
-    return this.#sessionId;
+  /**
+   * The cookies this device is known by, to be stored between runs.
+   *
+   * This identifies the device to CRG, so it is never logged.
+   */
+  get session(): string | undefined {
+    return this.#session;
+  }
+
+  /** The name CRG shows this device under in its client list. */
+  get deviceName(): string | undefined {
+    const name = this.state.getString(DEVICE_NAME);
+
+    return name === '' ? undefined : name;
   }
 
   /**
@@ -76,14 +104,14 @@ export class CrgClient extends EventEmitter<CrgClientEvents> {
    *
    * Calling this again with a different address reconnects to it.
    */
-  connect(connection: Connection, sessionId?: string): void {
+  connect(connection: Connection, session?: string): void {
     const changed = this.#connection?.webSocketUrl !== connection.webSocketUrl;
 
     this.#connection = connection;
     this.#closing = false;
 
-    if (sessionId) {
-      this.#sessionId = sessionId;
+    if (session) {
+      this.#session = session;
     }
 
     if (changed) {
@@ -166,23 +194,23 @@ export class CrgClient extends EventEmitter<CrgClientEvents> {
   async #fetchSession(connection: Connection): Promise<void> {
     const headers: Record<string, string> = {};
 
-    if (this.#sessionId) {
-      headers['Cookie'] = `${SESSION_COOKIE}=${this.#sessionId}`;
+    if (this.#session) {
+      headers['Cookie'] = this.#session;
     }
 
     const response = await fetch(`${connection.origin}/`, { headers, redirect: 'manual' });
-    const issued = readSessionCookie(response.headers.getSetCookie());
+    const issued = readSessionCookies(response.headers.getSetCookie());
 
     if (issued) {
-      this.#sessionId = issued;
+      this.#session = issued;
     }
   }
 
   #openSocket(connection: Connection): void {
     const headers: Record<string, string> = {};
 
-    if (this.#sessionId) {
-      headers['Cookie'] = `${SESSION_COOKIE}=${this.#sessionId}`;
+    if (this.#session) {
+      headers['Cookie'] = this.#session;
     }
 
     const socket = new WebSocket(connection.webSocketUrl, { headers });

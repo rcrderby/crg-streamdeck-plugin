@@ -7,7 +7,7 @@
  */
 
 import { type StateStore } from '../crg/state.ts';
-import { type TeamNumber, team, teamColor } from '../crg/paths.ts';
+import { COLOR_SETS, type ColorSlot, type TeamNumber, team, teamColor } from '../crg/paths.ts';
 
 /** The colors one team's keys are drawn in. */
 export type TeamTheme = {
@@ -84,17 +84,35 @@ export function readableForeground(background: string, requested: string, minimu
 }
 
 /**
- * Reads a team's 'operator' colors and display name.
+ * Reads one color slot across the sets, in order of preference.
  *
- * CRG leaves a color empty until someone sets it, so the uniform color
- * stands in for the background, and a default stands in after that.
+ * A game where nobody set the operator colors holds only the preset
+ * set, so a key still comes out in the team's colors rather than grey.
+ */
+function colorSlot(state: StateStore, number: TeamNumber, slot: ColorSlot): string {
+  for (const set of COLOR_SETS) {
+    const value = state.getString(teamColor(number, slot, set));
+
+    if (value !== '') {
+      return value;
+    }
+  }
+
+  return '';
+}
+
+/**
+ * Reads a team's colors and display name.
+ *
+ * CRG leaves a color empty until someone sets it, so the preset set,
+ * then the uniform color, then a default stand in.
  */
 export function teamTheme(state: StateStore, number: TeamNumber): TeamTheme {
   const uniform = state.getString(team(number, 'UniformColor'));
 
-  const background = safeColor(state.getString(teamColor(number, 'bg')), safeColor(uniform, DEFAULT_BACKGROUND));
-  const requested = safeColor(state.getString(teamColor(number, 'fg')), DEFAULT_FOREGROUND);
-  const glow = state.getString(teamColor(number, 'glow'));
+  const background = safeColor(colorSlot(state, number, 'bg'), safeColor(uniform, DEFAULT_BACKGROUND));
+  const requested = safeColor(colorSlot(state, number, 'fg'), DEFAULT_FOREGROUND);
+  const glow = colorSlot(state, number, 'glow');
 
   const name =
     state.getString(team(number, 'AlternateName(operator)')) ||
