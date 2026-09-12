@@ -1,0 +1,35 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Trip Score</title>
+    <script src="https://sdpi-components.dev/releases/v4/sdpi-components.js"></script>
+  </head>
+  <body>
+    <sdpi-item label="Team">
+      <sdpi-select setting="team" default="1">
+        <option value="1">Team 1</option>
+        <option value="2">Team 2</option>
+      </sdpi-select>
+    </sdpi-item>
+    <sdpi-item label="Points">
+      <sdpi-select setting="points" default="0">
+        <option value="0">0</option>
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+      </sdpi-select>
+    </sdpi-item>
+
+    <sdpi-item label="Scoreboard">
+      <sdpi-textfield global setting="host" placeholder="localhost"></sdpi-textfield>
+    </sdpi-item>
+    <sdpi-item label="Port">
+      <sdpi-textfield global setting="port" placeholder="8000"></sdpi-textfield>
+    </sdpi-item>
+    <sdpi-item label="Use TLS">
+      <sdpi-checkbox global setting="secure"></sdpi-checkbox>
+    </sdpi-item>
+  </body>
+</html>

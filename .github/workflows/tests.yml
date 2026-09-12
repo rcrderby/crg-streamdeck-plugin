@@ -1,0 +1,71 @@
+---
+# Type check the plugin, run its tests, and build it
+# https://nodejs.org/api/test.html
+
+# Name of the action
+name: Run Tests
+
+# Events that trigger the action
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Cancel superseded runs on a branch; never cancel main runs so the
+# post-merge run always completes.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  run-tests:
+    name: Run Tests
+    # Same-repo pushes are already covered by the 'push' event, so only
+    # run the pull_request event for forks (their branches are not in
+    # this repo and so never trigger 'push')
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+
+    steps:
+      # checkout action documentation
+      # https://github.com/marketplace/actions/checkout
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          # check_prose.py reads the files a branch changed
+          fetch-depth: 0
+
+      # setup-node action documentation
+      # https://github.com/marketplace/actions/setup-node-js-environment
+      - name: Set Up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+        with:
+          # The version the plugin manifest asks Stream Deck to run
+          node-version: '24'
+          cache: npm
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Check Types
+        run: npm run typecheck
+
+      - name: Run Tests
+        run: npm test
+
+      # The build proves the bundle Stream Deck loads still compiles
+      - name: Build The Plugin
+        run: npm run build
+
+      - name: Validate The Plugin
+        run: npm run validate
+
+      # Comments state what the code does now; reasoning lives in
+      # docs/design/decisions.md
+      - name: Check Comments And Docstrings
+        run: python3 scripts/check_prose.py src scripts

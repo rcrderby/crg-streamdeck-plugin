@@ -1,0 +1,142 @@
+import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
+
+import { StateStore } from '../crg/state.ts';
+import {
+  DEFAULT_BACKGROUND,
+  DEFAULT_FOREGROUND,
+  contrastRatio,
+  escapeXml,
+  luminance,
+  readableForeground,
+  safeColor,
+  teamTheme
+} from './theme.ts';
+
+describe('escapeXml', () => {
+  it('escapes every character that can change markup', () => {
+    assert.equal(escapeXml(`&<>"'`), '&amp;&lt;&gt;&quot;&apos;');
+  });
+
+  it('neutralizes a team name that carries markup', () => {
+    const escaped = escapeXml('</text><script>alert(1)</script>');
+
+    assert.ok(!escaped.includes('<'));
+    assert.ok(!escaped.includes('>'));
+  });
+
+  it('leaves ordinary text alone', () => {
+    assert.equal(escapeXml('Wheels of Justice'), 'Wheels of Justice');
+  });
+});
+
+describe('safeColor', () => {
+  it('accepts the hex forms CRG writes', () => {
+    assert.equal(safeColor('#b3122e', '#000000'), '#b3122e');
+    assert.equal(safeColor('#fff', '#000000'), '#fff');
+    assert.equal(safeColor('#b3122e80', '#000000'), '#b3122e80');
+  });
+
+  it('trims surrounding space', () => {
+    assert.equal(safeColor('  #b3122e  ', '#000000'), '#b3122e');
+  });
+
+  it('refuses anything that is not a hex color', () => {
+    assert.equal(safeColor('red', '#000000'), '#000000');
+    assert.equal(safeColor('', '#000000'), '#000000');
+    assert.equal(safeColor(undefined, '#000000'), '#000000');
+    assert.equal(safeColor('#b3122e" onload="x', '#000000'), '#000000');
+    assert.equal(safeColor('url(#x)', '#000000'), '#000000');
+  });
+});
+
+describe('luminance and contrastRatio', () => {
+  it('places black and white at the ends', () => {
+    assert.equal(luminance('#000000'), 0);
+    assert.equal(luminance('#ffffff'), 1);
+  });
+
+  it('reads a short hex color the same as its long form', () => {
+    assert.equal(luminance('#fff'), luminance('#ffffff'));
+  });
+
+  it('rates black against white at the maximum', () => {
+    assert.equal(Math.round(contrastRatio('#000000', '#ffffff')), 21);
+  });
+
+  it('rates a color against itself at the minimum', () => {
+    assert.equal(contrastRatio('#b3122e', '#b3122e'), 1);
+  });
+});
+
+describe('readableForeground', () => {
+  it('keeps a foreground that already reads', () => {
+    assert.equal(readableForeground('#000000', '#ffffff'), '#ffffff');
+  });
+
+  it('replaces a foreground that does not read', () => {
+    assert.equal(readableForeground('#ffffff', '#fefefe'), '#000000');
+    assert.equal(readableForeground('#000000', '#010101'), '#ffffff');
+  });
+});
+
+describe('teamTheme', () => {
+  const path = (number: number, field: string) => `ScoreBoard.CurrentGame.Team(${number}).${field}`;
+
+  it('reads the operator colors and the operator name', () => {
+    const state = new StateStore();
+
+    state.apply({
+      [path(1, 'Color(operator.bg)')]: '#000000',
+      [path(1, 'Color(operator.fg)')]: '#ffffff',
+      [path(1, 'Color(operator.glow)')]: '#ff0000',
+      [path(1, 'AlternateName(operator)')]: 'WOJ',
+      [path(1, 'Name')]: 'Wheels of Justice'
+    });
+
+    const theme = teamTheme(state, 1);
+
+    assert.equal(theme.background, '#000000');
+    assert.equal(theme.foreground, '#ffffff');
+    assert.equal(theme.glow, '#ff0000');
+    assert.equal(theme.name, 'WOJ');
+  });
+
+  it('falls back to the uniform color, then to the default', () => {
+    const state = new StateStore();
+
+    state.apply({ [path(2, 'UniformColor')]: '#123456' });
+    assert.equal(teamTheme(state, 2).background, '#123456');
+
+    assert.equal(teamTheme(new StateStore(), 2).background, DEFAULT_BACKGROUND);
+    assert.equal(teamTheme(new StateStore(), 2).foreground, DEFAULT_FOREGROUND);
+  });
+
+  it('falls back through the names CRG may not have set', () => {
+    const state = new StateStore();
+
+    state.apply({ [path(1, 'Name')]: 'Wheels of Justice' });
+    assert.equal(teamTheme(state, 1).name, 'Wheels of Justice');
+
+    assert.equal(teamTheme(new StateStore(), 2).name, 'Team 2');
+  });
+
+  it('replaces a foreground the operator chose that cannot be read', () => {
+    const state = new StateStore();
+
+    state.apply({
+      [path(1, 'Color(operator.bg)')]: '#000000',
+      [path(1, 'Color(operator.fg)')]: '#0a0a0a'
+    });
+
+    assert.equal(teamTheme(state, 1).foreground, '#ffffff');
+  });
+
+  it('drops a glow color that is not a hex color', () => {
+    const state = new StateStore();
+
+    state.apply({ [path(1, 'Color(operator.glow)')]: 'rgb(1,2,3)' });
+
+    assert.equal(teamTheme(state, 1).glow, undefined);
+  });
+});

@@ -1,0 +1,36 @@
+# Dependabot configuration
+# https://docs.github.com/code-security/dependabot/dependabot-version-updates
+
+---
+version: 2
+
+updates:
+  # Actions used by the workflows in .github/workflows
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      # One pull request per run, so related action bumps are reviewed
+      # and merged together
+      github-actions:
+        patterns:
+          - '*'
+
+  # The plugin's runtime and build packages
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      # Build and lint packages move together and are not shipped
+      development:
+        dependency-type: development
+      runtime:
+        dependency-type: production
+
+  # The base image the development container builds on
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: monthly

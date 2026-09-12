@@ -1,0 +1,29 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Clock</title>
+    <script src="https://sdpi-components.dev/releases/v4/sdpi-components.js"></script>
+  </head>
+  <body>
+    <sdpi-item label="Clock">
+      <sdpi-select setting="clock" default="Jam">
+        <option value="Period">Period</option>
+        <option value="Jam">Jam</option>
+        <option value="Lineup">Lineup</option>
+        <option value="Timeout">Timeout</option>
+        <option value="Intermission">Intermission</option>
+      </sdpi-select>
+    </sdpi-item>
+
+    <sdpi-item label="Scoreboard">
+      <sdpi-textfield global setting="host" placeholder="localhost"></sdpi-textfield>
+    </sdpi-item>
+    <sdpi-item label="Port">
+      <sdpi-textfield global setting="port" placeholder="8000"></sdpi-textfield>
+    </sdpi-item>
+    <sdpi-item label="Use TLS">
+      <sdpi-checkbox global setting="secure"></sdpi-checkbox>
+    </sdpi-item>
+  </body>
+</html>

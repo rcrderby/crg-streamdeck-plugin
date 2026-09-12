@@ -1,0 +1,11 @@
+node_modules/
+*.sdPlugin/bin/
+*.sdPlugin/logs/
+dist/
+LICENSE
+
+# yamllint and markdownlint own these, through the Super Linter
+# configuration in .github/linters
+*.yml
+*.yaml
+*.md

@@ -1,0 +1,17 @@
+# macOS Spotlight index
+.DS_Store
+
+# Node.js
+node_modules/
+
+# Stream Deck build output and plugin logs
+*.sdPlugin/bin/
+*.sdPlugin/logs/
+
+# Packaged plugin
+*.streamDeckPlugin
+
+# Environments
+.env
+.env.*
+!.env.example

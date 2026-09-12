@@ -1,0 +1,9 @@
+---
+##########################
+## Hadolint config file ##
+##########################
+## https://github.com/hadolint/hadolint
+
+failure-threshold: info
+ignored:
+  - DL3008 # Pin versions in apt get install

@@ -1,0 +1,56 @@
+// Visual Studio Code Development Container configuration file
+// https://code.visualstudio.com/docs/remote/devcontainerjson-reference
+{
+  // Docker build instructions
+  "build": {
+    "dockerfile": "../Dockerfile.dev",
+    "context": ".."
+  },
+  "name": "crg-streamdeck-plugin",
+  // Install the Node packages the build, tests, and editor need
+  "postCreateCommand": "npm ci || npm install",
+  "customizations": {
+    "vscode": {
+      // Visual Studio Code extensions
+      "extensions": [
+        "davidanson.vscode-markdownlint",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "github.vscode-github-actions",
+        "github.vscode-pull-request-github",
+        "ms-azuretools.vscode-docker",
+        "redhat.vscode-yaml",
+        "streetsidesoftware.code-spell-checker"
+      ],
+      // Visual Studio Code environment configuration
+      "settings": {
+        // ESLint configuration, shared with the Super Linter workflow
+        "eslint.options": {
+          "overrideConfigFile": "/workspaces/crg-streamdeck-plugin/.github/linters/eslint.config.mjs"
+        },
+        // Markdownlint configuration
+        "markdownlint.config": {
+          "extends": "/workspaces/crg-streamdeck-plugin/.github/linters/.markdown-lint.yml"
+        },
+        // Prettier formats the TypeScript, JavaScript, and JSON
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        // YAML validation
+        "yaml.customTags": [],
+        "yaml.validate": true,
+        // Customize YAML formatting
+        "[yaml]": {
+          "editor.autoIndent": "keep",
+          "editor.insertSpaces": true,
+          "editor.quickSuggestions": {
+            "other": true,
+            "comments": false,
+            "strings": true
+          },
+          "editor.tabSize": 2
+        }
+      }
+    }
+  },
+  // Ports to forward to the devcontainer
+  "forwardPorts": []
+}
