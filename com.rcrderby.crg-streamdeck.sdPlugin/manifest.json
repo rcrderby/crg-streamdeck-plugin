@@ -57,7 +57,8 @@
           "TitleAlignment": "middle"
         }
       ],
-      "UserTitleEnabled": false
+      "UserTitleEnabled": false,
+      "PropertyInspectorPath": "ui/connection.html"
     },
     {
       "Name": "Clock",
