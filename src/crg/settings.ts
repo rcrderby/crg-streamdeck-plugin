@@ -6,11 +6,14 @@
  * hall without a change to the code.
  */
 
-/** Connection settings, held in the plugin's global settings. */
+/**
+ * Connection settings, held in the plugin's global settings.
+ *
+ * Global means one address serves every key, rather than the scoreboard
+ * being configured on each one.
+ */
 export type ConnectionSettings = {
-  host?: string;
-  port?: number;
-  secure?: boolean;
+  url?: string;
 };
 
 /** The addresses one set of connection settings resolves to. */
@@ -22,6 +25,9 @@ export type Connection = {
 export const DEFAULT_HOST = 'localhost';
 
 export const DEFAULT_PORT = 8000;
+
+/** Shown in the property inspector, and used when the field is empty. */
+export const DEFAULT_URL = `http://${DEFAULT_HOST}:${DEFAULT_PORT}`;
 
 /** How the plugin names itself in CRG's list of connected clients. */
 export const CLIENT_SOURCE = 'Stream Deck plugin';
@@ -70,11 +76,46 @@ export function normalizePort(value: number | string | undefined): number {
   return port;
 }
 
+/**
+ * Reads a CRG address into its parts.
+ *
+ * A scoreboard is one address to the person typing it, so the setting
+ * is one field. A missing scheme is read as plain HTTP, and a missing
+ * port as CRG's own.
+ */
+export function parseUrl(value: string | undefined): { host: string; port: number; secure: boolean } {
+  const trimmed = (value ?? '').trim();
+
+  if (trimmed === '') {
+    return { host: DEFAULT_HOST, port: DEFAULT_PORT, secure: false };
+  }
+
+  const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed) ? trimmed : `http://${trimmed}`;
+
+  let parsed: URL;
+
+  try {
+    parsed = new URL(withScheme);
+  } catch {
+    throw new SettingsError(`'${trimmed}' is not a CRG address`);
+  }
+
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    throw new SettingsError(`'${trimmed}' must start with http:// or https://`);
+  }
+
+  const secure = parsed.protocol === 'https:';
+
+  return {
+    host: normalizeHost(parsed.hostname),
+    port: parsed.port === '' ? (secure ? 443 : DEFAULT_PORT) : normalizePort(parsed.port),
+    secure
+  };
+}
+
 /** Turns connection settings into the addresses the client opens. */
 export function resolveConnection(settings: ConnectionSettings): Connection {
-  const host = normalizeHost(settings.host);
-  const port = normalizePort(settings.port);
-  const secure = settings.secure === true;
+  const { host, port, secure } = parseUrl(settings.url);
 
   const origin = `${secure ? 'https' : 'http'}://${host}:${port}`;
   const query = `?source=${encodeURIComponent(CLIENT_SOURCE)}&platform=${encodeURIComponent(process.platform)}`;

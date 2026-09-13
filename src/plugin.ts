@@ -69,7 +69,7 @@ async function applySettings(settings: GlobalSettings): Promise<void> {
     context.client.connect(resolveConnection(settings), settings.session);
   } catch (cause) {
     if (cause instanceof SettingsError) {
-      logger.warn(`CRG connection settings are not usable: ${cause.message}`);
+      logger.warn(`The CRG URL is not usable: ${cause.message}`);
 
       return;
     }
