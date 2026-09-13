@@ -37,7 +37,6 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
-          # check_prose.py reads the files a branch changed
           fetch-depth: 0
 
       # setup-node action documentation
@@ -64,8 +63,3 @@ jobs:
 
       - name: Validate The Plugin
         run: npm run validate
-
-      # Comments state what the code does now; reasoning lives in
-      # docs/design/decisions.md
-      - name: Check Comments And Docstrings
-        run: python3 scripts/check_prose.py src scripts

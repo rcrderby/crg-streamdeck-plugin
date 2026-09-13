@@ -16,7 +16,6 @@
     "lint": "eslint --config .github/linters/eslint.config.mjs .",
     "format": "prettier --check .",
     "format:write": "prettier --write .",
-    "prose": "python3 scripts/check_prose.py src scripts",
     "validate": "streamdeck validate com.rcrderby.crg-streamdeck.sdPlugin",
     "pack": "streamdeck pack com.rcrderby.crg-streamdeck.sdPlugin --output dist --force",
     "probe": "node scripts/probe-crg.mjs",

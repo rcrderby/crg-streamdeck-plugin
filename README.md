@@ -14,7 +14,6 @@
 - [Actions](#actions "Available Actions")
 - [Compatibility](#compatibility "Supported Versions")
 - [Development](#development "Development Environment")
-- [Design Decisions](#design-decisions "Numbered Design Decisions")
 
 ## Overview
 
@@ -82,7 +81,6 @@ Then:
 | `npm run typecheck` | Type checks without emitting |
 | `npm run lint` | Runs ESLint with the same configuration the CI workflow uses |
 | `npm run format` | Checks formatting with Prettier |
-| `npm run prose` | Holds comments to the house style |
 | `npm run validate` | Validates the plugin against the Elgato schema |
 | `npm run probe` | Reports what a live CRG instance holds, for checking paths against a new CRG release |
 | `npm run install-plugin` | Copies the built bundle into the Stream Deck plugins folder, from the host |
@@ -114,7 +112,3 @@ The Stream Deck application runs on the host, not in the container, so the conta
 **Do not use `streamdeck link`, or any symlink, when the repository lives in a cloud storage folder.**  `~/Library/CloudStorage/...` covers iCloud Drive, Dropbox, OneDrive, and Google Drive on macOS.  Stream Deck's startup scan calls `open()` on the files it finds, the sync provider has to materialize each one first, and the application hangs on its main thread before it loads any plugin at all.  It looks like a frozen Stream Deck, with no error anywhere.
 
 `scripts/install-plugin.sh` copies the bundle to local disk instead, which avoids the problem entirely.
-
-## Design Decisions
-
-Numbered decisions are recorded in [`docs/design/decisions.md`](./docs/design/decisions.md "Design Decisions").  Where a code comment and that file disagree, that file governs.
