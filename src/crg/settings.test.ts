@@ -7,6 +7,7 @@ import {
   SettingsError,
   normalizeHost,
   normalizePort,
+  parseUrl,
   resolveConnection
 } from './settings.ts';
 
@@ -51,6 +52,53 @@ describe('normalizePort', () => {
   });
 });
 
+describe('parseUrl', () => {
+  it("falls back to CRG's own address when the field is empty", () => {
+    assert.deepEqual(parseUrl(undefined), { host: DEFAULT_HOST, port: DEFAULT_PORT, secure: false });
+    assert.deepEqual(parseUrl('   '), { host: DEFAULT_HOST, port: DEFAULT_PORT, secure: false });
+  });
+
+  it('reads a full address', () => {
+    assert.deepEqual(parseUrl('http://scoreboard.local:8000'), {
+      host: 'scoreboard.local',
+      port: 8000,
+      secure: false
+    });
+  });
+
+  it('reads an address with no scheme as plain HTTP', () => {
+    assert.deepEqual(parseUrl('scoreboard:8000'), { host: 'scoreboard', port: 8000, secure: false });
+    assert.deepEqual(parseUrl('192.168.1.20'), { host: '192.168.1.20', port: DEFAULT_PORT, secure: false });
+  });
+
+  it('reads TLS from the scheme', () => {
+    assert.deepEqual(parseUrl('https://scoreboard:8443'), { host: 'scoreboard', port: 8443, secure: true });
+  });
+
+  it("uses the scheme's own port when none is given", () => {
+    assert.equal(parseUrl('https://scoreboard').port, 443);
+    assert.equal(parseUrl('http://scoreboard').port, DEFAULT_PORT);
+  });
+
+  it('ignores a path, because CRG is addressed by origin', () => {
+    assert.deepEqual(parseUrl('http://scoreboard:8000/nso/sbo/?operator=x'), {
+      host: 'scoreboard',
+      port: 8000,
+      secure: false
+    });
+  });
+
+  it('refuses a scheme that is not HTTP', () => {
+    assert.throws(() => parseUrl('ws://scoreboard:8000'), SettingsError);
+    assert.throws(() => parseUrl('file:///etc/passwd'), SettingsError);
+  });
+
+  it('refuses an address it cannot read', () => {
+    assert.throws(() => parseUrl('http://not a host:8000'), SettingsError);
+    assert.throws(() => parseUrl('http://scoreboard:99999'), SettingsError);
+  });
+});
+
 describe('resolveConnection', () => {
   it('builds the default addresses', () => {
     const connection = resolveConnection({});
@@ -60,7 +108,7 @@ describe('resolveConnection', () => {
   });
 
   it('switches both addresses to TLS together', () => {
-    const connection = resolveConnection({ host: 'scoreboard', port: 8443, secure: true });
+    const connection = resolveConnection({ url: 'https://scoreboard:8443' });
 
     assert.equal(connection.origin, 'https://scoreboard:8443');
     assert.ok(connection.webSocketUrl.startsWith('wss://scoreboard:8443/WS/?source='));
