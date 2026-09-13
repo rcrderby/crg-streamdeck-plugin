@@ -18,7 +18,7 @@ import { type TeamNumber, team, teamColor } from '../crg/paths.ts';
 import { CrgKeyAction } from './key-action.ts';
 import { teamTheme } from '../render/theme.ts';
 
-export type TripScoreSettings = JsonObject & {
+export type TripPointsSettings = JsonObject & {
   team?: TeamNumber | string;
   points?: number | string;
 };
@@ -28,8 +28,11 @@ const TEAMS: readonly TeamNumber[] = [1, 2];
 /** CRG's own trip score buttons cover nought to four points. */
 const MAX_POINTS = 4;
 
+// The identifier keeps its original spelling on purpose. Stream Deck
+// stores it against every key a person has already placed, so changing
+// it would empty those keys rather than rename them.
 @action({ UUID: 'com.rcrderby.crg-streamdeck.trip-score' })
-export class TripScore extends CrgKeyAction<TripScoreSettings> {
+export class TripPoints extends CrgKeyAction<TripPointsSettings> {
   protected override watchedPaths(): readonly string[] {
     return TEAMS.flatMap((number) => [
       team(number, 'TripScore'),
@@ -43,7 +46,7 @@ export class TripScore extends CrgKeyAction<TripScoreSettings> {
     ]);
   }
 
-  protected override describe(settings: TripScoreSettings): KeySpec {
+  protected override describe(settings: TripPointsSettings): KeySpec {
     const number = readTeam(settings);
     const points = readPoints(settings);
     const theme = teamTheme(this.context.client.state, number);
@@ -63,7 +66,7 @@ export class TripScore extends CrgKeyAction<TripScoreSettings> {
     };
   }
 
-  override onKeyDown(event: KeyDownEvent<TripScoreSettings>): void {
+  override onKeyDown(event: KeyDownEvent<TripPointsSettings>): void {
     const number = readTeam(event.payload.settings);
 
     this.context.client.set(team(number, 'TripScore'), readPoints(event.payload.settings));
@@ -76,12 +79,12 @@ export class TripScore extends CrgKeyAction<TripScoreSettings> {
  * The property inspector stores the choice as text, so the value is
  * read as a number rather than compared to one.
  */
-function readTeam(settings: TripScoreSettings): TeamNumber {
+function readTeam(settings: TripPointsSettings): TeamNumber {
   return Number(settings.team) === 2 ? 2 : 1;
 }
 
 /** Reads the points a key is set to, held inside the range CRG accepts. */
-function readPoints(settings: TripScoreSettings): number {
+function readPoints(settings: TripPointsSettings): number {
   const points = Number(settings.points ?? 0);
 
   if (!Number.isInteger(points)) {
