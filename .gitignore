@@ -15,3 +15,8 @@ node_modules/
 .env
 .env.*
 !.env.example
+
+# Kept on a working machine, not in the repository
+.claude/
+docs/design/
+scripts/check_prose.py
