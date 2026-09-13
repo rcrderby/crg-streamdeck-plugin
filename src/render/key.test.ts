@@ -21,7 +21,7 @@ describe('renderKeySvg', () => {
     const svg = renderKeySvg({ background: 'red" onload="alert(1)' });
 
     assert.ok(!svg.includes('onload'));
-    assert.match(svg, /fill="#111111"/);
+    assert.match(svg, /fill="#000000"/);
   });
 
   it('escapes text that arrives from CRG', () => {

@@ -14,7 +14,7 @@ import { CrgClient } from './crg/client.ts';
 import { JamControl } from './actions/jam-control.ts';
 import { RenderScheduler } from './render/scheduler.ts';
 import { SettingsError, resolveConnection, type ConnectionSettings } from './crg/settings.ts';
-import { TripScore } from './actions/trip-score.ts';
+import { TripPoints } from './actions/trip-points.ts';
 import { type PluginContext } from './context.ts';
 
 type GlobalSettings = ConnectionSettings & {
@@ -81,7 +81,7 @@ async function applySettings(settings: GlobalSettings): Promise<void> {
 streamDeck.actions.registerAction(new Connection(context));
 streamDeck.actions.registerAction(new JamControl(context));
 streamDeck.actions.registerAction(new Clock(context));
-streamDeck.actions.registerAction(new TripScore(context));
+streamDeck.actions.registerAction(new TripPoints(context));
 
 streamDeck.settings.onDidReceiveGlobalSettings<GlobalSettings>((event) => {
   void applySettings(event.settings);

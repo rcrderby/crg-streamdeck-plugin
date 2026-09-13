@@ -17,10 +17,20 @@ export type TeamTheme = {
   readonly name: string;
 };
 
-/** Drawn when CRG offers no color for a team. */
-export const DEFAULT_BACKGROUND = '#111111';
+/**
+ * Drawn when CRG holds no colors for a team at all.
+ *
+ * The two teams come out as opposites so they stay apart at a glance,
+ * whoever is playing.
+ */
+export const TEAM_DEFAULTS: Readonly<Record<TeamNumber, { background: string; foreground: string }>> = {
+  1: { background: '#000000', foreground: '#ffffff' },
+  2: { background: '#ffffff', foreground: '#000000' }
+};
 
-export const DEFAULT_FOREGROUND = '#ffffff';
+export const DEFAULT_BACKGROUND = TEAM_DEFAULTS[1].background;
+
+export const DEFAULT_FOREGROUND = TEAM_DEFAULTS[1].foreground;
 
 const HEX_COLOR = /^#(?:[0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
 
@@ -86,8 +96,8 @@ export function readableForeground(background: string, requested: string, minimu
 /**
  * Reads one color slot across the sets, in order of preference.
  *
- * A game where nobody set the operator colors holds only the preset
- * set, so a key still comes out in the team's colors rather than grey.
+ * A game that nobody has configured holds a preset set but no operator
+ * set, so a key still comes out in the team's colors.
  */
 function colorSlot(state: StateStore, number: TeamNumber, slot: ColorSlot): string {
   for (const set of COLOR_SETS) {
@@ -104,20 +114,21 @@ function colorSlot(state: StateStore, number: TeamNumber, slot: ColorSlot): stri
 /**
  * Reads a team's colors and display name.
  *
- * CRG leaves a color empty until someone sets it, so the preset set,
- * then the uniform color, then a default stand in.
+ * The operator set comes first, then the preset set. A game holding
+ * neither falls to the team defaults, which are opposites rather than
+ * a color nobody picked.
  */
 export function teamTheme(state: StateStore, number: TeamNumber): TeamTheme {
-  const uniform = state.getString(team(number, 'UniformColor'));
+  const defaults = TEAM_DEFAULTS[number];
 
-  const background = safeColor(colorSlot(state, number, 'bg'), safeColor(uniform, DEFAULT_BACKGROUND));
-  const requested = safeColor(colorSlot(state, number, 'fg'), DEFAULT_FOREGROUND);
+  const background = safeColor(colorSlot(state, number, 'bg'), defaults.background);
+  const requested = safeColor(colorSlot(state, number, 'fg'), defaults.foreground);
   const glow = colorSlot(state, number, 'glow');
 
   const name =
     state.getString(team(number, 'AlternateName(operator)')) ||
     state.getString(team(number, 'Name')) ||
-    uniform ||
+    state.getString(team(number, 'UniformColor')) ||
     `Team ${number}`;
 
   return {

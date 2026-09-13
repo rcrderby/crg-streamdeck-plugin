@@ -127,7 +127,7 @@ export class CrgClient extends EventEmitter<CrgClientEvents> {
    * Reconnects now, without waiting out the backoff delay.
    *
    * The status key offers this so a stalled connection is one press
-   * from recovery in the middle of a bout.
+   * from recovery in the middle of a game.
    */
   reconnect(): void {
     if (this.#connection === undefined) {

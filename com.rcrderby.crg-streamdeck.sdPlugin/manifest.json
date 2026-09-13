@@ -77,15 +77,15 @@
       "UserTitleEnabled": false
     },
     {
-      "Name": "Trip Score",
+      "Name": "Trip Points",
       "UUID": "com.rcrderby.crg-streamdeck.trip-score",
-      "Icon": "imgs/actions/trip-score/icon",
-      "PropertyInspectorPath": "ui/trip-score.html",
-      "Tooltip": "Sets the trip score for a team, in that team's operator colors.",
+      "Icon": "imgs/actions/trip-points/icon",
+      "PropertyInspectorPath": "ui/trip-points.html",
+      "Tooltip": "Puts a fixed number of points on a team's current trip, in that team's operator colors.",
       "Controllers": ["Keypad"],
       "States": [
         {
-          "Image": "imgs/actions/trip-score/key",
+          "Image": "imgs/actions/trip-points/key",
           "TitleAlignment": "middle"
         }
       ],

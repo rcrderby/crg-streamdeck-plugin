@@ -23,9 +23,9 @@ export type ColorSlot = 'fg' | 'bg' | 'glow';
 /**
  * The color sets a key reads, in the order it prefers them.
  *
- * 'operator' is the set CRG's own operator console uses. A game where
- * nobody set it holds only 'preset', which is the set CRG's team editor
- * copies from, so it stands in.
+ * 'operator' is the set CRG's own operator console uses. 'preset' is
+ * what a game holds before anyone fills the operator set in, so it
+ * stands in rather than a key going to its plain default.
  */
 export const COLOR_SETS = ['operator', 'preset'] as const;
 

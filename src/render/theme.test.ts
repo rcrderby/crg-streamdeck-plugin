@@ -2,16 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import { StateStore } from '../crg/state.ts';
-import {
-  DEFAULT_BACKGROUND,
-  DEFAULT_FOREGROUND,
-  contrastRatio,
-  escapeXml,
-  luminance,
-  readableForeground,
-  safeColor,
-  teamTheme
-} from './theme.ts';
+import { contrastRatio, escapeXml, luminance, readableForeground, safeColor, teamTheme } from './theme.ts';
 
 describe('escapeXml', () => {
   it('escapes every character that can change markup', () => {
@@ -102,16 +93,21 @@ describe('teamTheme', () => {
     assert.equal(theme.name, 'WOJ');
   });
 
-  it('falls back to the preset set, which is all a fresh game holds', () => {
+  it('defaults the teams to opposites when CRG holds no operator colors', () => {
+    const empty = new StateStore();
+
+    assert.equal(teamTheme(empty, 1).background, '#000000');
+    assert.equal(teamTheme(empty, 1).foreground, '#ffffff');
+    assert.equal(teamTheme(empty, 2).background, '#ffffff');
+    assert.equal(teamTheme(empty, 2).foreground, '#000000');
+  });
+
+  it('falls back to the preset set before the defaults', () => {
     const state = new StateStore();
 
-    state.apply({
-      [path(2, 'Color(preset.bg)')]: '#38205b',
-      [path(2, 'Color(preset.fg)')]: '#ffffff'
-    });
+    state.apply({ [path(2, 'Color(preset.bg)')]: '#38205b' });
 
     assert.equal(teamTheme(state, 2).background, '#38205b');
-    assert.equal(teamTheme(state, 2).foreground, '#ffffff');
   });
 
   it('prefers the operator set over the preset set', () => {
@@ -125,14 +121,24 @@ describe('teamTheme', () => {
     assert.equal(teamTheme(state, 1).background, '#b3122e');
   });
 
-  it('falls back to the uniform color, then to the default', () => {
+  it('ignores a set that is neither operator nor preset', () => {
     const state = new StateStore();
 
-    state.apply({ [path(2, 'UniformColor')]: '#123456' });
-    assert.equal(teamTheme(state, 2).background, '#123456');
+    state.apply({ [path(2, 'Color(whiteboard.bg)')]: '#38205b' });
 
-    assert.equal(teamTheme(new StateStore(), 2).background, DEFAULT_BACKGROUND);
-    assert.equal(teamTheme(new StateStore(), 2).foreground, DEFAULT_FOREGROUND);
+    assert.equal(teamTheme(state, 2).background, '#ffffff');
+  });
+
+  it('uses the operator colors once they are set', () => {
+    const state = new StateStore();
+
+    state.apply({
+      [path(1, 'Color(operator.bg)')]: '#b3122e',
+      [path(1, 'Color(operator.fg)')]: '#ffffff'
+    });
+
+    assert.equal(teamTheme(state, 1).background, '#b3122e');
+    assert.equal(teamTheme(state, 1).foreground, '#ffffff');
   });
 
   it('falls back through the names CRG may not have set', () => {

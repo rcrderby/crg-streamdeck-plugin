@@ -123,7 +123,7 @@ state on a dedicated key, in all four states the client reports:
 connected, connecting, disconnected, and unauthorized.
 
 Pressing it reconnects at once rather than waiting out the backoff, so a
-stalled connection is one press from recovery in the middle of a bout.
+stalled connection is one press from recovery in the middle of a game.
 
 ## D17: U.S. English, and no en or em dashes
 

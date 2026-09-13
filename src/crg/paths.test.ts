@@ -11,9 +11,9 @@ describe('path builders', () => {
     assert.equal(label('Start'), 'ScoreBoard.CurrentGame.Label(Start)');
   });
 
-  it('reads a color slot from the set it is asked for', () => {
+  it('reads a color slot from the operator set', () => {
     assert.equal(teamColor(1, 'bg'), 'ScoreBoard.CurrentGame.Team(1).Color(operator.bg)');
-    assert.equal(teamColor(2, 'fg', 'preset'), 'ScoreBoard.CurrentGame.Team(2).Color(preset.fg)');
+    assert.equal(teamColor(2, 'fg'), 'ScoreBoard.CurrentGame.Team(2).Color(operator.fg)');
   });
 
   it('registers leaves rather than the whole game', () => {

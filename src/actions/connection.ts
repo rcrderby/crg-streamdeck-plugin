@@ -6,7 +6,7 @@
  * key of its own rather than only implied by the others.
  */
 
-import { action, type KeyDownEvent } from '@elgato/streamdeck';
+import { action } from '@elgato/streamdeck';
 
 import { type ConnectionStatus } from '../crg/client.ts';
 import { type KeySpec } from '../render/key.ts';
@@ -66,10 +66,8 @@ export class Connection extends CrgKeyAction {
     };
   }
 
-  /** Pressing the key reconnects, so a stalled bout is one press from recovery. */
-  override onKeyDown(event: KeyDownEvent): void | Promise<void> {
+  /** Pressing the key reconnects, so a stalled game is one press from recovery. */
+  override onKeyDown(): void {
     this.context.client.reconnect();
-
-    return event.action.showOk();
   }
 }
