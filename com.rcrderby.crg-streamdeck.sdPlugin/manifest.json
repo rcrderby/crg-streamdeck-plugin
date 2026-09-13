@@ -4,7 +4,7 @@
   "Version": "0.1.0.0",
   "Author": "Rose City Rollers",
   "URL": "https://github.com/rcrderby/crg-streamdeck-plugin",
-  "Description": "Control the CRG Scoreboard and show live game state on a Stream Deck.",
+  "Description": "Control the CRG Scoreboard with live game state on a Stream Deck.",
   "Category": "CRG Scoreboard",
   "CategoryIcon": "imgs/plugin/category-icon",
   "Icon": "imgs/plugin/marketplace",
@@ -57,8 +57,7 @@
           "TitleAlignment": "middle"
         }
       ],
-      "UserTitleEnabled": false,
-      "PropertyInspectorPath": "ui/connection.html"
+      "UserTitleEnabled": false
     },
     {
       "Name": "Clock",

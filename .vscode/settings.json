@@ -1,3 +1,13 @@
 {
-  "cSpell.words": ["dbaeumer", "esbenp", "streamdeck"]
+  "cSpell.words": [
+    "dbaeumer",
+    "Elgato",
+    "esbenp",
+    "imgs",
+    "rcrderby",
+    "streamdeck"
+  ],
+  "json.schemaDownload.trustedDomains": {
+    "https://schemas.elgato.com/": true
+  }
 }

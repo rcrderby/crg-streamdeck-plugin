@@ -3,9 +3,8 @@
 # mcr.microsoft.com/devcontainers/typescript-node:24-bookworm
 FROM mcr.microsoft.com/devcontainers/typescript-node@sha256:cba90c28e53ac2f5a8a5a0388b71b8e98bbe1a4711e0faaa6ef48b137037d4ae
 
-# Node.js 24 is the runtime the plugin manifest asks Stream Deck for,
-# and the base image carries the Python that scripts/check_prose.py runs
-# on. Only pre-commit is missing.
+# Node.js 24 is the runtime the plugin manifest asks Stream Deck for.
+# Only pre-commit is missing from the base image.
 
 # Set the working directory
 WORKDIR /workspaces/crg-streamdeck-plugin
