@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { VIEWBOX, renderKey, renderKeySvg } from './key.ts';
+import { VIEWBOX, estimateTextWidth, fittedSize, renderKey, renderKeySvg } from './key.ts';
 
 describe('renderKeySvg', () => {
   it('draws in a square viewBox so any model can scale it', () => {
@@ -54,5 +54,50 @@ describe('renderKey', () => {
     const decoded = Buffer.from(image.slice('data:image/svg+xml;base64,'.length), 'base64').toString('utf8');
 
     assert.match(decoded, /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg"/);
+  });
+});
+
+describe('fittedSize', () => {
+  it('leaves a line that already fits alone', () => {
+    assert.equal(fittedSize('0:30', 28), 28);
+    assert.equal(fittedSize('JAM', 12, 'bold'), 12);
+  });
+
+  it('shrinks a clock that has run past an hour', () => {
+    const size = fittedSize('1:00:00', 28);
+
+    assert.ok(size < 28, `expected a smaller size, got ${size}`);
+    assert.ok(estimateTextWidth('1:00:00', size) <= 92);
+  });
+
+  it('shrinks the longest clock name', () => {
+    const size = fittedSize('INTERMISSION', 12, 'bold');
+
+    assert.ok(size < 12, `expected a smaller size, got ${size}`);
+    assert.ok(estimateTextWidth('INTERMISSION', size, 'bold') <= 92);
+  });
+
+  it('shrinks a long team name', () => {
+    const size = fittedSize('Wheels of Justice', 11, 'bold');
+
+    assert.ok(estimateTextWidth('Wheels of Justice', size, 'bold') <= 92);
+  });
+
+  it('stops shrinking rather than becoming unreadable', () => {
+    assert.equal(fittedSize('x'.repeat(200), 28), 14);
+  });
+
+  it('counts bold text as wider than regular', () => {
+    assert.ok(estimateTextWidth('PERIOD', 12, 'bold') > estimateTextWidth('PERIOD', 12));
+  });
+});
+
+describe('long text on a key', () => {
+  it('draws an hour-long clock smaller than a short one', () => {
+    const short = /font-size="([\d.]+)"/.exec(renderKeySvg({ texts: [{ text: '0:30', y: 62, size: 28 }] }));
+    const long = /font-size="([\d.]+)"/.exec(renderKeySvg({ texts: [{ text: '1:00:00', y: 62, size: 28 }] }));
+
+    assert.ok(Number(long?.[1]) < Number(short?.[1]));
+    assert.equal(Number(short?.[1]), 28);
   });
 });

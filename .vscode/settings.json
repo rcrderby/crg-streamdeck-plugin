@@ -4,8 +4,10 @@
     "Elgato",
     "esbenp",
     "imgs",
+    "Neue",
     "rcrderby",
-    "streamdeck"
+    "streamdeck",
+    "VIEWBOX"
   ],
   "json.schemaDownload.trustedDomains": {
     "https://schemas.elgato.com/": true

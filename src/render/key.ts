@@ -5,6 +5,9 @@
  * one description fits every Stream Deck model: the hardware scales it
  * to whatever its keys are. Text arriving from CRG is escaped on the
  * way in, and colors are used only once they read as hex colors.
+ *
+ * A line of text that would run past the edge is drawn smaller rather
+ * than clipped, so a long clock or a long name stays readable.
  */
 
 import { DEFAULT_BACKGROUND, DEFAULT_FOREGROUND, escapeXml, safeColor } from './theme.ts';
@@ -40,16 +43,82 @@ const ACCENT_HEIGHT = 8;
 
 const OUTLINE_WIDTH = 5;
 
+/** Room a line of text is given, leaving a margin at each edge. */
+const TEXT_WIDTH = 92;
+
+/** How small a line may be shrunk before it stops being worth reading. */
+const MIN_FONT_SCALE = 0.5;
+
+/**
+ * Rough character widths, as a fraction of the font size.
+ *
+ * Enough to tell whether a line will overflow. The renderer has no font
+ * metrics, and the exact figures differ per device anyway, so the aim
+ * is a size that fits rather than one that fills the key precisely.
+ */
+function characterWidth(character: string): number {
+  if (":.,'| ".includes(character)) {
+    return 0.28;
+  }
+
+  if (character >= '0' && character <= '9') {
+    return 0.56;
+  }
+
+  if (character >= 'A' && character <= 'Z') {
+    return 0.68;
+  }
+
+  if (character >= 'a' && character <= 'z') {
+    return 0.52;
+  }
+
+  return 0.6;
+}
+
+/** Estimates how wide a line will be drawn, in viewBox units. */
+export function estimateTextWidth(text: string, size: number, weight: 'normal' | 'bold' = 'normal'): number {
+  const ems = [...text].reduce((total, character) => total + characterWidth(character), 0);
+
+  return ems * size * (weight === 'bold' ? 1.06 : 1);
+}
+
+/**
+ * Shrinks a line until it fits the room it is given.
+ *
+ * Returns the size unchanged when the line already fits.
+ */
+export function fittedSize(
+  text: string,
+  size: number,
+  weight: 'normal' | 'bold' = 'normal',
+  width = TEXT_WIDTH
+): number {
+  const estimated = estimateTextWidth(text, size, weight);
+
+  if (estimated <= width) {
+    return size;
+  }
+
+  return Math.max(size * MIN_FONT_SCALE, (size * width) / estimated);
+}
+
 function text(line: KeyText, foreground: string): string {
   const weight = line.weight === 'bold' ? 700 : 400;
   const fill = safeColor(line.color, foreground);
   const opacity = line.opacity !== undefined && line.opacity < 1 ? ` opacity="${clamp(line.opacity)}"` : '';
+  const size = round(fittedSize(line.text, line.size, line.weight ?? 'normal'));
 
   return (
     `<text x="${VIEWBOX / 2}" y="${line.y}" fill="${fill}" font-family="${FONT_STACK}" ` +
-    `font-size="${line.size}" font-weight="${weight}" text-anchor="middle"${opacity}>` +
+    `font-size="${size}" font-weight="${weight}" text-anchor="middle"${opacity}>` +
     `${escapeXml(line.text)}</text>`
   );
+}
+
+/** Keeps the generated markup short, and comparable between redraws. */
+function round(value: number): number {
+  return Math.round(value * 100) / 100;
 }
 
 function clamp(value: number): number {

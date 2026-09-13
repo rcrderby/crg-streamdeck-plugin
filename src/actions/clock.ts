@@ -11,6 +11,7 @@ import type { JsonObject } from '@elgato/utils';
 import { type KeySpec, type KeyText } from '../render/key.ts';
 import { CLOCK_NAMES, type ClockName, clock } from '../crg/paths.ts';
 import { CrgKeyAction } from './key-action.ts';
+import { clockTitle } from '../render/clock-title.ts';
 import { formatClock } from '../render/time.ts';
 
 export type ClockSettings = JsonObject & {
@@ -36,13 +37,9 @@ export class Clock extends CrgKeyAction<ClockSettings> {
     const connected = this.context.client.status === 'connected';
 
     const texts: KeyText[] = [
-      { text: name.toUpperCase(), y: 22, size: 12, weight: 'bold' as const, opacity: 0.75 },
-      { text: connected ? formatClock(state.getNumber(clock(name, 'Time'))) : '--:--', y: 62, size: 28 }
+      { text: clockTitle(name, number), y: 30, size: 13, weight: 'bold' as const, opacity: 0.75 },
+      { text: connected ? formatClock(state.getNumber(clock(name, 'Time'))) : '--:--', y: 72, size: 30 }
     ];
-
-    if (number > 0) {
-      texts.push({ text: `#${number}`, y: 88, size: 13, opacity: 0.75 });
-    }
 
     return {
       background: '#0b0b0f',
