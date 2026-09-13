@@ -46,7 +46,7 @@ Reads and writes share one connection, so a full Stream Deck XL costs CRG a sing
 
 | Action | Description |
 | ------ | ----------- |
-| CRG Connection | Shows whether the plugin is talking to CRG: connected, connecting, offline, or not allowed to write.  Pressing it reconnects at once. |
+| CRG Connection | Shows whether the plugin is connected to CRG: connected, connecting, offline, or not allowed to write.  Pressing it causes an immediate reconnect.  This key also holds the `CRG URL` setting. |
 | Jam Control | Starts or stops a jam.  The key reads `InJam` to decide which, and takes its wording from the same `Label` paths CRG shows on its own Start and Stop buttons. |
 | Clock | Displays a CRG clock: period, jam, lineup, timeout, or intermission, with its number and whether it is running. |
 | Trip Score | Sets a team's trip score to a fixed number of points, drawn in that team's `operator` colors from CRG. |
@@ -59,7 +59,7 @@ Reads and writes share one connection, so a full Stream Deck XL costs CRG a sing
 | Stream Deck software | 7.1 or later |
 | Stream Deck hardware | Stream Deck XL is the focus; nothing in the code assumes it |
 
-CRG's host, port, and use of TLS are settings, so the same build talks to a scoreboard on the same machine or one across the hall.
+The scoreboard address is one `CRG URL` setting, so the same build talks to a scoreboard on the same machine or one across the hall.  It is a plugin-wide setting rather than a per-key one, and it lives on the [CRG Connection](#actions "Available Actions") key, so add one of those to configure the plugin.
 
 ## Development
 
