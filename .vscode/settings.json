@@ -6,5 +6,8 @@
     "imgs",
     "rcrderby",
     "streamdeck"
-  ]
+  ],
+  "json.schemaDownload.trustedDomains": {
+    "https://schemas.elgato.com/": true
+  }
 }
