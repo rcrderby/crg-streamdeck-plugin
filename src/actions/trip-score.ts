@@ -1,9 +1,13 @@
 /**
- * Sets a team's trip score to a fixed number of points.
+ * Puts a fixed number of points on a team's current trip.
  *
  * The key is drawn in that team's 'operator' colors, the set CRG's own
  * operator console uses, so a key matches the console the operator
  * looks up at.
+ *
+ * CRG's TripScore is absolute rather than additive, so the key assigns
+ * the points rather than adding to what the trip already holds. The
+ * leading plus says what the key puts on the board.
  */
 
 import { action, type KeyDownEvent } from '@elgato/streamdeck';
@@ -15,8 +19,8 @@ import { CrgKeyAction } from './key-action.ts';
 import { teamTheme } from '../render/theme.ts';
 
 export type TripScoreSettings = JsonObject & {
-  team?: TeamNumber;
-  points?: number;
+  team?: TeamNumber | string;
+  points?: number | string;
 };
 
 const TEAMS: readonly TeamNumber[] = [1, 2];
@@ -54,23 +58,26 @@ export class TripScore extends CrgKeyAction<TripScoreSettings> {
       outline: current === points ? theme.foreground : undefined,
       texts: [
         { text: theme.name.slice(0, 10), y: 24, size: 11, weight: 'bold', opacity: 0.8 },
-        { text: String(points), y: 76, size: 44, weight: 'bold', opacity: noInitial ? 0.5 : 1 }
+        { text: `+${points}`, y: 76, size: 40, weight: 'bold', opacity: noInitial ? 0.5 : 1 }
       ]
     };
   }
 
-  override onKeyDown(event: KeyDownEvent<TripScoreSettings>): void | Promise<void> {
+  override onKeyDown(event: KeyDownEvent<TripScoreSettings>): void {
     const number = readTeam(event.payload.settings);
 
     this.context.client.set(team(number, 'TripScore'), readPoints(event.payload.settings));
-
-    return event.action.showOk();
   }
 }
 
-/** Reads the team a key is set to, defaulting to the first. */
+/**
+ * Reads the team a key is set to, defaulting to the first.
+ *
+ * The property inspector stores the choice as text, so the value is
+ * read as a number rather than compared to one.
+ */
 function readTeam(settings: TripScoreSettings): TeamNumber {
-  return settings.team === 2 ? 2 : 1;
+  return Number(settings.team) === 2 ? 2 : 1;
 }
 
 /** Reads the points a key is set to, held inside the range CRG accepts. */

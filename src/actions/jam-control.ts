@@ -70,7 +70,7 @@ export class JamControl extends CrgKeyAction {
 
     this.context.client.trigger(choice.path);
 
-    return event.action.showOk();
+    return undefined;
   }
 
   /**
