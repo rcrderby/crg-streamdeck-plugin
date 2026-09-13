@@ -9,3 +9,7 @@ LICENSE
 *.yml
 *.yaml
 *.md
+
+# Visual Studio Code rewrites its own settings file, and the spell
+# checker expands cSpell.words every time it adds a word
+.vscode/settings.json
