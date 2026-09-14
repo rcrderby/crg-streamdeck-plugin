@@ -7,10 +7,11 @@
  */
 
 import streamDeck from '@elgato/streamdeck';
+import { setTimeout as delay } from 'node:timers/promises';
 
 import { Clock } from './actions/clock.ts';
 import { Connection } from './actions/connection.ts';
-import { CrgClient } from './crg/client.ts';
+import { CrgClient, describeError } from './crg/client.ts';
 import { JamControl } from './actions/jam-control.ts';
 import { RenderScheduler } from './render/scheduler.ts';
 import { SettingsError, resolveConnection, type ConnectionSettings } from './crg/settings.ts';
@@ -22,6 +23,9 @@ type GlobalSettings = ConnectionSettings & {
   session?: string;
 };
 
+/** How long a stopping plugin waits for CRG to acknowledge the close. */
+const SHUTDOWN_GRACE_MS = 1_000;
+
 const logger = streamDeck.logger.createScope('plugin');
 
 const context: PluginContext = {
@@ -29,8 +33,15 @@ const context: PluginContext = {
   scheduler: new RenderScheduler()
 };
 
+/** The last failure logged, so a retry that fails the same way stays quiet. */
+let lastFailure: string | undefined;
+
 context.client.on('status', (status) => {
   logger.info(`CRG connection ${status}`);
+
+  if (status === 'connected') {
+    lastFailure = undefined;
+  }
 });
 
 context.client.on('unauthorized', (message) => {
@@ -40,7 +51,12 @@ context.client.on('unauthorized', (message) => {
 });
 
 context.client.on('error', (cause) => {
-  logger.error('CRG connection failed', cause);
+  const failure = describeError(cause);
+
+  if (failure !== lastFailure) {
+    lastFailure = failure;
+    logger.warn(`CRG connection failed: ${failure}. Retrying until CRG answers.`);
+  }
 });
 
 /**
@@ -64,7 +80,7 @@ async function rememberSession(): Promise<void> {
 }
 
 /** Opens or re-points the CRG connection from the stored settings. */
-async function applySettings(settings: GlobalSettings): Promise<void> {
+function applySettings(settings: GlobalSettings): void {
   try {
     context.client.connect(resolveConnection(settings), settings.session);
   } catch (cause) {
@@ -78,13 +94,25 @@ async function applySettings(settings: GlobalSettings): Promise<void> {
   }
 }
 
+/**
+ * Closes the CRG connection, then exits.
+ *
+ * CRG drops a client that closes at once. One that vanishes stays in its
+ * client list until the socket idles out five minutes later.
+ */
+async function shutdown(signal: NodeJS.Signals): Promise<void> {
+  logger.info(`Stopping on ${signal}`);
+  await Promise.race([context.client.disconnect(), delay(SHUTDOWN_GRACE_MS)]);
+  process.exit(0);
+}
+
 streamDeck.actions.registerAction(new Connection(context));
 streamDeck.actions.registerAction(new JamControl(context));
 streamDeck.actions.registerAction(new Clock(context));
 streamDeck.actions.registerAction(new TripPoints(context));
 
 streamDeck.settings.onDidReceiveGlobalSettings<GlobalSettings>((event) => {
-  void applySettings(event.settings);
+  applySettings(event.settings);
 });
 
 context.client.on('status', (status) => {
@@ -93,6 +121,11 @@ context.client.on('status', (status) => {
   }
 });
 
+for (const signal of ['SIGINT', 'SIGTERM'] as const) {
+  process.once(signal, () => void shutdown(signal));
+}
+
 await streamDeck.connect();
 
-await applySettings(await streamDeck.settings.getGlobalSettings<GlobalSettings>());
+// The settings this returns also reach the listener above, which applies them.
+await streamDeck.settings.getGlobalSettings<GlobalSettings>();

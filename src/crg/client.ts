@@ -67,6 +67,25 @@ export function readSessionCookies(setCookie: readonly string[]): string | undef
   return pairs.length > 0 ? pairs.join('; ') : undefined;
 }
 
+/** An error's message, or its code when the message is empty. */
+function errorText(error: Error): string {
+  if (error.message !== '') {
+    return error.message;
+  }
+
+  return (error as NodeJS.ErrnoException).code ?? error.name;
+}
+
+/**
+ * Describes a connection error in one line, without a stack trace.
+ *
+ * A failed fetch says only 'fetch failed' and keeps the reason in its
+ * cause, so the cause is included.
+ */
+export function describeError(error: Error): string {
+  return error.cause instanceof Error ? `${errorText(error)}: ${errorText(error.cause)}` : errorText(error);
+}
+
 export class CrgClient extends EventEmitter<CrgClientEvents> {
   readonly state = new StateStore();
 
@@ -78,6 +97,10 @@ export class CrgClient extends EventEmitter<CrgClientEvents> {
   #reconnectDelayMs = RECONNECT_MIN_MS;
   #status: ConnectionStatus = 'disconnected';
   #closing = false;
+  /** Counts connection attempts, so a superseded attempt can tell. */
+  #attempt = 0;
+  /** True while a session is being fetched and no socket exists yet. */
+  #opening = false;
 
   get status(): ConnectionStatus {
     return this.#status;
@@ -102,7 +125,9 @@ export class CrgClient extends EventEmitter<CrgClientEvents> {
   /**
    * Points the client at a scoreboard and connects.
    *
-   * Calling this again with a different address reconnects to it.
+   * Calling this again with a different address reconnects to it. With
+   * the same address it does nothing while a connection is open or
+   * being opened.
    */
   connect(connection: Connection, session?: string): void {
     const changed = this.#connection?.webSocketUrl !== connection.webSocketUrl;
@@ -118,7 +143,7 @@ export class CrgClient extends EventEmitter<CrgClientEvents> {
       this.state.clear();
     }
 
-    if (changed || this.#socket === undefined) {
+    if (changed || (this.#socket === undefined && !this.#opening)) {
       this.#open();
     }
   }
@@ -139,13 +164,21 @@ export class CrgClient extends EventEmitter<CrgClientEvents> {
     this.#open();
   }
 
-  /** Closes the connection and stops reconnecting. */
-  disconnect(): void {
+  /**
+   * Closes the connection and stops reconnecting.
+   *
+   * Resolves once the socket has closed, so a plugin that is stopping
+   * can wait for CRG to hear it leave.
+   */
+  disconnect(): Promise<void> {
     this.#closing = true;
     this.#clearTimers();
-    this.#socket?.close();
-    this.#socket = undefined;
+
+    const closed = this.#retire();
+
     this.#setStatus('disconnected');
+
+    return closed;
   }
 
   /**
@@ -165,9 +198,7 @@ export class CrgClient extends EventEmitter<CrgClientEvents> {
 
   #open(): void {
     this.#clearTimers();
-    this.#socket?.removeAllListeners();
-    this.#socket?.close();
-    this.#socket = undefined;
+    void this.#retire();
 
     const connection = this.#connection;
 
@@ -175,14 +206,52 @@ export class CrgClient extends EventEmitter<CrgClientEvents> {
       return;
     }
 
+    const attempt = this.#attempt;
+
+    this.#opening = true;
     this.#setStatus('connecting');
 
     void this.#fetchSession(connection)
-      .then(() => this.#openSocket(connection))
+      .then(() => {
+        if (attempt === this.#attempt) {
+          this.#opening = false;
+          this.#openSocket(connection);
+        }
+      })
       .catch((cause: unknown) => {
+        if (attempt !== this.#attempt) {
+          return;
+        }
+
+        this.#opening = false;
         this.emit('error', cause instanceof Error ? cause : new Error(String(cause)));
         this.#scheduleReconnect();
       });
+  }
+
+  /**
+   * Stops using the current socket and supersedes any attempt in flight.
+   *
+   * A retired socket keeps its listeners, which ignore it, because the
+   * socket library reports an error when a handshake is abandoned.
+   */
+  #retire(): Promise<void> {
+    this.#attempt += 1;
+    this.#opening = false;
+
+    const socket = this.#socket;
+
+    this.#socket = undefined;
+
+    if (socket === undefined || socket.readyState === WebSocket.CLOSED) {
+      return Promise.resolve();
+    }
+
+    const closed = new Promise<void>((resolve) => socket.once('close', () => resolve()));
+
+    socket.close();
+
+    return closed;
   }
 
   /**
@@ -206,6 +275,7 @@ export class CrgClient extends EventEmitter<CrgClientEvents> {
     }
   }
 
+  /** Opens the socket. Its events are acted on only while it is current. */
   #openSocket(connection: Connection): void {
     const headers: Record<string, string> = {};
 
@@ -214,19 +284,38 @@ export class CrgClient extends EventEmitter<CrgClientEvents> {
     }
 
     const socket = new WebSocket(connection.webSocketUrl, { headers });
+    const current = (): boolean => this.#socket === socket;
 
     this.#socket = socket;
 
     socket.on('open', () => {
+      if (!current()) {
+        return;
+      }
+
       this.#reconnectDelayMs = RECONNECT_MIN_MS;
       this.#setStatus('connected');
       this.#send({ action: 'Register', paths: [...REGISTERED_PATHS] });
       this.#ping = setInterval(() => this.#send({ action: 'Ping' }), PING_INTERVAL_MS);
     });
 
-    socket.on('message', (data: RawData) => this.#receive(data));
-    socket.on('error', (cause: Error) => this.emit('error', cause));
+    socket.on('message', (data: RawData) => {
+      if (current()) {
+        this.#receive(data);
+      }
+    });
+
+    socket.on('error', (cause: Error) => {
+      if (current()) {
+        this.emit('error', cause);
+      }
+    });
+
     socket.on('close', () => {
+      if (!current()) {
+        return;
+      }
+
       this.#clearTimers();
       this.#socket = undefined;
 
