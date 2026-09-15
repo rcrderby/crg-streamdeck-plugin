@@ -29,10 +29,7 @@ const DESCRIPTIONS = {
   },
   'com.rcrderby.crg-streamdeck.undo': {
     summary: "Undoes CRG's last clock action.",
-    details: [
-      "If 'Enable Replace on Undo' is active, this button displays CRG's undo options.",
-      'Requires a 1-second hold.'
-    ]
+    details: ['Requires a 1-second hold.']
   },
   'com.rcrderby.crg-streamdeck.active-clock': {
     summary: 'Displays the clock and label that appear on the scoreboard.',
