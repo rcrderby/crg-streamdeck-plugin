@@ -308,12 +308,19 @@ const SHEET = [
         ]
       },
       {
-        name: 'Score - total and jam total',
+        name: 'Team 1 score - total and jam total',
         slugs: ['score'],
         keys: [
           ['Early in a game', d.scoreKey(WHEELS, 8, 4, 2)],
-          ['Later in a game', d.scoreKey(WHEELS, 113, 0, 1)],
-          ['A light team color', d.scoreKey(JUSTICE, 109, 14, 3, true)]
+          ['Later in a game', d.scoreKey(WHEELS, 113, 0, 1)]
+        ]
+      },
+      {
+        name: 'Team 2 score - jam total and total',
+        slugs: ['score'],
+        keys: [
+          ['Early in a game', d.scoreKey(JUSTICE, 6, 3, 2, true)],
+          ['Later in a game', d.scoreKey(JUSTICE, 109, 14, 3, true)]
         ]
       }
     ]
