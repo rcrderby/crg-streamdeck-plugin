@@ -12,7 +12,7 @@
 - [Features](#features "Plugin Features")
 - [Compatibility](#compatibility "Supported Versions And Platforms")
 - [Getting Started](#getting-started "Setup Instructions")
-- [Action Reference](#action-reference "Every Action And Its Settings")
+- [Button Action Reference](#button-action-reference "Every Button And Its Settings")
 - [Troubleshooting](#troubleshooting "Troubleshooting Information")
 - [Contributing](#contributing "How To Contribute")
 
@@ -22,9 +22,9 @@ This repository includes a plugin that allows you to control the [CRG ScoreBoard
 
 Every roller derby SBO [^1] has a preferred way to interact with the CRG Scoreboard application.  Some SBOs use a mouse exclusively, some use a mouse with a standard keyboard and small handful of key mappings, some use highly-customized keyboard controllers, and some even use gaming console controllers.  A Stream Deck is just another option to operate a roller derby scoreboard.
 
-Each Stream Deck button is a small display, and this plugin connects to a CRG instance which allows the buttons show live game information and change their function based on the state of a game. For example, some buttons display live clock and score information, some use CRG `operator` colors for team-specific controls, and some dynamically change what they do.
+Each Stream Deck button is a small display, and this plugin connects to a CRG instance which allows the buttons to show live game information and change their function based on the state of a game.  For example, some buttons display live clock and score information, some use CRG `operator` colors for team-specific controls, and some dynamically change what they do.
 
-Each button holds its own action, and you can customize a button layout that meets your needs and fits your specific Stream Deck model [[example](/docs/images/key-gallery.svg "Stream Deck XL Layout Image")].
+Each button holds its own action, and you can customize a button layout that meets your needs and fits your specific Stream Deck model [[example](/docs/images/crg-streamdeck-plugin-preview.svg "Stream Deck XL Layout Image")].  This repository includes an example two-page layout you can import and adapt [[profile](/streamdeck-profiles/crg-live-1.streamDeckProfile "CRG Live 1 Stream Deck Profile")].
 
 ## Features
 
@@ -35,7 +35,7 @@ Each button holds its own action, and you can customize a button layout that mee
 - **Hold functions for sensitive actions:**  Some CRG buttons have more consequences than others.  For example, pressing `Undo` by mistake can change the state of a game in a way that isn't recoverable. On the Stream Deck, these buttons require a one-second hold to take action, and they display an indicator so it's clear that a timed hold is in progress.  Releasing these buttons early takes no action, so an accidental press doesn't disrupt a game.
 - **Menus for button action options:**  Some buttons open a separate page of buttons that allow you to choose from several available actions.  For example, with `Enable Replace on Undo` enabled in CRG, a held press of the `Undo` button presents a menu of options for you to choose from.
 - **CRG operator profile integration:**  The plugin creates and uses an operator profile named `StreamDeck` by default, and you can create new or select existing operator profiles to store or inherit operator settings.
-- **Connect locally or over a network:**  The plugin tries to connect to a local instance of CRG (`http://localhost:8000`) by default, and you can change the URL to connect to a remote CRG instance (`http://192.168.0.67`).  The plugin stores the URL so you don't have to re-enter the URL each time you use your Stream Deck.
+- **Connect locally or over a network:**  The plugin tries to connect to a local instance of CRG (`http://localhost:8000`) by default, and you can change the URL to connect to a remote CRG instance (`http://192.168.0.67:8000`).  The plugin stores the URL so you don't have to re-enter the URL each time you use your Stream Deck.
 - **Computer sleep prevention:**  Using a Stream Deck to control CRG may mean that you don't touch the keyboard or mouse for an extended period.  While connected to CRG, the plugin keeps the computer and its display awake.
 
 ## Compatibility
@@ -52,15 +52,16 @@ Each button holds its own action, and you can customize a button layout that mee
 | 7.1 to 7.3           | Not Tested         |
 | Earlier              | :x:                |
 
-The plugin buttons should with with any Stream Deck Platform, although they've only ben tested on a Stream Deck XL.  The plugin includes expandable menu profiles for the following Stream Deck platforms:
+The plugin buttons should work with any Stream Deck Platform, although they've only been tested on a Stream Deck XL.  The plugin includes expandable menu profiles for the following Stream Deck platforms:
 
-|         **Platform**        |      **Tested**    | **Number of Keys** | **Number of Dials** |
-| --------------------------- |:------------------:|:------------------:|:-------------------:|
-| Stream Deck XL [^2]         | :white_check_mark: |         32         |         N/A         |
-| Stream Deck MK.2 [^3]       | :x:                |         15         |         N/A         |
-| Stream Deck + [^4]          | :x:                |          8         |          4          |
-| Stream Deck Mini [^5]       | :x:                |          6         |         N/A         |
-| Stream Deck Neo [^6]        | :x:                |          8         |         N/A         |
+|        **Platform**         |    **Tested**      | **Number of Buttons** | **Number of Dials** |
+| --------------------------- |:------------------:|:---------------------:|:-------------------:|
+| Stream Deck XL [^2]         | :white_check_mark: |          32           |         N/A         |
+| Stream Deck MK.2 [^3]       | :grey_question:    |          15           |         N/A         |
+| Stream Deck + [^4]          | :grey_question:    |           8           |          4          |
+| Stream Deck Mini [^5]       | :grey_question:    |           6           |         N/A         |
+| Stream Deck Neo [^6]        | :grey_question:    |           8           |         N/A         |
+| Stream Deck Virtual [^7]    | :white_check_mark  |        Variable       |         N/A         |
 
 ## Getting Started
 
@@ -129,13 +130,13 @@ These steps will help you set up the plugin to control CRG from a Stream Deck.  
     <strong>Test controlling CRG with the Stream Deck</strong>
   </summary>
 
-  Your Stream Deck and CRG are now set up to work together.  Start a new game and confirm the Stream Deck keys control the scoreboard correctly.
+  Your Stream Deck and CRG are now set up to work together.  Start a new game and confirm the Stream Deck buttons control the scoreboard correctly.
 
 </details>
 
 ## Button Action Reference
 
-Buttons that control one team take a `Team` setting.
+Buttons that control one team take a `Team` setting.  You can view Every button, and every state each displays in this image [[reference](/docs/images/key-reference.svg "Button Reference Image")].
 
 <details>
   <summary>
@@ -144,7 +145,7 @@ Buttons that control one team take a `Team` setting.
 
 | Action | Description |
 | ------ | ----------- |
-| `CRG Connection` | Shows whether the plugin is connected to CRG: connected, connecting, offline, not allowed to write, or disconnected on purpose.  Pressing it opens the connection page.  This key holds the `CRG URL` and `CRG Operator` settings for every CRG button. |
+| `CRG Connection` | Shows whether the plugin is connected to CRG: connected, connecting, offline, not allowed to write, or disconnected on purpose.  Pressing it opens the connection page.  This button holds the `CRG URL` and `CRG Operator` settings for every CRG button. |
 | `Jam Control` | Starts a jam, stops a jam, or ends a timeout, and shows the relevant clock and jam data.  It turns orange five seconds before a jam should start, and pulses if the lineup clock goes past the prescribed time in the active CRG ruleset. |
 | `Timeout` | Starts an untyped timeout.  Its activity indicator is green until timeout type is assigned. |
 | `Official Timeout` | Starts an official timeout.  Its activity indicator is green while an official timeout is running. |
@@ -175,7 +176,7 @@ Buttons that control one team take a `Team` setting.
 
 | Action | Description |
 | ------ | ----------- |
-| `Team Timeout` | Starts a team timeout or assigns an untyped timeout.  Displays a dot for each timeout and its status.
+| `Team Timeout` | Starts a team timeout or assigns an untyped timeout.  Displays a dot for each timeout and its status. |
 | `Official Review` | Starts an official review or assigns an untyped timeout.  Displays a dot for a team that has its official review available.  Displays a plus sign if a team wins their first official review of a period, and a vertical line if a team wins a second official review within the same period. |
 
 </details>
@@ -213,7 +214,7 @@ Buttons that control one team take a `Team` setting.
     <strong>Menu Button Pages</strong>
   </summary>
 
-The plugin includes two small pages of keys and switches your Stream Deck to these menus as needed.  The first time a menu page opens on a Stream Deck, the Stream Deck software prompts the user to allow the page.
+The plugin includes two small pages of buttons and switches your Stream Deck to these menus as needed.  The first time a menu page opens on a Stream Deck, the Stream Deck software prompts the user to allow the page.
 
 | Page | Opens | Buttons |
 | ---- | ----- | ---- |
@@ -244,16 +245,16 @@ The plugin writes a log of its connection and anything that goes wrong to:
 
 | `Connection` button label | What it means |
 | ------------ | ------------- |
-| `NO CRG`, and every key is dimmed | The plugin cannot reach CRG.  Check the `CRG URL` setting on a CRG Connection key, and confirm CRG is running and reachable from this computer.  The plugin keeps retrying on its own. |
-| `Not allowed` | CRG will not let this device change the scoreboard.  Authorize it in CRG's `Settings` page under `Clients`.  The keys still show the game, because CRG permits reading game data. |
+| `NO CRG`, and every button is dimmed | The plugin cannot reach CRG.  Check the `CRG URL` setting on a `CRG Connection` button, and confirm CRG is running and reachable from this computer.  The plugin keeps retrying on its own. |
+| `Not allowed` | CRG will not let this device change the scoreboard.  Authorize it in CRG's `Settings` page under `Clients`.  The buttons still show the game, because CRG permits reading game data. |
 | `CRG Disconnected` | Your Stream Deck was disconnected manually and remains in this state across restarts.  Press and hold this button for one second to reconnect. |
 
 ## Contributing
 
 Please consider sharing any Stream Deck content for CRG you create to this repository.  Some examples of things you can share include:
 
-- Key layouts, within a Stream Deck Profile, for different models of controllers.
-- Key designs for actions the plugin does not cover yet.
+- Button layouts, within a Stream Deck Profile, for different models of controllers.
+- Button designs for actions the plugin does not cover yet.
 - Reports of CRG versions and Stream Deck software versions you have tested, so the [Compatibility](#compatibility "Compatibility Tables") tables can say more.
 
 Please open an [Issue](https://github.com/rcrderby/crg-streamdeck-plugin/issues "Repository Issues") to report a problem or request features.
@@ -264,3 +265,4 @@ Please open an [Issue](https://github.com/rcrderby/crg-streamdeck-plugin/issues 
 [^4]: [Stream Deck +](https://www.elgato.com/us/en/p/stream-deck-plus-black "Stream Deck +")
 [^5]: [Stream Deck Mini](https://www.elgato.com/us/en/p/stream-deck-mini "Stream Deck Mini")
 [^6]: [Stream Deck Neo](https://www.elgato.com/us/en/p/stream-deck-neo "Stream Deck Neo")
+[^7]: [Stream Deck Virtual](https://www.elgato.com/us/en/s/downloads "Stream Deck Virtual, included with the Stream Deck software")
