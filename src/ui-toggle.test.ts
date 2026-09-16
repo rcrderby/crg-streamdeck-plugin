@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import { setImmediate } from 'node:timers/promises';
 import { runInNewContext } from 'node:vm';
@@ -38,18 +38,27 @@ function fakeSwitch(setting: string): FakeSwitch {
   };
 }
 
-/** Runs ui/toggle.js on a stand-in property inspector holding one switch. */
-async function connect(stored: Settings): Promise<{ element: FakeSwitch; saved: Settings[] }> {
+type Inspector = { element: FakeSwitch; saved: Settings[]; arrive: () => Promise<void> };
+
+/**
+ * Runs ui/toggle.js on a stand-in property inspector holding one switch.
+ *
+ * The settings are handed over only when the test asks, so a click
+ * landing before Stream Deck answers can be tested as well.
+ */
+function open(stored: Settings): Inspector {
   const element = fakeSwitch('replaceOnUndo');
   const saved: Settings[] = [];
   const style = { textContent: '' };
+  let answer: (settings: { settings: Settings }) => void = () => undefined;
+  const settings = new Promise<{ settings: Settings }>((resolve) => (answer = resolve));
 
   runInNewContext(toggleScript, {
     window: {
       SDPIComponents: {
         streamDeckClient: {
-          getSettings: async () => ({ settings: stored }),
-          setSettings: async (settings: Settings) => void saved.push(settings)
+          getSettings: () => settings,
+          setSettings: async (next: Settings) => void saved.push(next)
         }
       }
     },
@@ -60,9 +69,23 @@ async function connect(stored: Settings): Promise<{ element: FakeSwitch; saved: 
     }
   });
 
-  await setImmediate();
+  return {
+    element,
+    saved,
+    arrive: async () => {
+      answer({ settings: stored });
+      await setImmediate();
+    }
+  };
+}
 
-  return { element, saved };
+/** Runs ui/toggle.js and waits for the settings to arrive, as a property inspector normally does. */
+async function connect(stored: Settings): Promise<Inspector> {
+  const inspector = open(stored);
+
+  await inspector.arrive();
+
+  return inspector;
 }
 
 describe('the property inspector switch', () => {
@@ -98,5 +121,38 @@ describe('the property inspector switch', () => {
 
     assert.deepEqual({ ...saved[1] }, { replaceOnUndo: true, other: 'kept' });
     assert.equal(saved.length, 2);
+  });
+
+  it('saves nothing while it is still waiting for the settings', async () => {
+    const inspector = open({ replaceOnUndo: true, other: 'kept' });
+
+    assert.equal(inspector.element.attributes.get('aria-busy'), 'true');
+
+    inspector.element.click();
+
+    assert.equal(inspector.saved.length, 0);
+
+    await inspector.arrive();
+
+    assert.equal(inspector.element.attributes.get('aria-busy'), 'false');
+    assert.equal(inspector.element.attributes.get('aria-checked'), 'true');
+
+    inspector.element.click();
+
+    assert.deepEqual({ ...inspector.saved[0] }, { replaceOnUndo: false, other: 'kept' });
+  });
+});
+
+describe('the property inspector pages', () => {
+  it('name every switch, since its label sits in a shadow root a reader cannot reach', () => {
+    const ui = new URL('ui/', PLUGIN);
+
+    for (const file of readdirSync(ui).filter((name) => name.endsWith('.html'))) {
+      const markup = readFileSync(new URL(file, ui), 'utf8');
+
+      for (const element of markup.match(/<button[^>]*data-setting=[^>]*>/g) ?? []) {
+        assert.match(element, /aria-label="[^"]+"/, `${file}: ${element}`);
+      }
+    }
   });
 });
