@@ -9,7 +9,7 @@
  * the Score key shows what the trip holds.
  */
 
-import { action, type KeyDownEvent } from '@elgato/streamdeck';
+import { type KeyDownEvent } from '@elgato/streamdeck';
 
 import { team } from '../crg/paths.ts';
 import { type KeySpec } from '../render/key.ts';
@@ -26,7 +26,6 @@ const MAX_POINTS = 4;
 // The identifier keeps its original spelling on purpose. Stream Deck
 // stores it against every key a person has already placed, so changing
 // it would empty those keys rather than rename them.
-@action({ UUID: 'com.rcrderby.crg-streamdeck.trip-score' })
 export class TripPoints extends TeamKeyAction<TripPointsSettings> {
   protected override watchedPaths(): readonly string[] {
     return this.teamPaths();

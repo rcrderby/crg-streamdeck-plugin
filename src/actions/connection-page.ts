@@ -5,7 +5,7 @@
  * connected again.
  */
 
-import { action, type KeyAction, type KeyDownEvent } from '@elgato/streamdeck';
+import { type KeyAction, type KeyDownEvent } from '@elgato/streamdeck';
 
 import { type KeySpec } from '../render/key.ts';
 import { backKey, connectionToggleKey } from '../render/designs.ts';
@@ -13,7 +13,6 @@ import { CrgKeyAction } from './key-action.ts';
 import { HoldKeyAction } from './hold-key-action.ts';
 import { returnToLayout } from './navigation.ts';
 
-@action({ UUID: 'com.rcrderby.crg-streamdeck.back' })
 export class Back extends CrgKeyAction {
   protected override watchedPaths(): readonly string[] {
     return [];
@@ -39,7 +38,6 @@ export class Back extends CrgKeyAction {
  * to be, so a hold also stops the retries, and Hold to connect once the
  * deck has been disconnected on purpose.
  */
-@action({ UUID: 'com.rcrderby.crg-streamdeck.connection-toggle' })
 export class ConnectionToggle extends HoldKeyAction {
   protected override watchedPaths(): readonly string[] {
     return [];

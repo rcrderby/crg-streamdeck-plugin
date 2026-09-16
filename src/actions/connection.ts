@@ -6,7 +6,7 @@
  * key of its own rather than only implied by the others.
  */
 
-import { action, type KeyDownEvent, type SendToPluginEvent } from '@elgato/streamdeck';
+import { type KeyDownEvent, type SendToPluginEvent } from '@elgato/streamdeck';
 import type { JsonObject, JsonValue } from '@elgato/utils';
 
 import { type KeySpec } from '../render/key.ts';
@@ -16,7 +16,6 @@ import { type PluginContext } from '../context.ts';
 import { CrgKeyAction } from './key-action.ts';
 import { openPage } from './navigation.ts';
 
-@action({ UUID: 'com.rcrderby.crg-streamdeck.connection' })
 export class Connection extends CrgKeyAction {
   constructor(context: PluginContext) {
     super(context);

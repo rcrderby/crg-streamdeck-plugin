@@ -6,7 +6,7 @@
  * doing anything when pressed.
  */
 
-import { action, type KeyDownEvent } from '@elgato/streamdeck';
+import { type KeyDownEvent } from '@elgato/streamdeck';
 
 import { SCORING_TRIP_IDS, team } from '../crg/paths.ts';
 import { currentTripNumber } from '../crg/game-state.ts';
@@ -31,14 +31,12 @@ abstract class TripAdjust extends TeamKeyAction {
   }
 }
 
-@action({ UUID: 'com.rcrderby.crg-streamdeck.trip-points-up' })
 export class TripPointsUp extends TripAdjust {
   protected override get up(): boolean {
     return true;
   }
 }
 
-@action({ UUID: 'com.rcrderby.crg-streamdeck.trip-points-down' })
 export class TripPointsDown extends TripAdjust {
   protected override get up(): boolean {
     return false;
@@ -62,21 +60,18 @@ abstract class TripChange extends TeamKeyAction {
   }
 }
 
-@action({ UUID: 'com.rcrderby.crg-streamdeck.add-trip' })
 export class AddTrip extends TripChange {
   protected override get add(): boolean {
     return true;
   }
 }
 
-@action({ UUID: 'com.rcrderby.crg-streamdeck.remove-trip' })
 export class RemoveTrip extends TripChange {
   protected override get add(): boolean {
     return false;
   }
 }
 
-@action({ UUID: 'com.rcrderby.crg-streamdeck.score' })
 export class Score extends TeamKeyAction {
   protected override watchedPaths(): readonly string[] {
     return [...this.teamPaths('Score', 'JamScore', 'CurrentTrip'), SCORING_TRIP_IDS];

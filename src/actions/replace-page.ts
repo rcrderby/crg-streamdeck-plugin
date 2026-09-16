@@ -10,7 +10,7 @@
  * keys are never veiled.
  */
 
-import { action, type KeyAction, type KeyDownEvent } from '@elgato/streamdeck';
+import { type KeyAction, type KeyDownEvent } from '@elgato/streamdeck';
 import type { JsonObject } from '@elgato/utils';
 
 import { game, label } from '../crg/paths.ts';
@@ -28,7 +28,6 @@ const REPLACED = label('Replaced');
 const NO_ACTION = 'No Action';
 
 /** The first key: what CRG is waiting to replace, in CRG's own words. */
-@action({ UUID: 'com.rcrderby.crg-streamdeck.replace-info' })
 export class ReplaceInfo extends CrgKeyAction {
   /** Takes the deck off the page once CRG's replace menu closes, whether a key here closed it or the operator screen did. */
   constructor(context: PluginContext) {
@@ -39,7 +38,7 @@ export class ReplaceInfo extends CrgKeyAction {
         return;
       }
 
-      for (const key of this.actions) {
+      for (const key of this.visibleKeys) {
         void returnToLayout(key);
       }
     });
@@ -65,7 +64,6 @@ export class ReplaceInfo extends CrgKeyAction {
  * Action and keeps the plain undo. Leaving the page is not this key's
  * job: the deck goes back when CRG closes the menu, however it closed.
  */
-@action({ UUID: 'com.rcrderby.crg-streamdeck.replace-confirm' })
 export class ReplaceConfirm extends HoldKeyAction {
   protected override watchedPaths(): readonly string[] {
     return [label('Undo'), REPLACED];
@@ -103,7 +101,6 @@ function slotOf(settings: ChoiceSettings): number {
  * The page holds three of these. The choices CRG allows fill them from
  * the first, and a key with no choice left for it stays blank.
  */
-@action({ UUID: 'com.rcrderby.crg-streamdeck.replace-choice' })
 export class ReplaceChoice extends HoldKeyAction<ChoiceSettings> {
   protected override watchedPaths(): readonly string[] {
     return [label('Start'), label('Stop'), label('Timeout'), REPLACED];

@@ -8,8 +8,6 @@
  * Coming Up, the key shows the label alone.
  */
 
-import { action } from '@elgato/streamdeck';
-
 import { INTERMISSION_LABELS, type ClockName, clock, game, rule } from '../crg/paths.ts';
 import { activeClock } from '../crg/game-state.ts';
 import { type KeySpec } from '../render/key.ts';
@@ -20,7 +18,6 @@ import { formatClock } from '../render/time.ts';
 
 const SHOWN: readonly ClockName[] = ['Period', 'Intermission'];
 
-@action({ UUID: 'com.rcrderby.crg-streamdeck.active-clock' })
 export class ActiveClock extends CrgKeyAction {
   protected override watchedPaths(): readonly string[] {
     return [

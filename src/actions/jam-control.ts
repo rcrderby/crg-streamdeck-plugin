@@ -8,8 +8,6 @@
  * 'End Timeout'.
  */
 
-import { action } from '@elgato/streamdeck';
-
 import { CLOCK_NAMES, type ClockName, clock, game, isUnavailable, label, rule } from '../crg/paths.ts';
 import { jamControlClock, lineupWarning } from '../crg/game-state.ts';
 import { type KeySpec } from '../render/key.ts';
@@ -17,7 +15,7 @@ import { JAM_IDLE, JAM_STOP, jamControlKey, lineupBackground } from '../render/d
 import { clockTitle } from '../render/clock-title.ts';
 import { SECOND_PULSE_MS, pulsePhase } from '../render/pulse.ts';
 import { formatClock } from '../render/time.ts';
-import { CrgKeyAction } from './key-action.ts';
+import { CrgKeyAction, isOnline } from './key-action.ts';
 
 const IN_JAM = game('InJam');
 
@@ -32,7 +30,6 @@ type Choice = {
   readonly stopping: boolean;
 };
 
-@action({ UUID: 'com.rcrderby.crg-streamdeck.jam-control' })
 export class JamControl extends CrgKeyAction {
   protected override watchedPaths(): readonly string[] {
     return [
@@ -52,9 +49,11 @@ export class JamControl extends CrgKeyAction {
   }
 
   protected override describe(): KeySpec {
-    const connected = this.context.client.status === 'connected';
+    // Every key reads the game while a write is refused, so this one
+    // does too rather than reading No CRG beside clocks that are live.
+    const online = isOnline(this.context.client.status);
     const choice = this.#choose();
-    const available = connected && choice.path !== undefined;
+    const available = online && choice.path !== undefined;
 
     const background = !available
       ? JAM_IDLE
@@ -62,10 +61,10 @@ export class JamControl extends CrgKeyAction {
         ? JAM_STOP
         : lineupBackground(lineupWarning(this.context.client.state), pulsePhase(Date.now(), SECOND_PULSE_MS));
 
-    const running = connected ? jamControlClock(this.context.client.state, choice.stopping) : undefined;
+    const running = online ? jamControlClock(this.context.client.state, choice.stopping) : undefined;
 
     return jamControlKey(
-      connected ? choice.text : 'No CRG',
+      online ? choice.text : 'No CRG',
       running === undefined ? undefined : this.#time(running),
       running === undefined ? '' : this.#clockName(running),
       background,

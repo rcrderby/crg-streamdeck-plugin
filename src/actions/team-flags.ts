@@ -7,7 +7,7 @@
  * is found by name and works as soon as it is placed.
  */
 
-import { action, type KeyAction, type KeyDownEvent } from '@elgato/streamdeck';
+import { type KeyAction, type KeyDownEvent } from '@elgato/streamdeck';
 
 import { team } from '../crg/paths.ts';
 import { type KeySpec } from '../render/key.ts';
@@ -42,7 +42,6 @@ abstract class TeamFlagAction extends TeamKeyAction {
   }
 }
 
-@action({ UUID: 'com.rcrderby.crg-streamdeck.lead' })
 export class Lead extends TeamFlagAction {
   protected override get field(): string {
     return 'Lead';
@@ -60,7 +59,6 @@ export class Lead extends TeamFlagAction {
  * rather than a corner dial, which would compete with whatever color
  * the team brings.
  */
-@action({ UUID: 'com.rcrderby.crg-streamdeck.lost-lead' })
 export class LostLead extends HoldKeyAction<TeamSettings> {
   protected override watchedPaths(): readonly string[] {
     return teamPaths(LOST);
@@ -85,7 +83,6 @@ export class LostLead extends HoldKeyAction<TeamSettings> {
  * CRG ignores Star Pass for a team skating without a pivot, so while No
  * Pivot is on the key is subdued, says why, and does nothing when pressed.
  */
-@action({ UUID: 'com.rcrderby.crg-streamdeck.star-pass' })
 export class StarPass extends TeamFlagAction {
   protected override get field(): string {
     return 'StarPass';
@@ -121,7 +118,6 @@ export class StarPass extends TeamFlagAction {
   }
 }
 
-@action({ UUID: 'com.rcrderby.crg-streamdeck.no-pivot' })
 export class NoPivot extends TeamFlagAction {
   protected override get field(): string {
     return 'NoPivot';
@@ -133,7 +129,6 @@ export class NoPivot extends TeamFlagAction {
 }
 
 /** NI is active while CRG's NoInitial is true: the jammer has not finished their initial trip. */
-@action({ UUID: 'com.rcrderby.crg-streamdeck.no-initial' })
 export class NoInitial extends TeamFlagAction {
   protected override get field(): string {
     return 'NoInitial';
@@ -145,7 +140,6 @@ export class NoInitial extends TeamFlagAction {
 }
 
 /** Injury is drawn in its own colors rather than the team's, since the state outranks the team. */
-@action({ UUID: 'com.rcrderby.crg-streamdeck.injury' })
 export class Injury extends TeamFlagAction {
   protected override get field(): string {
     return 'Injury';

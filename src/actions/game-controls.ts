@@ -7,7 +7,7 @@
  * since a stray press can undo something that matters.
  */
 
-import { action, type DidReceiveSettingsEvent, type KeyAction, type SendToPluginEvent } from '@elgato/streamdeck';
+import { type DidReceiveSettingsEvent, type KeyAction, type SendToPluginEvent } from '@elgato/streamdeck';
 import type { JsonObject, JsonValue } from '@elgato/utils';
 
 import { TIMEOUTS, game, isUnavailable, label } from '../crg/paths.ts';
@@ -44,7 +44,6 @@ abstract class TimeoutControl extends CrgKeyAction {
   }
 }
 
-@action({ UUID: 'com.rcrderby.crg-streamdeck.timeout' })
 export class Timeout extends TimeoutControl {
   protected override get lines(): readonly string[] {
     return ['Timeout'];
@@ -59,7 +58,6 @@ export class Timeout extends TimeoutControl {
   }
 }
 
-@action({ UUID: 'com.rcrderby.crg-streamdeck.official-timeout' })
 export class OfficialTimeout extends TimeoutControl {
   protected override get lines(): readonly string[] {
     return ['Official', 'Timeout'];
@@ -93,7 +91,6 @@ function usesReplaceOnUndo(settings: UndoSettings): boolean {
  * page. The key carries the top bar then, green while CRG waits. On a
  * model with no Undo page it simply undoes.
  */
-@action({ UUID: 'com.rcrderby.crg-streamdeck.undo' })
 export class Undo extends HoldKeyAction<UndoSettings> {
   #unfollow: (() => void) | undefined;
 
@@ -180,7 +177,7 @@ export class Undo extends HoldKeyAction<UndoSettings> {
       return;
     }
 
-    for (const key of this.actions) {
+    for (const key of this.visibleKeys) {
       const settings = this.settingsOf(key.id);
 
       if (settings !== undefined && usesReplaceOnUndo(settings) !== held) {

@@ -6,7 +6,7 @@
  * mark it used pulsing. Pressing it calls one.
  */
 
-import { action, type KeyDownEvent } from '@elgato/streamdeck';
+import { type KeyDownEvent } from '@elgato/streamdeck';
 
 import { TIMEOUTS, game, rule, team } from '../crg/paths.ts';
 import { reviewMark, reviewWins } from '../crg/game-state.ts';
@@ -20,7 +20,6 @@ const DEFAULT_TIMEOUTS = 3;
 
 const DEFAULT_REVIEWS = 1;
 
-@action({ UUID: 'com.rcrderby.crg-streamdeck.team-timeout' })
 export class TeamTimeout extends TeamKeyAction {
   protected override watchedPaths(): readonly string[] {
     return [...this.teamPaths('Timeouts', 'InTimeout'), rule('Team.Timeouts')];
@@ -61,7 +60,6 @@ export class TeamTimeout extends TeamKeyAction {
  * While a review runs, CRG has already counted it, so the mark it used
  * is drawn as it looked before the review began.
  */
-@action({ UUID: 'com.rcrderby.crg-streamdeck.official-review' })
 export class OfficialReview extends TeamKeyAction {
   protected override watchedPaths(): readonly string[] {
     return [
