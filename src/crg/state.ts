@@ -15,7 +15,7 @@ export type StateValue = string | number | boolean | null;
 export type StateListener = (changed: ReadonlySet<string>) => void;
 
 type Subscription = {
-  readonly patterns: readonly RegExp[];
+  readonly matches: (path: string) => boolean;
   readonly listener: StateListener;
 };
 
@@ -89,6 +89,24 @@ export class StateStore {
     return fallback;
   }
 
+  /** Every held path under a prefix, with its value. */
+  startingWith(prefix: string): [string, StateValue][] {
+    return [...this.#values].filter(([path]) => path.startsWith(prefix));
+  }
+
+  /**
+   * Every held path that matches a pattern, with its value.
+   *
+   * A star matches one path component or argument, as in a
+   * subscription, so 'Period(*).Timeout(*).Running' finds every timeout
+   * in every period.
+   */
+  matching(path: string): [string, StateValue][] {
+    const pattern = toPattern(path);
+
+    return [...this.#values].filter(([held]) => pattern.test(held));
+  }
+
   /**
    * Applies one delta from CRG and tells the subscriptions it touched.
    *
@@ -131,8 +149,22 @@ export class StateStore {
    * Returns the function that ends the subscription.
    */
   subscribe(paths: readonly string[], listener: StateListener): () => void {
-    const subscription: Subscription = { patterns: paths.map(toPattern), listener };
+    const patterns = paths.map(toPattern);
 
+    return this.#add({ matches: (path) => patterns.some((pattern) => pattern.test(path)), listener });
+  }
+
+  /**
+   * Calls the listener whenever any path under a prefix changes.
+   *
+   * CRG keeps a settings name inside parentheses, dots and all, which no
+   * wildcard reaches, so a subtree is followed by its prefix instead.
+   */
+  subscribePrefix(prefix: string, listener: StateListener): () => void {
+    return this.#add({ matches: (path) => path.startsWith(prefix), listener });
+  }
+
+  #add(subscription: Subscription): () => void {
     this.#subscriptions.add(subscription);
 
     return () => {
@@ -141,10 +173,10 @@ export class StateStore {
   }
 
   #notify(changed: ReadonlySet<string>): void {
-    for (const subscription of this.#subscriptions) {
-      const matched = subscription.patterns.some((pattern) => [...changed].some((path) => pattern.test(path)));
+    const paths = [...changed];
 
-      if (matched) {
+    for (const subscription of this.#subscriptions) {
+      if (paths.some((path) => subscription.matches(path))) {
         subscription.listener(changed);
       }
     }

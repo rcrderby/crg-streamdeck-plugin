@@ -93,6 +93,70 @@ export function readableForeground(background: string, requested: string, minimu
   return contrastRatio(background, '#ffffff') >= contrastRatio(background, '#000000') ? '#ffffff' : '#000000';
 }
 
+/** The six hex digits of a color, for mixing. */
+function channels(color: string): number[] {
+  const digits = safeColor(color, '#000000').slice(1);
+  const full = digits.length <= 4 ? [...digits].map((digit) => digit + digit).join('') : digits;
+
+  return [0, 2, 4].map((index) => parseInt(full.slice(index, index + 2), 16));
+}
+
+/**
+ * A color partway from a background to a foreground.
+ *
+ * It stands in for opacity on a drawing made of overlapping parts, which
+ * would show their overlaps if each part were made transparent.
+ */
+export function blend(foreground: string, background: string, amount: number): string {
+  const from = channels(background);
+  const to = channels(foreground);
+
+  return `#${to
+    .map((value, index) => {
+      const base = from[index] ?? 0;
+
+      return Math.round(base + (value - base) * amount)
+        .toString(16)
+        .padStart(2, '0');
+    })
+    .join('')}`;
+}
+
+/** How far a panel stands from the key behind it. */
+export const PANEL_CONTRAST = 1.35;
+
+/** The most of the way toward the foreground a panel is ever mixed. */
+const PANEL_MOST_LIFT = 0.5;
+
+/** How finely the mix is searched for. */
+const PANEL_STEPS = 24;
+
+/**
+ * A panel set the same step apart from whatever key it sits on.
+ *
+ * Mixing in a fixed share of the foreground leaves the step varying with
+ * the color underneath, so the share is searched for instead. Every
+ * league's colors then carry the same panel, rather than one that reads
+ * on some and washes out on others.
+ */
+export function panelColor(background: string, foreground: string): string {
+  const key = safeColor(background, DEFAULT_BACKGROUND);
+  let low = 0;
+  let high = PANEL_MOST_LIFT;
+
+  for (let step = 0; step < PANEL_STEPS; step += 1) {
+    const middle = (low + high) / 2;
+
+    if (contrastRatio(blend(foreground, key, middle), key) < PANEL_CONTRAST) {
+      low = middle;
+    } else {
+      high = middle;
+    }
+  }
+
+  return blend(foreground, key, (low + high) / 2);
+}
+
 /**
  * Reads one color slot across the sets, in order of preference.
  *

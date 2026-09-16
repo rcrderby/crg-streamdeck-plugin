@@ -20,7 +20,8 @@ import { StateStore, type StateValue } from './state.ts';
 /** How a Set is applied. A relative change carries 'change'. */
 export type SetFlag = '' | 'change' | 'reset';
 
-export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'unauthorized';
+/** Where the connection stands. 'stopped' is a disconnect made on purpose, as opposed to CRG going away. */
+export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'unauthorized' | 'stopped';
 
 export type CrgClientEvents = {
   status: [ConnectionStatus];
@@ -171,12 +172,26 @@ export class CrgClient extends EventEmitter<CrgClientEvents> {
    * can wait for CRG to hear it leave.
    */
   disconnect(): Promise<void> {
+    return this.#close('disconnected');
+  }
+
+  /**
+   * Disconnects on purpose, and stays disconnected until connect is called.
+   *
+   * The status reads 'stopped' rather than 'disconnected', so a key can
+   * tell a choice to disconnect from a scoreboard that went away.
+   */
+  stop(): Promise<void> {
+    return this.#close('stopped');
+  }
+
+  #close(status: 'disconnected' | 'stopped'): Promise<void> {
     this.#closing = true;
     this.#clearTimers();
 
     const closed = this.#retire();
 
-    this.#setStatus('disconnected');
+    this.#setStatus(status);
 
     return closed;
   }

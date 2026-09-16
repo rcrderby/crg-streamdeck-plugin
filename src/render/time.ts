@@ -18,6 +18,22 @@ export function formatClock(milliseconds: number): string {
 }
 
 /**
+ * Reads a clock CRG holds as text, such as a rule's '0:30', in milliseconds.
+ *
+ * A value that does not read as a clock comes back as 0, which every
+ * caller treats as the rule not being held.
+ */
+export function parseClock(text: string): number {
+  const parts = text.trim().split(':');
+
+  if (parts.length === 0 || parts.length > 3 || parts.some((part) => !/^\d+$/.test(part))) {
+    return 0;
+  }
+
+  return parts.reduce((total, part) => total * 60 + Number(part), 0) * 1000;
+}
+
+/**
  * How often a clock is worth redrawing.
  *
  * A running clock changes the text it shows once a second, so it asks

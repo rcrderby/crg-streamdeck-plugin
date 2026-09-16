@@ -23,11 +23,12 @@ const NUMBERED: Readonly<Partial<Record<ClockName, boolean>>> = {
 /**
  * The title for a clock, carrying its number where CRG counts one.
  *
- * The number rides in the title rather than on a line of its own, so
- * the key does not say the same word twice.
+ * CRG can rename a clock while it runs: after a timeout, the lineup
+ * clock is called "Post Timeout". The title follows the name CRG gives,
+ * and falls back to the clock's own name when CRG has sent none.
  */
-export function clockTitle(name: ClockName, number: number): string {
-  const title = name.toUpperCase();
+export function clockTitle(name: ClockName, number: number, crgName = ''): string {
+  const title = (crgName.trim() || name).toUpperCase();
 
   return NUMBERED[name] === true && number > 0 ? `${title} ${number}` : title;
 }

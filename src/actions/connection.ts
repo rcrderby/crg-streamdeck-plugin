@@ -1,73 +1,62 @@
 /**
- * Shows whether the plugin is talking to CRG.
+ * Shows whether the plugin is talking to CRG, and opens the connection page.
  *
  * A key that has quietly stopped updating looks the same as a key whose
  * value has not changed, so the state of the connection is shown on a
  * key of its own rather than only implied by the others.
  */
 
-import { action } from '@elgato/streamdeck';
+import { action, type KeyDownEvent, type SendToPluginEvent } from '@elgato/streamdeck';
+import type { JsonObject, JsonValue } from '@elgato/utils';
 
-import { type ConnectionStatus } from '../crg/client.ts';
 import { type KeySpec } from '../render/key.ts';
+import { answerOperatorMessage } from './operator-messages.ts';
+import { connectionKey } from '../render/designs.ts';
+import { type PluginContext } from '../context.ts';
 import { CrgKeyAction } from './key-action.ts';
-
-type Appearance = {
-  readonly background: string;
-  readonly accent: string;
-  readonly headline: string;
-  readonly detail: string;
-};
-
-const APPEARANCE: Readonly<Record<ConnectionStatus, Appearance>> = {
-  connected: {
-    background: '#04170c',
-    accent: '#22c55e',
-    headline: 'CRG',
-    detail: 'Connected'
-  },
-  connecting: {
-    background: '#1c1503',
-    accent: '#eab308',
-    headline: 'CRG',
-    detail: 'Connecting'
-  },
-  disconnected: {
-    background: '#1f0708',
-    accent: '#ef4444',
-    headline: 'NO CRG',
-    detail: 'Offline'
-  },
-  unauthorized: {
-    background: '#1f0708',
-    accent: '#f97316',
-    headline: 'NO CRG',
-    detail: 'Not allowed'
-  }
-};
+import { openPage } from './navigation.ts';
 
 @action({ UUID: 'com.rcrderby.crg-streamdeck.connection' })
 export class Connection extends CrgKeyAction {
+  constructor(context: PluginContext) {
+    super(context);
+
+    context.operator.onChange(() => this.redrawAll());
+  }
+
   protected override watchedPaths(): readonly string[] {
     return [];
   }
 
-  protected override describe(): KeySpec {
-    const appearance = APPEARANCE[this.context.client.status];
-
-    return {
-      background: appearance.background,
-      foreground: '#ffffff',
-      accent: appearance.accent,
-      texts: [
-        { text: appearance.headline, y: 44, size: 20, weight: 'bold' },
-        { text: appearance.detail, y: 72, size: 13, opacity: 0.85 }
-      ]
-    };
+  /** Stays readable while disconnected, since this is the key that says what is wrong. */
+  protected override get subduedWhileOffline(): boolean {
+    return false;
   }
 
-  /** Pressing the key reconnects, so a stalled game is one press from recovery. */
-  override onKeyDown(): void {
-    this.context.client.reconnect();
+  protected override describe(): KeySpec {
+    return connectionKey(this.context.client.status, this.context.operator.name);
+  }
+
+  /** Lists the CRG operator profiles for the settings dropdown, and makes one when asked. */
+  override onSendToPlugin(event: SendToPluginEvent<JsonValue, JsonObject>): Promise<void> {
+    return answerOperatorMessage(this.context, event);
+  }
+
+  /**
+   * Pressing the key opens the connection page.
+   *
+   * On a model with no page, it reconnects instead, or connects a deck
+   * disconnected on purpose.
+   */
+  override async onKeyDown(event: KeyDownEvent): Promise<void> {
+    if (await openPage(event.action, 'connection')) {
+      return;
+    }
+
+    if (this.context.client.status === 'stopped') {
+      await this.context.connection.connect();
+    } else {
+      this.context.client.reconnect();
+    }
   }
 }
