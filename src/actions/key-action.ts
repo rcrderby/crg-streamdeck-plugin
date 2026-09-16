@@ -24,18 +24,34 @@ export function isOnline(status: ConnectionStatus): boolean {
   return status === 'connected' || status === 'unauthorized';
 }
 
+/**
+ * Names an action as its entry in the manifest, which is what registering it reads.
+ *
+ * The SDK offers a class decorator for this, which sets the same field on
+ * a subclass. It is done by hand because Node runs the TypeScript in src/
+ * by stripping its types, and a decorator is not a type: a file carrying
+ * one cannot be loaded by the test runner at all, which is what left this
+ * whole layer without a test.
+ */
+export function named<T extends SingletonAction<never>>(uuid: string, keyAction: T): T {
+  Object.defineProperty(keyAction, 'manifestId', { value: uuid, writable: false, enumerable: true });
+
+  return keyAction;
+}
+
 export abstract class CrgKeyAction<T extends JsonObject = JsonObject> extends SingletonAction<T> {
   protected readonly context: PluginContext;
 
   readonly #settings = new Map<string, T>();
   readonly #drawn = new Map<string, string>();
+  readonly #visible = new Map<string, WillAppearEvent<T>['action']>();
 
   constructor(context: PluginContext) {
     super();
 
     this.context = context;
 
-    context.client.state.subscribe(this.watchedPaths(), () => this.redrawAll());
+    context.client.state.subscribe(this.watchedPaths(), (changed) => this.redrawAll(changed));
     context.client.on('status', () => this.redrawAll());
   }
 
@@ -55,14 +71,29 @@ export abstract class CrgKeyAction<T extends JsonObject = JsonObject> extends Si
     return false;
   }
 
+  /**
+   * Whether one key's picture depends on any of the paths that changed.
+   *
+   * An action names the paths every key of its kind can draw from, since
+   * it subscribes before any key has settings. A key whose settings
+   * narrow that, such as a clock key showing one of the five clocks,
+   * says so here rather than drawing itself again for a change it is not
+   * showing.
+   */
+  protected concerns(_settings: T | undefined, _changed: ReadonlySet<string>): boolean {
+    return true;
+  }
+
   override onWillAppear(event: WillAppearEvent<T>): void {
     this.#settings.set(event.action.id, event.payload.settings);
+    this.#visible.set(event.action.id, event.action);
     this.redraw(event.action);
   }
 
   override onWillDisappear(event: WillDisappearEvent<T>): void {
     this.#settings.delete(event.action.id);
     this.#drawn.delete(event.action.id);
+    this.#visible.delete(event.action.id);
   }
 
   override onDidReceiveSettings(event: DidReceiveSettingsEvent<T>): void {
@@ -75,9 +106,25 @@ export abstract class CrgKeyAction<T extends JsonObject = JsonObject> extends Si
     return this.#settings.get(actionId);
   }
 
-  /** Queues a redraw of every visible key this action owns. */
-  protected redrawAll(): void {
-    for (const action of this.actions) {
+  /**
+   * The keys of this action currently on a deck.
+   *
+   * These are the keys that have appeared and not yet gone, which the
+   * action knows because Stream Deck tells it both. Reading them here
+   * rather than from the SDK's own store lets the whole layer be driven
+   * without a deck.
+   */
+  protected get visibleKeys(): WillAppearEvent<T>['action'][] {
+    return [...this.#visible.values()];
+  }
+
+  /** Queues a redraw of every visible key this action owns, skipping any the change does not reach. */
+  protected redrawAll(changed?: ReadonlySet<string>): void {
+    for (const action of this.#visible.values()) {
+      if (changed !== undefined && !this.concerns(this.#settings.get(action.id), changed)) {
+        continue;
+      }
+
       this.redraw(action);
     }
   }

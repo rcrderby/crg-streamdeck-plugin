@@ -4,6 +4,10 @@ import { describe, it } from 'node:test';
 import { StateStore, toPattern } from './state.ts';
 
 describe('toPattern', () => {
+  it('keeps a pattern it has already built, since the same paths are matched on every message', () => {
+    assert.equal(toPattern('ScoreBoard.CurrentGame.Team(*).Score'), toPattern('ScoreBoard.CurrentGame.Team(*).Score'));
+  });
+
   it('matches a literal path', () => {
     assert.ok(toPattern('ScoreBoard.CurrentGame.InJam').test('ScoreBoard.CurrentGame.InJam'));
   });

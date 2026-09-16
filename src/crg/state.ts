@@ -19,16 +19,35 @@ type Subscription = {
   readonly listener: StateListener;
 };
 
+/** Patterns already built, since the same paths are matched on every message CRG sends. */
+const patterns = new Map<string, RegExp>();
+
 /**
  * Builds a matcher for a CRG path pattern.
  *
  * A '*' stands for one path component or one argument inside
  * parentheses, which is how CRG's own pages register for a group of
- * paths such as 'Team(*).Score'.
+ * paths such as 'Team(*).Score'. Patterns are kept, because the paths
+ * come from the code rather than from CRG and so are few.
  */
 export function toPattern(path: string): RegExp {
+  const built = patterns.get(path);
+
+  if (built !== undefined) {
+    return built;
+  }
+
   const escaped = path.replace(/[.+?^${}()|[\]\\]/g, '\\$&');
-  return new RegExp(`^${escaped.replace(/\*/g, '[^.()]*')}$`);
+  const pattern = new RegExp(`^${escaped.replace(/\*/g, '[^.()]*')}$`);
+
+  patterns.set(path, pattern);
+
+  return pattern;
+}
+
+/** The part of a pattern before its first star, which every match starts with. */
+function literalPrefix(path: string): string {
+  return path.split('*')[0] ?? '';
 }
 
 export class StateStore {
@@ -91,7 +110,15 @@ export class StateStore {
 
   /** Every held path under a prefix, with its value. */
   startingWith(prefix: string): [string, StateValue][] {
-    return [...this.#values].filter(([path]) => path.startsWith(prefix));
+    const found: [string, StateValue][] = [];
+
+    for (const entry of this.#values) {
+      if (entry[0].startsWith(prefix)) {
+        found.push(entry);
+      }
+    }
+
+    return found;
   }
 
   /**
@@ -100,11 +127,23 @@ export class StateStore {
    * A star matches one path component or argument, as in a
    * subscription, so 'Period(*).Timeout(*).Running' finds every timeout
    * in every period.
+   *
+   * The store holds every scoring trip of a whole game by the end of it,
+   * and this runs once a key per redraw, so the held paths are cut down
+   * by the pattern's leading text before the pattern itself is tried.
    */
   matching(path: string): [string, StateValue][] {
     const pattern = toPattern(path);
+    const prefix = literalPrefix(path);
+    const found: [string, StateValue][] = [];
 
-    return [...this.#values].filter(([held]) => pattern.test(held));
+    for (const entry of this.#values) {
+      if (entry[0].startsWith(prefix) && pattern.test(entry[0])) {
+        found.push(entry);
+      }
+    }
+
+    return found;
   }
 
   /**
