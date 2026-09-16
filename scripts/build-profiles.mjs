@@ -22,8 +22,8 @@ const MANIFEST_FILE = fileURLToPath(new URL('manifest.json', PLUGIN));
 
 const PLUGIN_UUID = 'com.rcrderby.crg-streamdeck';
 
-/** The Stream Deck version the package says it came from, the oldest the plugin supports. */
-const APP_VERSION = '7.1.0.0';
+/** The supported Stream Deck version. */
+const APP_VERSION = '7.4.0.0';
 
 /** The models a page ships for, with the model number Stream Deck records in a profile. */
 const DEVICES = [
