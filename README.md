@@ -12,8 +12,8 @@
 - [Features](#features "Plugin Features")
 - [Compatibility](#compatibility "Supported Versions And Platforms")
 - [Getting Started](#getting-started "Setup Instructions")
-- [Button Actions Reference](#button-action-reference "All Button Settings")
-- [Button Images Reference](/docs/button-reference.md "All Buttons and States")
+- [Button Action Reference](#button-action-reference "All Button Settings")
+- [Button Image Reference](/docs/button-image-reference.md "All Buttons and States")
 - [Troubleshooting](#troubleshooting "Troubleshooting Information")
 - [Contributing](#contributing "How To Contribute")
 
@@ -140,7 +140,7 @@ These steps will help you set up the plugin to control CRG from a Stream Deck.  
 
 ## Button Action Reference
 
-Buttons that control one team take a `Team` setting.  The [Button Reference](/docs/button-reference.md "Button Reference Page") page shows every button, and every state that each displays.
+Buttons that control one team take a `Team` setting.  The [Button Image Reference](/docs/button-image-reference.md "Button Image Reference Page") page shows every button, and every state that each displays.
 
 <details>
   <summary>
@@ -151,7 +151,7 @@ Buttons that control one team take a `Team` setting.  The [Button Reference](/do
 | ------ | ----------- |
 | `CRG Connection` | Shows whether the plugin is connected to CRG: connected, connecting, offline, not allowed to write, or disconnected on purpose.  Pressing it opens the connection page.  This button holds the `CRG URL` and `CRG Operator` settings for every CRG button. |
 | `Jam Control` | Starts a jam, stops a jam, or ends a timeout, and shows the relevant clock and jam data.  It turns orange five seconds before a jam should start, and pulses if the lineup clock goes past the prescribed time in the active CRG ruleset. |
-| `Timeout` | Starts an untyped timeout.  Its activity indicator is green until timeout type is assigned. |
+| `Timeout` | Starts an untyped timeout.  Its activity indicator turns green while a timeout runs without an assigned type. |
 | `Official Timeout` | Starts an official timeout.  Its activity indicator is green while an official timeout is running. |
 | `Undo` | Undoes CRG's last clock action after a one-second hold.  It is subdued when there is nothing to undo.  Its `Enable Replace on Undo` toggle configures that setting for the specified CRG operator profile.  While the setting is on, the hold opens an `Undo` menu instead of immediately performing an undo action. |
 
@@ -222,8 +222,8 @@ The plugin includes two small pages of buttons and switches your Stream Deck to 
 
 | Page | Opens | Buttons |
 | ---- | ----- | ---- |
-| `Connection` | Holding CRG Connection | Displays `Back`, and a button that shows the connection's state and allows manual connect and disconnect operations.  A Stream Deck that is manually disconnected remains in that state until it is connected again. |
-| `Undo` | Holding Undo with `Enable Replace on Undo` on | Displays buttons indicating the available CRG replace options and CRG's `No Action` button, which confirms the undo action. |
+| `Connection` | Pressing `CRG Connection` | Displays `Back`, and a button that shows the connection's state and allows manual connect and disconnect operations.  A Stream Deck that is manually disconnected remains in that state until it is connected again. |
+| `Undo` | Holding `Undo` with `Enable Replace on Undo` on | Displays buttons indicating the available CRG replace options and CRG's `No Action` button, which confirms the undo action.  Displays `Back`, which leaves the menu without answering CRG. |
 
 </details>
 
@@ -235,6 +235,9 @@ The plugin includes two small pages of buttons and switches your Stream Deck to 
 CRG recognizes devices by their HTTP session, so the plugin fetches a session cookie before it connects and retains it.  Without a session cookie, CRG sees your Stream Deck as a new device on every restart.
 
 The Stream Deck software keeps the session cookie in the plugin settings, alongside the scoreboard that issued it.  This ensures that the plugin only offers a session cookie to the correct CRG instance.
+
+> [!WARNING]
+> The Stream Deck software stores plugin settings unencrypted on disk, and every settings page in a plugin can read them.  No protected store is available to a plugin, so treat the session cookie as readable by anything running as your user.  The plugin never writes the cookie to its log, and it includes its own copy of every library its settings pages use rather than loading code from the internet.
 
 </details>
 
@@ -251,7 +254,7 @@ The plugin writes a log of its connection and anything that goes wrong to:
 | ------------ | ------------- |
 | `NO CRG`, and every button is dimmed | The plugin cannot reach CRG.  Check the `CRG URL` setting on a `CRG Connection` button, and confirm CRG is running and reachable from this computer.  The plugin keeps retrying on its own. |
 | `Not allowed` | CRG will not let this device change the scoreboard.  Authorize it in CRG's `Settings` page under `Clients`.  The buttons still show the game, because CRG permits reading game data. |
-| `CRG Disconnected` | Your Stream Deck was disconnected manually and remains in this state across restarts.  Press and hold this button for one second to reconnect. |
+| `CRG Disconnected` | Your Stream Deck was disconnected manually and remains in this state across restarts.  Press this button to open the connection page, then hold its connect button for one second. |
 
 ## Contributing
 
