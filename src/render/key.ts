@@ -101,9 +101,34 @@ const SHADOW_MIN_OFFSET = 0.9;
 
 const MARK_FILL = '#2563eb';
 
-const MARK_RADIUS = 7.5;
+/** How far the informational tab reaches in from the key's left and bottom edges. */
+const MARK_SIZE = 24;
 
-const MARK_INSET = 8;
+const MARK_CORNER = 7;
+
+/** The dark rule that sets the tab apart from a background of its own blue. */
+const MARK_RULE = 2;
+
+const MARK_RULE_COLOR = '#0b0b0f';
+
+/** Where the "i" is centered, and how tall it is drawn. */
+const MARK_GLYPH_X = 11.94;
+
+const MARK_GLYPH_Y = 88.06;
+
+const MARK_GLYPH_HEIGHT = 15;
+
+/**
+ * An italic "i" in a box 40 wide and 100 tall: a round dot set right, and a
+ * stem with a slanted flag at its top and a foot that sweeps right.
+ */
+const MARK_GLYPH_WIDTH = 40;
+
+const MARK_GLYPH_DOT = '<circle cx="28.5" cy="11" r="10.8"/>';
+
+const MARK_GLYPH_STEM =
+  'M 0.5 45 L 0 40.5 C 11 37.5 21 34 31 31 L 33 32 L 23.5 77 C 22.8 81 24.3 82.5 27 80.5 L 37.5 74.5 L 38.5 78.5 ' +
+  'C 30 87 22 94.5 13.5 96 C 7.5 97 5 93 6 88 L 14.5 51 C 15.2 47 13 45.5 10 46 Z';
 
 const VEIL_OPACITY = 0.62;
 
@@ -201,22 +226,27 @@ function text(line: KeyText, foreground: string): string {
   return `${shadow}<text x="${x}" y="${line.y}" fill="${fill}" ${common}>${content}</text>`;
 }
 
-/** The blue circle with a white "i", in the lower left corner. */
-function informationalMark(): string {
-  const x = MARK_INSET + MARK_RADIUS;
-  const y = VIEWBOX - MARK_INSET - MARK_RADIUS;
-  const half = MARK_RADIUS * 0.478;
-  const dot = MARK_RADIUS * 0.161;
-  const stem = MARK_RADIUS * 0.3;
-  const gap = MARK_RADIUS * 0.133;
-  const top = y - half;
-  const stemTop = top + dot * 2 + gap;
+/** A tab filling the lower left corner up to a size, its inner corner rounded. */
+function cornerTab(size: number, corner: number, fill: string): string {
+  const top = VIEWBOX - size;
 
   return (
-    `<circle cx="${x}" cy="${y}" r="${MARK_RADIUS}" fill="${MARK_FILL}"/>` +
-    `<circle cx="${x}" cy="${round(top + dot)}" r="${round(dot)}" fill="#ffffff"/>` +
-    `<rect x="${round(x - stem / 2)}" y="${round(stemTop)}" width="${round(stem)}" ` +
-    `height="${round(y + half - stemTop)}" rx="${round(stem / 2)}" fill="#ffffff"/>`
+    `<path d="M 0 ${top} H ${size - corner} A ${corner} ${corner} 0 0 1 ${size} ${top + corner} ` +
+    `V ${VIEWBOX} H 0 Z" fill="${fill}"/>`
+  );
+}
+
+/** The blue tab with a white italic "i", in the lower left corner, over a dark rule. */
+function informationalMark(): string {
+  const scale = MARK_GLYPH_HEIGHT / 100;
+  const left = round(MARK_GLYPH_X - (MARK_GLYPH_WIDTH * scale) / 2);
+  const top = round(MARK_GLYPH_Y - MARK_GLYPH_HEIGHT / 2);
+
+  return (
+    cornerTab(MARK_SIZE + MARK_RULE, MARK_CORNER + MARK_RULE, MARK_RULE_COLOR) +
+    cornerTab(MARK_SIZE, MARK_CORNER, MARK_FILL) +
+    `<g transform="translate(${left} ${top}) scale(${scale})" fill="#ffffff">` +
+    `${MARK_GLYPH_DOT}<path d="${MARK_GLYPH_STEM}"/></g>`
   );
 }
 

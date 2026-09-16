@@ -106,7 +106,24 @@ describe('top bar', () => {
 describe('informational mark', () => {
   it('draws the blue mark only when asked', () => {
     assert.ok(!renderKeySvg({}).includes('#2563eb'));
-    assert.match(renderKeySvg({ informational: true }), /<circle cx="15.5" cy="84.5" r="7.5" fill="#2563eb"\/>/);
+    assert.match(
+      renderKeySvg({ informational: true }),
+      /<path d="M 0 76 H 17 A 7 7 0 0 1 24 83 V 100 H 0 Z" fill="#2563eb"\/>/
+    );
+  });
+
+  it('sets the tab apart with a dark rule drawn beneath it', () => {
+    const svg = renderKeySvg({ informational: true });
+    const rule = svg.indexOf('<path d="M 0 74 H 17 A 9 9 0 0 1 26 83 V 100 H 0 Z" fill="#0b0b0f"/>');
+
+    assert.ok(rule !== -1 && rule < svg.indexOf('fill="#2563eb"'));
+  });
+
+  it('centers a white "i" in the tab', () => {
+    assert.match(
+      renderKeySvg({ informational: true }),
+      /<g transform="translate\(8\.94 80\.56\) scale\(0\.15\)" fill="#ffffff">/
+    );
   });
 });
 

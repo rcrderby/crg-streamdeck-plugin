@@ -127,7 +127,10 @@ describe('connection page keys', () => {
 
   it('draw every line in the key’s own text color', () => {
     for (const status of ['connected', 'connecting', 'disconnected', 'unauthorized', 'stopped'] as const) {
-      assert.ok(connectionToggleKey(status).texts?.every((line) => line.color === undefined), status);
+      assert.ok(
+        connectionToggleKey(status).texts?.every((line) => line.color === undefined),
+        status
+      );
     }
   });
 
