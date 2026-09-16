@@ -154,6 +154,15 @@ describe('the Star Pass arrow', () => {
 });
 
 describe('resourceDots', () => {
+  it('holds the count inside what a key has room for, since it comes from a rule an operator types', () => {
+    const dots = (markup: string): number => [...markup.matchAll(/<circle/g)].length;
+
+    assert.equal(dots(resourceDots(10_000, 3, '#ffffff')), 12);
+    assert.equal(dots(resourceDots(-4, 0, '#ffffff')), 0);
+    assert.equal(dots(resourceDots(2.7, 1, '#ffffff')), 2);
+    assert.equal(dots(resourceDots(Number.NaN, 0, '#ffffff')), 0);
+  });
+
   it('fills a dot for each one left and outlines the rest', () => {
     const markup = resourceDots(3, 1, '#ffffff');
 

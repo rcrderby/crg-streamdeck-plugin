@@ -26,6 +26,9 @@ const SLASH_GAP = 3;
 /** A resource dot's radius. */
 const DOT_RADIUS = 3.4;
 
+/** More dots than any rule set gives a team, and more than a key has room for. */
+const MAX_DOTS = 12;
+
 /** A resource mark's opacity once the key has nothing left. */
 const SPENT_OPACITY = 0.38;
 
@@ -398,6 +401,9 @@ function reviewMark(mark: ReviewMark, cx: number, cy: number, color: string, opa
  * left is subdued, and its mark with it. While the team's timeout or
  * review runs, the mark it used pulses at the given opacity: CRG has
  * already counted it, so it is the one at the position of the count left.
+ *
+ * The count comes from a CRG rule, which an operator types, so it is
+ * read as a whole number and held inside what a key has room for.
  */
 export function resourceDots(
   total: number,
@@ -407,16 +413,17 @@ export function resourceDots(
   mark?: ReviewMark,
   pulse?: number
 ): string {
+  const count = Math.min(MAX_DOTS, Math.max(0, Math.floor(total) || 0));
   const gap = DOT_RADIUS * 3.3;
-  const start = 50 - ((total - 1) * gap) / 2;
+  const start = 50 - ((count - 1) * gap) / 2;
   const fill = hex(color);
   const dots: string[] = [];
 
-  for (let index = 0; index < total; index += 1) {
+  for (let index = 0; index < count; index += 1) {
     const cx = start + index * gap;
     const pulsing = pulse !== undefined && index === left ? pulse : undefined;
 
-    if (mark !== undefined && index === total - 1) {
+    if (mark !== undefined && index === count - 1) {
       dots.push(reviewMark(mark, cx, y, color, pulsing ?? (left === 0 ? SPENT_OPACITY : 1)));
     } else if (index < left || pulsing !== undefined) {
       dots.push(`<circle cx="${n(cx)}" cy="${y}" r="${DOT_RADIUS}" fill="${fill}"${opacityAttribute(pulsing ?? 1)}/>`);
