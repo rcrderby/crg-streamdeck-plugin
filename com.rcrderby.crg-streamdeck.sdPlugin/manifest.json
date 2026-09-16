@@ -10,12 +10,12 @@
   "Icon": "imgs/plugin/marketplace",
   "CodePath": "bin/plugin.js",
   "SDKVersion": 3,
-  "Software": { "MinimumVersion": "7.1" },
+  "Software": { "MinimumVersion": "7.4" },
   "OS": [
     { "Platform": "mac", "MinimumVersion": "12" },
     { "Platform": "windows", "MinimumVersion": "10" }
   ],
-  "Nodejs": { "Version": "24", "Debug": "enabled" },
+  "Nodejs": { "Version": "24" },
   "UUID": "com.rcrderby.crg-streamdeck",
   "Actions": [
     {
@@ -70,6 +70,7 @@
       "Tooltip": "Changes between 'Start Jam', 'Stop Jam', and 'End Timeout', based on the game state.",
       "Controllers": ["Keypad"],
       "States": [{ "Image": "imgs/actions/jam-control/key", "TitleAlignment": "middle" }],
+      "SupportedInMultiActions": false,
       "UserTitleEnabled": false
     },
     {
@@ -80,6 +81,7 @@
       "Tooltip": "Starts an untyped timeout. Remains active until you select a team timeout, official review, or official timeout.",
       "Controllers": ["Keypad"],
       "States": [{ "Image": "imgs/actions/timeout/key", "TitleAlignment": "middle" }],
+      "SupportedInMultiActions": true,
       "UserTitleEnabled": false
     },
     {
@@ -90,6 +92,7 @@
       "Tooltip": "Starts an official timeout.",
       "Controllers": ["Keypad"],
       "States": [{ "Image": "imgs/actions/official-timeout/key", "TitleAlignment": "middle" }],
+      "SupportedInMultiActions": true,
       "UserTitleEnabled": false
     },
     {
@@ -100,6 +103,7 @@
       "Tooltip": "Assigns or removes lead jammer status.",
       "Controllers": ["Keypad"],
       "States": [{ "Image": "imgs/actions/lead/key", "TitleAlignment": "middle" }],
+      "SupportedInMultiActions": true,
       "UserTitleEnabled": false
     },
     {
@@ -110,6 +114,7 @@
       "Tooltip": "Assigns or removes 'No Initial' (trip) status for a jammer.",
       "Controllers": ["Keypad"],
       "States": [{ "Image": "imgs/actions/no-initial/key", "TitleAlignment": "middle" }],
+      "SupportedInMultiActions": true,
       "UserTitleEnabled": false
     },
     {
@@ -120,6 +125,7 @@
       "Tooltip": "Assigns or removes a star pass for a team. Disabled when 'No Pivot' is active.",
       "Controllers": ["Keypad"],
       "States": [{ "Image": "imgs/actions/star-pass/key", "TitleAlignment": "middle" }],
+      "SupportedInMultiActions": true,
       "UserTitleEnabled": false
     },
     {
@@ -130,6 +136,7 @@
       "Tooltip": "Assigns or removes 'Lost Lead' status for a jammer. Requires a 1-second hold.",
       "Controllers": ["Keypad"],
       "States": [{ "Image": "imgs/actions/lost-lead/key", "TitleAlignment": "middle" }],
+      "SupportedInMultiActions": false,
       "UserTitleEnabled": false
     },
     {
@@ -140,6 +147,7 @@
       "Tooltip": "Adds one point to the current scoring trip's total.",
       "Controllers": ["Keypad"],
       "States": [{ "Image": "imgs/actions/trip-points-up/key", "TitleAlignment": "middle" }],
+      "SupportedInMultiActions": true,
       "UserTitleEnabled": false
     },
     {
@@ -150,6 +158,7 @@
       "Tooltip": "Removes one point from the current scoring trip's total.",
       "Controllers": ["Keypad"],
       "States": [{ "Image": "imgs/actions/trip-points-down/key", "TitleAlignment": "middle" }],
+      "SupportedInMultiActions": true,
       "UserTitleEnabled": false
     },
     {
@@ -160,6 +169,7 @@
       "Tooltip": "Sets points for a jammer's current trip. Select the team and trip points, from 0 to 4.",
       "Controllers": ["Keypad"],
       "States": [{ "Image": "imgs/actions/trip-points/key", "TitleAlignment": "middle" }],
+      "SupportedInMultiActions": true,
       "UserTitleEnabled": false
     },
     {
@@ -170,6 +180,7 @@
       "Tooltip": "Starts a team timeout or assigns an active timeout to a team. Displays total and remaining timeouts.",
       "Controllers": ["Keypad"],
       "States": [{ "Image": "imgs/actions/team-timeout/key", "TitleAlignment": "middle" }],
+      "SupportedInMultiActions": true,
       "UserTitleEnabled": false
     },
     {
@@ -180,6 +191,7 @@
       "Tooltip": "Starts an official review or assigns an active timeout to a team. Displays the availability of a team's official review, and whether a team retained their review one or more times.",
       "Controllers": ["Keypad"],
       "States": [{ "Image": "imgs/actions/official-review/key", "TitleAlignment": "middle" }],
+      "SupportedInMultiActions": true,
       "UserTitleEnabled": false
     },
     {
@@ -190,6 +202,7 @@
       "Tooltip": "Assigns or removes 'Injury' status for both teams in a jam.",
       "Controllers": ["Keypad"],
       "States": [{ "Image": "imgs/actions/injury/key", "TitleAlignment": "middle" }],
+      "SupportedInMultiActions": true,
       "UserTitleEnabled": false
     },
     {
@@ -200,6 +213,7 @@
       "Tooltip": "Adds a new scoring trip for a team.",
       "Controllers": ["Keypad"],
       "States": [{ "Image": "imgs/actions/add-trip/key", "TitleAlignment": "middle" }],
+      "SupportedInMultiActions": true,
       "UserTitleEnabled": false
     },
     {
@@ -210,6 +224,7 @@
       "Tooltip": "Removes a team's last scoring trip.",
       "Controllers": ["Keypad"],
       "States": [{ "Image": "imgs/actions/remove-trip/key", "TitleAlignment": "middle" }],
+      "SupportedInMultiActions": true,
       "UserTitleEnabled": false
     },
     {
@@ -220,6 +235,7 @@
       "Tooltip": "Assigns or removes 'No Pivot' status for a team. Disables the Star Pass button when enabled.",
       "Controllers": ["Keypad"],
       "States": [{ "Image": "imgs/actions/no-pivot/key", "TitleAlignment": "middle" }],
+      "SupportedInMultiActions": true,
       "UserTitleEnabled": false
     },
     {
@@ -230,6 +246,7 @@
       "Tooltip": "Undoes CRG's last clock action. Requires a 1-second hold.",
       "Controllers": ["Keypad"],
       "States": [{ "Image": "imgs/actions/undo/key", "TitleAlignment": "middle" }],
+      "SupportedInMultiActions": false,
       "UserTitleEnabled": false
     },
     {
