@@ -7,10 +7,9 @@
  * after a timeout ends.
  */
 
-import { action } from '@elgato/streamdeck';
 import type { JsonObject } from '@elgato/utils';
 
-import { CLOCK_NAMES, type ClockName, clock } from '../crg/paths.ts';
+import { CLOCK_NAMES, CURRENT_GAME, type ClockName, clock } from '../crg/paths.ts';
 import { type KeySpec } from '../render/key.ts';
 import { CrgKeyAction, isOnline } from './key-action.ts';
 import { clockKey } from '../render/designs.ts';
@@ -21,7 +20,6 @@ export type ClockSettings = JsonObject & {
   clock?: ClockName;
 };
 
-@action({ UUID: 'com.rcrderby.crg-streamdeck.clock' })
 export class Clock extends CrgKeyAction<ClockSettings> {
   protected override watchedPaths(): readonly string[] {
     return CLOCK_NAMES.flatMap((name) => [
@@ -32,8 +30,21 @@ export class Clock extends CrgKeyAction<ClockSettings> {
     ]);
   }
 
+  /** A key shows one clock, so the other four ticking say nothing about its picture. */
+  protected override concerns(settings: ClockSettings | undefined, changed: ReadonlySet<string>): boolean {
+    const shown = `${CURRENT_GAME}.Clock(${chosenClock(settings)}).`;
+
+    for (const path of changed) {
+      if (path.startsWith(shown)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   protected override describe(settings: ClockSettings): KeySpec {
-    const name = settings.clock ?? 'Jam';
+    const name = chosenClock(settings);
     const state = this.context.client.state;
 
     return clockKey(
@@ -42,4 +53,9 @@ export class Clock extends CrgKeyAction<ClockSettings> {
       state.getBoolean(clock(name, 'Running'))
     );
   }
+}
+
+/** The clock a key is set to, which is the jam clock until someone changes it. */
+function chosenClock(settings: ClockSettings | undefined): ClockName {
+  return settings?.clock ?? 'Jam';
 }
