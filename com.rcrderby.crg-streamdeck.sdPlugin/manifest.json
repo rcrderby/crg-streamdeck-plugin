@@ -127,7 +127,7 @@
       "UUID": "com.rcrderby.crg-streamdeck.lost-lead",
       "Icon": "imgs/actions/lost-lead/icon",
       "PropertyInspectorPath": "ui/team.html",
-      "Tooltip": "Assigns or removes 'Lost Lead' status for a jammer.",
+      "Tooltip": "Assigns or removes 'Lost Lead' status for a jammer. Requires a 1-second hold.",
       "Controllers": ["Keypad"],
       "States": [{ "Image": "imgs/actions/lost-lead/key", "TitleAlignment": "middle" }],
       "UserTitleEnabled": false
