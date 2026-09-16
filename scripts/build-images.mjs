@@ -26,10 +26,8 @@ const RADIUS = 10;
 
 const GROUND = '#000000';
 const PAPER = '#141417';
-const HEADING = '#f4f4f5';
 const LABEL = '#d4d4d8';
 const CAPTION = '#8b8b93';
-const RULE = '#2a2a31';
 const FONT = "'Helvetica Neue', Helvetica, Arial, sans-serif";
 
 /** Escapes text so it cannot change the markup it is placed in. */
@@ -348,7 +346,7 @@ const SHEET = [
     ]
   },
   {
-    section: 'Pages of Keys',
+    section: 'Pages of Buttons',
     actions: [
       {
         name: 'Connection page',
@@ -402,27 +400,18 @@ const PAGES = [
   }
 ];
 
-const MARGIN = 40;
+const MARGIN = 30;
 const COLUMNS = 6;
 const CAPTION_DROP = 20;
 const ROW_STEP = VIEWBOX + CAPTION_DROP + 30;
 const NAME_DROP = 22;
-const SECTION_DROP = 54;
 
-const width = MARGIN * 2 + COLUMNS * VIEWBOX + (COLUMNS - 1) * GAP;
-const parts = [];
-let y = MARGIN + 26;
+const sheetWidth = MARGIN * 2 + COLUMNS * VIEWBOX + (COLUMNS - 1) * GAP;
 
-parts.push(text('CRG Scoreboard Stream Deck plugin', MARGIN, y, { size: 22, color: HEADING, weight: 'bold' }));
-y += 24;
-parts.push(text('Every key, and every state that means something different.', MARGIN, y, { size: 13, color: CAPTION }));
-y += 26;
-
-for (const { section, actions } of SHEET) {
-  y += SECTION_DROP;
-  parts.push(text(section, MARGIN, y, { size: 17, color: HEADING, weight: 'bold' }));
-  parts.push(`<rect x="${MARGIN}" y="${y + 10}" width="${width - MARGIN * 2}" height="1" fill="${RULE}"/>`);
-  y += NAME_DROP;
+/** One section of the reference, drawn as its own image. */
+function drawSection(actions, extras = []) {
+  const parts = [];
+  let y = MARGIN;
 
   for (const action of actions) {
     for (let start = 0; start < action.keys.length; start += COLUMNS) {
@@ -439,48 +428,69 @@ for (const { section, actions } of SHEET) {
 
         parts.push(tile(spec, x, y));
         parts.push(
-          text(caption, x + VIEWBOX / 2, y + VIEWBOX + CAPTION_DROP - 6, {
-            size: 11,
-            color: CAPTION,
-            anchor: 'middle'
-          })
+          text(caption, x + VIEWBOX / 2, y + VIEWBOX + CAPTION_DROP - 6, { size: 11, color: CAPTION, anchor: 'middle' })
         );
       });
 
       y += ROW_STEP;
     }
   }
-}
 
-y += SECTION_DROP;
-parts.push(text('The Pages as a Deck Shows Them', MARGIN, y, { size: 17, color: HEADING, weight: 'bold' }));
-parts.push(`<rect x="${MARGIN}" y="${y + 10}" width="${width - MARGIN * 2}" height="1" fill="${RULE}"/>`);
-y += NAME_DROP;
+  for (const page of extras) {
+    const drawn = deck(page.rows);
 
-for (const page of PAGES) {
-  y += NAME_DROP + 12;
-  parts.push(text(page.name, MARGIN, y, { size: 14, weight: 'bold' }));
-  y += 12;
+    y += NAME_DROP;
+    parts.push(text(page.name, MARGIN, y, { size: 14, weight: 'bold' }));
+    y += 12;
+    parts.push(
+      `<svg x="${MARGIN}" y="${y}" width="${drawn.width}" height="${drawn.height}" ` +
+        `viewBox="0 0 ${drawn.width} ${drawn.height}">${drawn.markup}</svg>`
+    );
+    y += drawn.height + 20;
+  }
 
-  const drawn = deck(page.rows);
+  const height = y + MARGIN - 20;
 
-  parts.push(
-    `<svg x="${MARGIN}" y="${y}" width="${drawn.width}" height="${drawn.height}" ` +
-      `viewBox="0 0 ${drawn.width} ${drawn.height}">${drawn.markup}</svg>`
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${sheetWidth} ${height}" ` +
+    `width="${sheetWidth}" height="${height}" role="img" aria-label="Plugin buttons and the states they show">` +
+    `<rect width="${sheetWidth}" height="${height}" fill="${PAPER}"/>${parts.join('')}</svg>\n`
   );
-  y += drawn.height + 20;
 }
 
-const height = y + MARGIN;
+/** The file name a section goes by, which its page links to. */
+function slugFor(section) {
+  return section
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+}
 
-mkdirSync(fileURLToPath(IMAGES), { recursive: true });
-writeFileSync(
-  fileURLToPath(new URL('key-reference.svg', IMAGES)),
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" ` +
-    `role="img" aria-label="Every key the plugin draws, and the states each one shows">` +
-    `<rect width="${width}" height="${height}" fill="${PAPER}"/>${parts.join('')}</svg>\n`
-);
+const REFERENCE = new URL('button-reference/', IMAGES);
+
+mkdirSync(fileURLToPath(REFERENCE), { recursive: true });
+
+const written = SHEET.map(({ section, actions }) => {
+  const file = `${slugFor(section)}.svg`;
+  const extras = section === 'Pages of Buttons' ? PAGES : [];
+
+  writeFileSync(fileURLToPath(new URL(file, REFERENCE)), drawSection(actions, extras));
+
+  // The path as the page links it, which sits beside the page in docs/.
+  return { section, path: `images/button-reference/${file}` };
+});
+
+// The page that carries these images is edited by hand, so the build
+// checks it still shows every one of them rather than writing it.
+const PAGE = fileURLToPath(new URL('docs/button-reference.md', ROOT));
+const page = readFileSync(PAGE, 'utf8');
+const unlinked = written.filter(({ path }) => !page.includes(path));
+
+if (unlinked.length > 0) {
+  throw new Error(`docs/button-reference.md shows no image for: ${unlinked.map((e) => e.section).join(', ')}`);
+}
 
 console.log(
-  `wrote crg-streamdeck-plugin-preview.svg (${preview.width} by ${preview.height}) and key-reference.svg (${width} by ${height})`
+  `wrote crg-streamdeck-plugin-preview.svg (${preview.width} by ${preview.height}) ` +
+    `and ${written.length} reference images`
 );
