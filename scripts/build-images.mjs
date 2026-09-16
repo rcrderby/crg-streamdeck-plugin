@@ -1,0 +1,486 @@
+// Draws the repository's key images from the same designs the plugin
+// draws, so a picture cannot drift from what a deck shows.
+//
+//     node scripts/build-images.mjs
+//
+// Writes the deck preview and the key reference sheet under docs/images.
+
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
+const ROOT = new URL('../', import.meta.url);
+const IMAGES = new URL('docs/images/', ROOT);
+
+const { renderKeySvg, VIEWBOX } = await import('../src/render/key.ts');
+const d = await import('../src/render/designs.ts');
+
+export const IMAGE_SOURCES = ['src/render/designs.ts', 'src/render/icons.ts', 'src/render/key.ts'];
+
+/** Two teams whose colors are as far apart as a league's usually are. */
+const WHEELS = { background: '#38205b', foreground: '#ffffff', glow: '#000000', name: 'Wheels' };
+const JUSTICE = { background: '#ffffff', foreground: '#38205b', glow: '#cbd5e1', name: 'Justice' };
+
+const GAP = 14;
+const EDGE = 20;
+const RADIUS = 10;
+
+const GROUND = '#000000';
+const PAPER = '#141417';
+const HEADING = '#f4f4f5';
+const LABEL = '#d4d4d8';
+const CAPTION = '#8b8b93';
+const RULE = '#2a2a31';
+const FONT = "'Helvetica Neue', Helvetica, Arial, sans-serif";
+
+/** Escapes text so it cannot change the markup it is placed in. */
+function escape(text) {
+  return text.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' })[c]);
+}
+
+/** One key, drawn on a rounded tile the way a deck shows it. */
+function tile(spec, x, y) {
+  const inner = renderKeySvg(spec)
+    .replace(/^<svg[^>]*>/, '')
+    .replace(/<\/svg>$/, '');
+
+  return (
+    `<svg x="${x}" y="${y}" width="${VIEWBOX}" height="${VIEWBOX}" viewBox="0 0 ${VIEWBOX} ${VIEWBOX}">` +
+    `<rect width="${VIEWBOX}" height="${VIEWBOX}" rx="${RADIUS}" fill="${GROUND}"/>` +
+    `<g clip-path="inset(0 round ${RADIUS}px)">${inner}</g>` +
+    `</svg>`
+  );
+}
+
+function text(value, x, y, { size = 13, color = LABEL, weight = 'normal', anchor = 'start' } = {}) {
+  return (
+    `<text x="${x}" y="${y}" font-family="${FONT}" font-size="${size}" font-weight="${weight}" ` +
+    `fill="${color}" text-anchor="${anchor}">${escape(value)}</text>`
+  );
+}
+
+// ---------------------------------------------------------------------
+// The deck preview: an XL mid jam, laid out the way an operator works a game.
+// ---------------------------------------------------------------------
+
+const DECK = [
+  [
+    d.jammerKey(WHEELS, 'lead', false),
+    d.lostLeadKey(WHEELS, true),
+    d.scoreKey(WHEELS, 113, 0, 1),
+    d.jamControlKey('Stop Jam', '1:04', ['JAM 13'], d.JAM_STOP, false),
+    d.clockKey('PERIOD 2', '12:26', true),
+    d.scoreKey(JUSTICE, 109, 4, 3),
+    d.lostLeadKey(JUSTICE, false),
+    d.jammerKey(JUSTICE, 'lead', true)
+  ],
+  [
+    d.noInitialKey(WHEELS, true),
+    d.teamTimeoutKey(WHEELS, 3, 2, false),
+    d.officialReviewKey(WHEELS, 1, 1, undefined, false),
+    d.timeoutKey(['Official', 'Timeout'], false),
+    d.timeoutKey(['Timeout'], false),
+    d.officialReviewKey(JUSTICE, 1, 1, undefined, false),
+    d.teamTimeoutKey(JUSTICE, 3, 1, false),
+    d.noInitialKey(JUSTICE, false)
+  ],
+  [
+    d.jammerKey(WHEELS, 'starPass', true),
+    d.tripAdjustKey(WHEELS, true),
+    d.tripAdjustKey(WHEELS, false),
+    d.undoKey(),
+    d.connectionKey('connected', 'StreamDeck'),
+    d.tripAdjustKey(JUSTICE, false),
+    d.tripAdjustKey(JUSTICE, true),
+    d.jammerKey(JUSTICE, 'starPass', false)
+  ],
+  [
+    d.tripPointsKey(WHEELS, 4),
+    d.tripPointsKey(WHEELS, 3),
+    d.tripPointsKey(WHEELS, 2),
+    d.tripPointsKey(WHEELS, 1),
+    d.tripPointsKey(JUSTICE, 1),
+    d.tripPointsKey(JUSTICE, 2),
+    d.tripPointsKey(JUSTICE, 3),
+    d.tripPointsKey(JUSTICE, 4)
+  ]
+];
+
+/** A grid of keys on one deck-colored ground, as a deck shows them. */
+function deck(rows, label = '') {
+  const columns = Math.max(...rows.map((row) => row.length));
+  const width = EDGE * 2 + columns * VIEWBOX + (columns - 1) * GAP;
+  const height = EDGE * 2 + rows.length * VIEWBOX + (rows.length - 1) * GAP;
+  const keys = rows.flatMap((row, down) =>
+    row.map((spec, across) => tile(spec, EDGE + across * (VIEWBOX + GAP), EDGE + down * (VIEWBOX + GAP)))
+  );
+
+  return {
+    width,
+    height,
+    markup: `<rect width="${width}" height="${height}" rx="${EDGE}" fill="${GROUND}"/>${keys.join('')}`,
+    label
+  };
+}
+
+const preview = deck(DECK);
+
+writeFileSync(
+  fileURLToPath(new URL('key-gallery.svg', IMAGES)),
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${preview.width} ${preview.height}" ` +
+    `width="${preview.width}" height="${preview.height}" role="img" ` +
+    `aria-label="A Stream Deck XL running the plugin's keys during a jam">${preview.markup}</svg>\n`
+);
+
+// ---------------------------------------------------------------------
+// The reference sheet: every key, and every state that carries meaning.
+// ---------------------------------------------------------------------
+
+const SHEET = [
+  {
+    section: 'Game Control',
+    actions: [
+      {
+        name: 'CRG Connection',
+        slugs: ['connection'],
+        keys: [
+          ['Connected', d.connectionKey('connected', 'StreamDeck')],
+          ['Connecting', d.connectionKey('connecting', 'StreamDeck')],
+          ['Offline', d.connectionKey('disconnected', 'StreamDeck')],
+          ['Not allowed', d.connectionKey('unauthorized', 'StreamDeck')],
+          ['Disconnected on purpose', d.connectionKey('stopped', 'StreamDeck')]
+        ]
+      },
+      {
+        name: 'Jam Control',
+        slugs: ['jam-control'],
+        keys: [
+          ['Nothing running', d.jamControlKey('Start Jam', undefined, ['JAM 13'], d.lineupBackground('none'), false)],
+          ['Lineup', d.jamControlKey('Start Jam', '0:21', ['LINEUP', 'JAM 13'], d.lineupBackground('none'), false)],
+          [
+            'After a timeout',
+            d.jamControlKey('Start Jam', '0:21', ['POST TIMEOUT', 'JAM 13'], d.lineupBackground('none'), false)
+          ],
+          [
+            'Lineup nearly up',
+            d.jamControlKey('Start Jam', '0:27', ['LINEUP', 'JAM 13'], d.lineupBackground('due'), false)
+          ],
+          [
+            'Lineup over',
+            d.jamControlKey('Start Jam', '0:32', ['LINEUP', 'JAM 13'], d.lineupBackground('over', 0.5), false)
+          ],
+          ['In a jam', d.jamControlKey('Stop Jam', '1:04', ['JAM 13'], d.JAM_STOP, false)],
+          ['Timeout', d.jamControlKey('End Timeout', '0:43', ['JAM 13'], d.TIMEOUT_RED, false)],
+          ['Nothing CRG will do', d.jamControlKey('Wait', undefined, [], d.JAM_IDLE, true)]
+        ]
+      },
+      {
+        name: 'Timeout',
+        slugs: ['timeout'],
+        keys: [
+          ['Ready', d.timeoutKey(['Timeout'], false)],
+          ['Running', d.timeoutKey(['Timeout'], true)]
+        ]
+      },
+      {
+        name: 'Official Timeout',
+        slugs: ['official-timeout'],
+        keys: [
+          ['Ready', d.timeoutKey(['Official', 'Timeout'], false)],
+          ['Running', d.timeoutKey(['Official', 'Timeout'], true)]
+        ]
+      },
+      {
+        name: 'Undo',
+        slugs: ['undo'],
+        keys: [
+          ['Ready', d.undoKey()],
+          ['Held', d.undoKey(0.6)],
+          ['Nothing to undo', { ...d.undoKey(), subdued: true }],
+          ['Replace on undo', d.undoKey(0, false)],
+          ['CRG is waiting', d.undoKey(0, true)]
+        ]
+      }
+    ]
+  },
+  {
+    section: 'Jammer Status',
+    actions: [
+      {
+        name: 'Lead',
+        slugs: ['lead'],
+        keys: [
+          ['Not lead', d.jammerKey(WHEELS, 'lead', false)],
+          ['Lead', d.jammerKey(WHEELS, 'lead', true)]
+        ]
+      },
+      {
+        name: 'Lost Lead',
+        slugs: ['lost-lead'],
+        keys: [
+          ['Not lost', d.lostLeadKey(WHEELS, false)],
+          ['Held', d.lostLeadKey(WHEELS, false, 0.6)],
+          ['Lost', d.lostLeadKey(WHEELS, true)]
+        ]
+      },
+      {
+        name: 'Star Pass',
+        slugs: ['star-pass'],
+        keys: [
+          ['No star pass', d.jammerKey(WHEELS, 'starPass', false)],
+          ['Star pass', d.jammerKey(WHEELS, 'starPass', true)],
+          ['Team has no pivot', d.jammerKey(WHEELS, 'starPass', false, 'NO PIVOT')]
+        ]
+      },
+      {
+        name: 'No Pivot',
+        slugs: ['no-pivot'],
+        keys: [
+          ['With a pivot', d.jammerKey(WHEELS, 'noPivot', false)],
+          ['Without a pivot', d.jammerKey(WHEELS, 'noPivot', true)]
+        ]
+      },
+      {
+        name: 'NI',
+        slugs: ['no-initial'],
+        keys: [
+          ['Initial trip done', d.noInitialKey(WHEELS, false)],
+          ['On the initial trip', d.noInitialKey(WHEELS, true)]
+        ]
+      },
+      {
+        name: 'Injury',
+        slugs: ['injury'],
+        keys: [
+          ['No injury', d.injuryKey(false)],
+          ['Injury', d.injuryKey(true)]
+        ]
+      }
+    ]
+  },
+  {
+    section: 'Team Timeouts and Reviews',
+    actions: [
+      {
+        name: 'Team Timeout',
+        slugs: ['team-timeout'],
+        keys: [
+          ['Three left', d.teamTimeoutKey(WHEELS, 3, 3, false)],
+          ['One left', d.teamTimeoutKey(WHEELS, 3, 1, false)],
+          ['None left', d.teamTimeoutKey(WHEELS, 3, 0, false)],
+          ['Running', d.teamTimeoutKey(WHEELS, 3, 2, true, 0.5)]
+        ]
+      },
+      {
+        name: 'Official Review',
+        slugs: ['official-review'],
+        keys: [
+          ['One left', d.officialReviewKey(WHEELS, 1, 1, undefined, false)],
+          ['Won this period', d.officialReviewKey(WHEELS, 1, 1, 'retained', false)],
+          ['Won twice', d.officialReviewKey(WHEELS, 1, 1, 'twice', false)],
+          ['None left', d.officialReviewKey(WHEELS, 1, 0, undefined, false)],
+          ['Running', d.officialReviewKey(WHEELS, 1, 1, undefined, true, 0.5)]
+        ]
+      }
+    ]
+  },
+  {
+    section: 'Scoring',
+    actions: [
+      {
+        name: 'Trip Points',
+        slugs: ['trip-score'],
+        keys: [0, 1, 2, 3, 4].map((points) => [
+          `${points} point${points === 1 ? '' : 's'}`,
+          d.tripPointsKey(WHEELS, points)
+        ])
+      },
+      {
+        name: 'Up 1 and Down 1',
+        slugs: ['trip-points-up', 'trip-points-down'],
+        keys: [
+          ['Up 1', d.tripAdjustKey(WHEELS, true)],
+          ['Down 1', d.tripAdjustKey(WHEELS, false)]
+        ]
+      },
+      {
+        name: 'Add Trip and Remove Trip',
+        slugs: ['add-trip', 'remove-trip'],
+        keys: [
+          ['Add Trip', d.tripChangeKey(WHEELS, true)],
+          ['Remove Trip', d.tripChangeKey(WHEELS, false)]
+        ]
+      },
+      {
+        name: 'Score',
+        slugs: ['score'],
+        keys: [
+          ['Early in a game', d.scoreKey(WHEELS, 8, 4, 2)],
+          ['Later in a game', d.scoreKey(WHEELS, 113, 0, 1)],
+          ['A light team color', d.scoreKey(JUSTICE, 109, 14, 3)]
+        ]
+      }
+    ]
+  },
+  {
+    section: 'Clocks',
+    actions: [
+      {
+        name: 'Clock',
+        slugs: ['clock'],
+        keys: [
+          ['Period', d.clockKey('PERIOD 2', '12:26', true)],
+          ['Jam', d.clockKey('JAM 13', '1:04', true)],
+          ['Lineup', d.clockKey('LINEUP', '0:21', true)],
+          ['After a timeout', d.clockKey('POST TIMEOUT', '0:21', true)],
+          ['Timeout', d.clockKey('TIMEOUT', '0:43', false)],
+          ['Intermission', d.clockKey('INTERMISSION', '5:00', true)]
+        ]
+      },
+      {
+        name: 'Active Clock',
+        slugs: ['active-clock'],
+        keys: [
+          ['During a period', d.clockKey('PERIOD 2', '12:26', true)],
+          ['Between periods', d.clockKey('INTERMISSION', '5:00', true)],
+          ['No time to show', d.clockKey('COMING UP', undefined, false)]
+        ]
+      }
+    ]
+  },
+  {
+    section: 'Pages of Keys',
+    actions: [
+      {
+        name: 'Connection page',
+        slugs: ['back', 'connection-toggle'],
+        keys: [
+          ['Back', d.backKey()],
+          ['Connected', d.connectionToggleKey('connected')],
+          ['Held', d.connectionToggleKey('connected', 0.6)],
+          ['Disconnected', d.connectionToggleKey('stopped')]
+        ]
+      },
+      {
+        name: 'Undo page',
+        slugs: ['replace-info', 'replace-confirm', 'replace-choice'],
+        keys: [
+          ['What is being replaced', d.replaceInfoKey('Stop Jam')],
+          ['No Action', d.replaceConfirmKey('No Action')],
+          ['Start Jam', d.replaceChoiceKey('Start Jam', 'start')],
+          ['Stop Jam', d.replaceChoiceKey('Stop Jam', 'stop')],
+          ['Timeout', d.replaceChoiceKey('Timeout', 'timeout')],
+          ['No choice for this key', d.blankKey()]
+        ]
+      }
+    ]
+  }
+];
+
+/** Every action the sheet draws, so a new one cannot be left out of it. */
+const drawn = new Set(SHEET.flatMap(({ actions }) => actions.flatMap((action) => action.slugs)));
+const declared = JSON.parse(
+  readFileSync(fileURLToPath(new URL('com.rcrderby.crg-streamdeck.sdPlugin/manifest.json', ROOT)), 'utf8')
+).Actions.map((entry) => entry.UUID.slice(entry.UUID.lastIndexOf('.') + 1));
+const missing = declared.filter((slug) => !drawn.has(slug));
+
+if (missing.length > 0) {
+  throw new Error(`The key reference draws no picture of: ${missing.join(', ')}`);
+}
+
+/** The pages as an operator meets them, in the positions the profiles place them. */
+const PAGES = [
+  {
+    name: 'The connection page',
+    rows: [[d.backKey(), d.connectionToggleKey('connected')]]
+  },
+  {
+    name: 'The Undo page',
+    rows: [
+      [d.replaceInfoKey('Stop Jam'), d.replaceConfirmKey('No Action'), d.backKey()],
+      [d.replaceChoiceKey('Start Jam', 'start'), d.replaceChoiceKey('Timeout', 'timeout'), d.blankKey()]
+    ]
+  }
+];
+
+const MARGIN = 40;
+const COLUMNS = 6;
+const CAPTION_DROP = 20;
+const ROW_STEP = VIEWBOX + CAPTION_DROP + 30;
+const NAME_DROP = 22;
+const SECTION_DROP = 54;
+
+const width = MARGIN * 2 + COLUMNS * VIEWBOX + (COLUMNS - 1) * GAP;
+const parts = [];
+let y = MARGIN + 26;
+
+parts.push(text('CRG Scoreboard Stream Deck plugin', MARGIN, y, { size: 22, color: HEADING, weight: 'bold' }));
+y += 24;
+parts.push(text('Every key, and every state that means something different.', MARGIN, y, { size: 13, color: CAPTION }));
+y += 26;
+
+for (const { section, actions } of SHEET) {
+  y += SECTION_DROP;
+  parts.push(text(section, MARGIN, y, { size: 17, color: HEADING, weight: 'bold' }));
+  parts.push(`<rect x="${MARGIN}" y="${y + 10}" width="${width - MARGIN * 2}" height="1" fill="${RULE}"/>`);
+  y += NAME_DROP;
+
+  for (const action of actions) {
+    for (let start = 0; start < action.keys.length; start += COLUMNS) {
+      const chunk = action.keys.slice(start, start + COLUMNS);
+
+      y += NAME_DROP;
+      parts.push(
+        text(start === 0 ? action.name : `${action.name}, continued`, MARGIN, y, { size: 14, weight: 'bold' })
+      );
+      y += 12;
+
+      chunk.forEach(([caption, spec], index) => {
+        const x = MARGIN + index * (VIEWBOX + GAP);
+
+        parts.push(tile(spec, x, y));
+        parts.push(
+          text(caption, x + VIEWBOX / 2, y + VIEWBOX + CAPTION_DROP - 6, {
+            size: 11,
+            color: CAPTION,
+            anchor: 'middle'
+          })
+        );
+      });
+
+      y += ROW_STEP;
+    }
+  }
+}
+
+y += SECTION_DROP;
+parts.push(text('The Pages as a Deck Shows Them', MARGIN, y, { size: 17, color: HEADING, weight: 'bold' }));
+parts.push(`<rect x="${MARGIN}" y="${y + 10}" width="${width - MARGIN * 2}" height="1" fill="${RULE}"/>`);
+y += NAME_DROP;
+
+for (const page of PAGES) {
+  y += NAME_DROP + 12;
+  parts.push(text(page.name, MARGIN, y, { size: 14, weight: 'bold' }));
+  y += 12;
+
+  const drawn = deck(page.rows);
+
+  parts.push(
+    `<svg x="${MARGIN}" y="${y}" width="${drawn.width}" height="${drawn.height}" ` +
+      `viewBox="0 0 ${drawn.width} ${drawn.height}">${drawn.markup}</svg>`
+  );
+  y += drawn.height + 20;
+}
+
+const height = y + MARGIN;
+
+mkdirSync(fileURLToPath(IMAGES), { recursive: true });
+writeFileSync(
+  fileURLToPath(new URL('key-reference.svg', IMAGES)),
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" ` +
+    `role="img" aria-label="Every key the plugin draws, and the states each one shows">` +
+    `<rect width="${width}" height="${height}" fill="${PAPER}"/>${parts.join('')}</svg>\n`
+);
+
+console.log(
+  `wrote key-gallery.svg (${preview.width} by ${preview.height}) and key-reference.svg (${width} by ${height})`
+);

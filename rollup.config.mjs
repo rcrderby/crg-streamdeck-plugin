@@ -31,12 +31,14 @@ const config = {
       // Tooltips in the manifest are written from ui/descriptions.js, and
       // the page profiles and their manifest entries from
       // scripts/build-profiles.mjs. Both write the manifest, so they run
-      // one after the other.
+      // one after the other. The images under docs/ are drawn from the key
+      // designs last, once the manifest names every action they cover.
       name: 'plugin-files',
       async buildStart() {
         this.addWatchFile(DESCRIPTIONS_FILE);
         await syncTooltips();
         await buildProfiles();
+        await import('./scripts/build-images.mjs');
       }
     },
     {
