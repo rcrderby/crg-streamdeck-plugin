@@ -52,17 +52,6 @@
       "UserTitleEnabled": false
     },
     {
-      "Name": "Clocks",
-      "UUID": "com.rcrderby.crg-streamdeck.clock",
-      "Icon": "imgs/actions/clock/icon",
-      "PropertyInspectorPath": "ui/clock.html",
-      "Tooltip": "Displays the clock you select: 'Lineup', 'Period', 'Jam', 'Timeout', or 'Intermission'. Informational only. Add multiple buttons to display different clocks.",
-      "Controllers": ["Keypad"],
-      "States": [{ "Image": "imgs/actions/clock/key", "TitleAlignment": "middle" }],
-      "SupportedInMultiActions": false,
-      "UserTitleEnabled": false
-    },
-    {
       "Name": "Jam Control",
       "UUID": "com.rcrderby.crg-streamdeck.jam-control",
       "Icon": "imgs/actions/jam-control/icon",
@@ -308,6 +297,17 @@
       "SupportedInMultiActions": false,
       "UserTitleEnabled": false,
       "VisibleInActionsList": false
+    },
+    {
+      "Name": "Clocks",
+      "UUID": "com.rcrderby.crg-streamdeck.clock",
+      "Icon": "imgs/actions/clock/icon",
+      "PropertyInspectorPath": "ui/clock.html",
+      "Tooltip": "Displays the clock you select: 'Lineup', 'Period', 'Jam', 'Timeout', or 'Intermission'. Informational only. Add multiple buttons to display different clocks.",
+      "Controllers": ["Keypad"],
+      "States": [{ "Image": "imgs/actions/clock/key", "TitleAlignment": "middle" }],
+      "SupportedInMultiActions": false,
+      "UserTitleEnabled": false
     }
   ],
   "Profiles": [
