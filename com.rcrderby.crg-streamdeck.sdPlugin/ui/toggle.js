@@ -45,15 +45,20 @@
   /** Draws one switch, and reports its state back to the action's settings when it is used. */
   function connectSwitch(element, client) {
     const name = element.dataset.setting;
-    let settings = {};
+    let settings;
 
     const show = (value) => element.setAttribute('aria-checked', isOn(value) ? 'true' : 'false');
 
     element.classList.add('sdpi-switch');
     element.setAttribute('role', 'switch');
+    element.setAttribute('aria-busy', 'true');
     show(false);
 
     element.addEventListener('click', () => {
+      if (settings === undefined) {
+        return;
+      }
+
       const value = element.getAttribute('aria-checked') !== 'true';
 
       show(value);
@@ -64,6 +69,7 @@
     void client.getSettings().then((payload) => {
       settings = payload?.settings ?? payload ?? {};
       show(settings[name]);
+      element.setAttribute('aria-busy', 'false');
     });
   }
 
