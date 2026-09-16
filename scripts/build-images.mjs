@@ -145,7 +145,7 @@ const SHEET = [
           ['Connecting', d.connectionKey('connecting', 'StreamDeck')],
           ['Offline', d.connectionKey('disconnected', 'StreamDeck')],
           ['Not allowed', d.connectionKey('unauthorized', 'StreamDeck')],
-          ['Disconnected intentionally', d.connectionKey('stopped', 'StreamDeck')]
+          ['Manually disconnected', d.connectionKey('stopped', 'StreamDeck')]
         ]
       },
       {
@@ -155,7 +155,7 @@ const SHEET = [
           ['No active jam', d.jamControlKey('Start Jam', undefined, ['JAM 13'], d.lineupBackground('none'), false)],
           ['Lineup', d.jamControlKey('Start Jam', '0:21', ['LINEUP', 'JAM 13'], d.lineupBackground('none'), false)],
           [
-            'After a timeout',
+            'Post timeout',
             d.jamControlKey('Start Jam', '0:21', ['POST TIMEOUT', 'JAM 13'], d.lineupBackground('none'), false)
           ],
           [
@@ -166,12 +166,12 @@ const SHEET = [
             'Lineup expired',
             d.jamControlKey('Start Jam', '0:32', ['LINEUP', 'JAM 13'], d.lineupBackground('over', 0.5), false)
           ],
-          ['Active jam', d.jamControlKey('Stop Jam', '1:04', ['JAM 13'], d.JAM_STOP, false)],
+          ['Jam active', d.jamControlKey('Stop Jam', '1:04', ['JAM 13'], d.JAM_STOP, false)],
           ['Timeout active', d.jamControlKey('End Timeout', '0:43', ['JAM 13'], d.TIMEOUT_RED, false)]
         ]
       },
       {
-        name: 'Timeout',
+        name: 'Untyped timeout',
         slugs: ['timeout'],
         keys: [
           ['Inactive', d.timeoutKey(['Timeout'], false)],
