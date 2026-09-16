@@ -39,7 +39,8 @@ const DESCRIPTIONS = {
     summary: 'Assigns or removes lead jammer status.'
   },
   'com.rcrderby.crg-streamdeck.lost-lead': {
-    summary: "Assigns or removes 'Lost Lead' status for a jammer."
+    summary: "Assigns or removes 'Lost Lead' status for a jammer.",
+    details: ['Requires a 1-second hold.']
   },
   'com.rcrderby.crg-streamdeck.star-pass': {
     summary: 'Assigns or removes a star pass for a team.',
