@@ -125,7 +125,7 @@ function deck(rows, label = '') {
 const preview = deck(DECK);
 
 writeFileSync(
-  fileURLToPath(new URL('key-gallery.svg', IMAGES)),
+  fileURLToPath(new URL('crg-streamdeck-plugin-preview.svg', IMAGES)),
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${preview.width} ${preview.height}" ` +
     `width="${preview.width}" height="${preview.height}" role="img" ` +
     `aria-label="A Stream Deck XL running the plugin's keys during a jam">${preview.markup}</svg>\n`
@@ -482,5 +482,5 @@ writeFileSync(
 );
 
 console.log(
-  `wrote key-gallery.svg (${preview.width} by ${preview.height}) and key-reference.svg (${width} by ${height})`
+  `wrote crg-streamdeck-plugin-preview.svg (${preview.width} by ${preview.height}) and key-reference.svg (${width} by ${height})`
 );
