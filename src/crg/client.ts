@@ -36,6 +36,29 @@ const RECONNECT_MIN_MS = 1_000;
 
 const RECONNECT_MAX_MS = 30_000;
 
+/**
+ * How long a refused write is reported for.
+ *
+ * CRG says nothing when a device is given permission, so the refusal is
+ * shown for a while after the write it answered and raised again by the
+ * next write CRG refuses.
+ */
+export const REFUSAL_SHOWN_MS = 30_000;
+
+/**
+ * Room for a listener per key, and a few for the plugin itself.
+ *
+ * Every action follows the connection, and a deck can hold more keys
+ * than Node's own limit warns at, which would put a leak warning in the
+ * log for something working as designed.
+ */
+const MAX_LISTENERS = 100;
+
+/** What a client can be built with, so a test need not wait out the refusal. */
+export type CrgClientOptions = {
+  refusalShownMs?: number;
+};
+
 /** Names that carry a cookie's attributes rather than its value. */
 const COOKIE_ATTRIBUTES = new Set([
   'domain',
@@ -49,12 +72,23 @@ const COOKIE_ATTRIBUTES = new Set([
   'secure'
 ]);
 
+/** The names CRG has given its session cookie. */
+const SESSION_COOKIE_NAMES = new Set(['crg_scoreboard', 'jsessionid']);
+
+/** True for a cookie name that carries a session rather than something else the scoreboard keeps. */
+function isSessionCookie(name: string): boolean {
+  return SESSION_COOKIE_NAMES.has(name) || name.includes('session');
+}
+
 /**
- * Reads the cookies a response sets, dropping their attributes.
+ * Reads the session a response sets, dropping cookie attributes.
  *
- * CRG 2027 names its session cookie 'CRG_SCOREBOARD' and earlier
- * builds used the servlet container's own name, so whatever it sets is
- * kept rather than one name being looked for.
+ * CRG 2027 names its session cookie 'CRG_SCOREBOARD' and earlier builds
+ * used the servlet container's own name, so a cookie that reads as a
+ * session is preferred and everything is kept only when none does. What
+ * is kept is written to settings and sent on every connection, so a
+ * scoreboard that one day sets a second cookie does not have it stored
+ * and replayed for good.
  */
 export function readSessionCookies(setCookie: readonly string[]): string | undefined {
   const pairs = setCookie
@@ -65,7 +99,10 @@ export function readSessionCookies(setCookie: readonly string[]): string | undef
       return name !== '' && pair.includes('=') && !COOKIE_ATTRIBUTES.has(name);
     });
 
-  return pairs.length > 0 ? pairs.join('; ') : undefined;
+  const sessions = pairs.filter((pair) => isSessionCookie(pair.split('=')[0]?.trim().toLowerCase() ?? ''));
+  const kept = sessions.length > 0 ? sessions : pairs;
+
+  return kept.length > 0 ? kept.join('; ') : undefined;
 }
 
 /** An error's message, or its code when the message is empty. */
@@ -102,9 +139,31 @@ export class CrgClient extends EventEmitter<CrgClientEvents> {
   #attempt = 0;
   /** True while a session is being fetched and no socket exists yet. */
   #opening = false;
+  /** Runs out the time a refused write is reported for. */
+  #refusal: NodeJS.Timeout | undefined;
+  readonly #refusalShownMs: number;
+
+  /**
+   * Reports failures rather than throwing them.
+   *
+   * An EventEmitter throws when an 'error' event has no listener, which
+   * would take the whole plugin down the first time a connection failed.
+   */
+  constructor(options: CrgClientOptions = {}) {
+    super();
+
+    this.setMaxListeners(MAX_LISTENERS);
+    this.#refusalShownMs = options.refusalShownMs ?? REFUSAL_SHOWN_MS;
+    this.on('error', () => undefined);
+  }
 
   get status(): ConnectionStatus {
     return this.#status;
+  }
+
+  /** The scoreboard this client is pointed at, which is what its session belongs to. */
+  get origin(): string | undefined {
+    return this.#connection?.origin;
   }
 
   /**
@@ -136,12 +195,17 @@ export class CrgClient extends EventEmitter<CrgClientEvents> {
     this.#connection = connection;
     this.#closing = false;
 
-    if (session) {
-      this.#session = session;
+    if (changed) {
+      // A session names this device to the scoreboard that issued it.
+      // Offering it to a different one would hand that scoreboard the
+      // identity this deck writes with, so it goes with the state it
+      // belongs to.
+      this.#session = undefined;
+      this.state.clear();
     }
 
-    if (changed) {
-      this.state.clear();
+    if (session) {
+      this.#session = session;
     }
 
     if (changed || (this.#socket === undefined && !this.#opening)) {
@@ -359,7 +423,7 @@ export class CrgClient extends EventEmitter<CrgClientEvents> {
     const { authorization, state } = message as { authorization?: unknown; state?: unknown };
 
     if (typeof authorization === 'string') {
-      this.#setStatus('unauthorized');
+      this.#refuse();
       this.emit('unauthorized', authorization);
 
       return;
@@ -390,7 +454,34 @@ export class CrgClient extends EventEmitter<CrgClientEvents> {
     }, delay);
   }
 
+  /**
+   * Reports a refused write, and stops reporting it after a while.
+   *
+   * Authorizing the device in CRG leaves the socket open and sends
+   * nothing, so a refusal that was never cleared would outlast the
+   * problem and read as broken for the rest of the game.
+   */
+  #refuse(): void {
+    this.#setStatus('unauthorized');
+    clearTimeout(this.#refusal);
+
+    this.#refusal = setTimeout(() => {
+      this.#refusal = undefined;
+
+      if (this.#status === 'unauthorized') {
+        this.#setStatus('connected');
+      }
+    }, this.#refusalShownMs);
+
+    this.#refusal.unref();
+  }
+
   #clearTimers(): void {
+    if (this.#refusal !== undefined) {
+      clearTimeout(this.#refusal);
+      this.#refusal = undefined;
+    }
+
     if (this.#ping !== undefined) {
       clearInterval(this.#ping);
       this.#ping = undefined;

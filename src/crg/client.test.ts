@@ -84,7 +84,12 @@ describe('readSessionCookies', () => {
     assert.equal(readSessionCookies(['JSESSIONID=abc123; Path=/']), 'JSESSIONID=abc123');
   });
 
-  it('keeps every cookie it is sent', () => {
+  it('keeps only the cookie that reads as a session', () => {
+    assert.equal(readSessionCookies(['CRG_SCOREBOARD=abc; Path=/', 'theme=dark; Path=/']), 'CRG_SCOREBOARD=abc');
+    assert.equal(readSessionCookies(['theme=dark', 'JSESSIONID=abc; HttpOnly']), 'JSESSIONID=abc');
+  });
+
+  it('keeps every cookie when none reads as a session, since CRG chooses the name', () => {
     const value = readSessionCookies(['A=1; Path=/', 'B=2; HttpOnly']);
 
     assert.equal(value, 'A=1; B=2');
@@ -93,6 +98,12 @@ describe('readSessionCookies', () => {
   it('returns nothing when no cookie was set', () => {
     assert.equal(readSessionCookies([]), undefined);
     assert.equal(readSessionCookies(['Path=/; HttpOnly']), undefined);
+  });
+});
+
+describe('a client nothing is listening to', () => {
+  it('reports a failure rather than throwing it, which would end the plugin', () => {
+    assert.doesNotThrow(() => new CrgClient().emit('error', new Error('connect ECONNREFUSED 127.0.0.1:8000')));
   });
 });
 
@@ -190,6 +201,46 @@ describe('CrgClient', () => {
     await until(() => crg.actions.get(crg.sockets[1] as WebSocket)?.includes('Register') === true);
 
     assert.deepEqual(crg.actions.get(crg.sockets[1] as WebSocket), ['Register']);
+  });
+
+  it('keeps its session while the address stays the same', async () => {
+    client.connect(connection, 'CRG_SCOREBOARD=stored');
+    await until(() => client.status === 'connected');
+
+    assert.equal(client.origin, connection.origin);
+
+    client.connect(connection);
+
+    assert.equal(client.session, 'CRG_SCOREBOARD=test');
+  });
+
+  it('forgets its session when it is pointed at a different scoreboard', async () => {
+    client.connect(connection);
+    await until(() => client.status === 'connected');
+
+    assert.equal(client.session, 'CRG_SCOREBOARD=test');
+
+    const elsewhere: Connection = { origin: 'http://127.0.0.1:1/', webSocketUrl: 'ws://127.0.0.1:1/WS/?source=test' };
+
+    client.connect(elsewhere);
+
+    assert.equal(client.session, undefined);
+    assert.equal(client.origin, elsewhere.origin);
+  });
+
+  it('reports a refused write for a while, then stops, since CRG never says it was allowed', async () => {
+    const refused = new CrgClient({ refusalShownMs: 30 });
+
+    try {
+      refused.connect(connection);
+      await until(() => refused.status === 'connected');
+
+      crg.sockets[0]?.send(JSON.stringify({ authorization: 'Not authorized for Set' }));
+      await until(() => refused.status === 'unauthorized');
+      await until(() => refused.status === 'connected');
+    } finally {
+      await refused.disconnect();
+    }
   });
 
   it('stays disconnected after stopping on purpose, until connect is called', async () => {
