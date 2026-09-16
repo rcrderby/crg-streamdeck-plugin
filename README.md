@@ -153,7 +153,7 @@ Buttons that control one team take a `Team` setting.  The [Button Reference](/do
 | `Jam Control` | Starts a jam, stops a jam, or ends a timeout, and shows the relevant clock and jam data.  It turns orange five seconds before a jam should start, and pulses if the lineup clock goes past the prescribed time in the active CRG ruleset. |
 | `Timeout` | Starts an untyped timeout.  Its activity indicator is green until timeout type is assigned. |
 | `Official Timeout` | Starts an official timeout.  Its activity indicator is green while an official timeout is running. |
-| `Undo` | Undoes CRG's last clock action after a one-second hold.  It is subdued when there is nothing to undo.  Its `Enable Replace on Undo` configures that setting for the specified CRG operator profile.  While the setting is on, the hold opens an `Undo` menu instead of immediately performing an undo action. |
+| `Undo` | Undoes CRG's last clock action after a one-second hold.  It is subdued when there is nothing to undo.  Its `Enable Replace on Undo` toggle configures that setting for the specified CRG operator profile.  While the setting is on, the hold opens an `Undo` menu instead of immediately performing an undo action. |
 
 </details>
 
@@ -165,7 +165,7 @@ Buttons that control one team take a `Team` setting.  The [Button Reference](/do
 | Action | Description |
 | ------ | ----------- |
 | `Lead` | Shows and sets whether a team's jammer is lead. |
-| `Lost Lead` | Shows and sets whether a team's jammer has lost lead.  Requires a one-second hold |
+| `Lost Lead` | Shows and sets whether a team's jammer has lost lead.  Requires a one-second hold. |
 | `Star Pass` | Shows and sets whether the team has passed the star.  CRG disables the `Star Pass` button for a team when `No Pivot` is active. |
 | `No Pivot` | Shows and sets whether the team has no pivot in the current jam. |
 | `NI` | Shows and sets whether the team's jammer is still on their initial trip. |
@@ -208,7 +208,7 @@ Buttons that control one team take a `Team` setting.  The [Button Reference](/do
 
 | Action | Description |
 | ------ | ----------- |
-| `Clock` | Displays one CRG clock: period, jam, lineup, timeout, or intermission.  Each clock display the applicable CRG clock labels. |
+| `Clock` | Displays one CRG clock: period, jam, lineup, timeout, or intermission.  Each clock displays the applicable CRG clock labels. |
 | `Active Clock` | Displays the clock and label that are visible on the scoreboard itself. |
 
 </details>
@@ -234,7 +234,7 @@ The plugin includes two small pages of buttons and switches your Stream Deck to 
 
 CRG recognizes devices by their HTTP session, so the plugin fetches a session cookie before it connects and retains it.  Without a session cookie, CRG sees your Stream Deck as a new device on every restart.
 
-The Stream Deck software keeps the session cookie in the plugin settings, alongside the scoreboard that issued it.  This ensures that the Plugin only offers a session cookie to the correct CRG instance.
+The Stream Deck software keeps the session cookie in the plugin settings, alongside the scoreboard that issued it.  This ensures that the plugin only offers a session cookie to the correct CRG instance.
 
 </details>
 
