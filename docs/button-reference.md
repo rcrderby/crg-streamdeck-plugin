@@ -1,6 +1,6 @@
-# Button Reference
+# Stream Deck Plugin Button Image Reference
 
-Every button the plugin draws, and every state each one displays.  The images come from the plugin itself, so they show exactly what a Stream Deck shows.
+This reference includes images of all of the plugin buttons and each of their states.
 
 ## Contents
 
@@ -11,7 +11,7 @@ Every button the plugin draws, and every state each one displays.  The images co
 - [Clocks](#clocks "Clock Buttons")
 - [Pages of Buttons](#pages-of-buttons "Menu Page Buttons")
 
-Buttons that control one team take a `Team` setting, and appear here in the colors of a team whose CRG `operator` colors are set to purple and white.  See the [Button Action Reference](../README.md#button-action-reference "Button Action Reference") for what each button does.
+Buttons for team-specific operations team take a `Team` setting, and appear in the images here in the colors of a team whose CRG `operator` colors are set to purple and white.  See the [Button Action Reference](../README.md#button-image-reference "Button Image Reference") for what each button does.
 
 ## Game Control
 
