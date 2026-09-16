@@ -104,6 +104,9 @@ These steps will help you set up the plugin to control CRG from a Stream Deck.  
 
   3. Click on the `CRG Connection` button and set the `CRG URL` to the address of your scoreboard.  If you run the Stream Deck Software from your SBO computer, the Stream Deck will automatically connect to CRG (`http://localhost:8000`).
 
+  > [!NOTE]
+  > The example profile already includes a `CRG Connection` button, on its second page.
+
   4. Confirm the button reads `CRG Connected`.
 
 </details>
