@@ -85,7 +85,8 @@ export class Score extends TeamKeyAction {
       this.themeOf(settings),
       state.getNumber(team(number, 'Score')),
       state.getNumber(team(number, 'JamScore')),
-      currentTripNumber(state, number)
+      currentTripNumber(state, number),
+      number === 2
     );
   }
 }

@@ -67,7 +67,7 @@ const DECK = [
     d.scoreKey(WHEELS, 113, 0, 1),
     d.jamControlKey('Stop Jam', '1:04', ['JAM 13'], d.JAM_STOP, false),
     d.clockKey('PERIOD 2', '12:26', true),
-    d.scoreKey(JUSTICE, 109, 4, 3),
+    d.scoreKey(JUSTICE, 109, 4, 3, true),
     d.lostLeadKey(JUSTICE, false),
     d.jammerKey(JUSTICE, 'lead', true)
   ],
@@ -313,7 +313,7 @@ const SHEET = [
         keys: [
           ['Early in a game', d.scoreKey(WHEELS, 8, 4, 2)],
           ['Later in a game', d.scoreKey(WHEELS, 113, 0, 1)],
-          ['A light team color', d.scoreKey(JUSTICE, 109, 14, 3)]
+          ['A light team color', d.scoreKey(JUSTICE, 109, 14, 3, true)]
         ]
       }
     ]

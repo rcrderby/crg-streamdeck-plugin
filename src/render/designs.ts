@@ -232,12 +232,13 @@ const SCORE_ROOM = 92;
 /**
  * Score: the total beside this jam's points, each on a panel of its own.
  *
- * The pair sits the way a scoreboard sets it, the jam's points to the
- * right of the total and smaller, both standing on one line. Each panel
- * is cut to a fixed width, the jam's for two digits, so nothing moves as
- * the score climbs; a longer number shrinks into its panel instead.
+ * The pair sits the way a scoreboard sets it: the jam's points smaller
+ * and on the outside, so team 1's key reads total then jam points and
+ * team 2's reads jam points then total, both standing on one line. Each
+ * panel is cut to a fixed width, the jam's for two digits, so nothing
+ * moves as the score climbs; a longer number shrinks into its panel.
  */
-export function scoreKey(theme: TeamTheme, total: number, jam: number, trip: number): KeySpec {
+export function scoreKey(theme: TeamTheme, total: number, jam: number, trip: number, mirrored = false): KeySpec {
   const pad = SCORE_JAM_SIZE * SCORE_PAD;
   const totalPad = SCORE_TOTAL_SIZE * SCORE_PAD * 0.55;
 
@@ -250,18 +251,19 @@ export function scoreKey(theme: TeamTheme, total: number, jam: number, trip: num
   const jamHeight = CAP_HEIGHT * SCORE_JAM_SIZE + pad * 2;
 
   const left = 50 - (totalPanel + gap + jamPanel) / 2;
-  const jamLeft = left + totalPanel + gap;
+  const totalLeft = mirrored ? left + jamPanel + gap : left;
+  const jamLeft = mirrored ? left : left + totalPanel + gap;
   const panel = panelColor(theme.background, theme.foreground);
 
   return teamKey(theme, {
     shapes: [
-      plate(left, SCORE_BASELINE - totalHeight, totalPanel, totalHeight, panel, totalPad * 0.6),
+      plate(totalLeft, SCORE_BASELINE - totalHeight, totalPanel, totalHeight, panel, totalPad * 0.6),
       plate(jamLeft, SCORE_BASELINE - jamHeight, jamPanel, jamHeight, panel, pad * 0.7)
     ],
     texts: [
       teamName(theme, 20),
       teamText(theme, String(total), SCORE_BASELINE - totalPad, SCORE_TOTAL_SIZE, {
-        x: left + totalPanel / 2,
+        x: totalLeft + totalPanel / 2,
         width: totalPanel - totalPad * 2,
         shadow: undefined
       }),

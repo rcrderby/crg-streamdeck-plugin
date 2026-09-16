@@ -138,8 +138,12 @@ describe('scoring keys', () => {
 
 describe('scoreKey', () => {
   /** The y, height and x of each panel, read back out of the drawing. */
-  function panels(total: number, jam: number): { x: number; y: number; width: number; height: number }[] {
-    const svg = renderKeySvg(scoreKey(WHEELS, total, jam, 2));
+  function panels(
+    total: number,
+    jam: number,
+    mirrored = false
+  ): { x: number; y: number; width: number; height: number }[] {
+    const svg = renderKeySvg(scoreKey(WHEELS, total, jam, 2, mirrored));
 
     return [...svg.matchAll(/<rect x="([\d.]+)" y="([\d.]+)" width="([\d.]+)" height="([\d.]+)" rx=/g)].map(
       (found) => ({
@@ -161,6 +165,26 @@ describe('scoreKey', () => {
     );
     assert.ok((jamPanel as { x: number }).x > (totalPanel as { x: number }).x);
     assert.ok((totalPanel as { height: number }).height > (jamPanel as { height: number }).height);
+  });
+
+  it('puts team 2’s jam points on the left, mirroring the scoreboard', () => {
+    const [totalPanel, jamPanel] = panels(11, 7, true);
+    const [plainTotal, plainJam] = panels(11, 7);
+
+    assert.ok(totalPanel !== undefined && jamPanel !== undefined && plainTotal !== undefined && plainJam !== undefined);
+    assert.ok(jamPanel.x < totalPanel.x, 'the jam points should come first');
+    assert.equal(jamPanel.x, plainTotal.x, 'the pair should span the same room either way');
+    assert.equal(totalPanel.x + totalPanel.width, plainJam.x + plainJam.width);
+    assert.equal(totalPanel.y + totalPanel.height, jamPanel.y + jamPanel.height, 'both should stand on one line');
+  });
+
+  it('draws each number over its own panel when mirrored', () => {
+    const spec = scoreKey(WHEELS, 11, 7, 2, true);
+    const [, total, jam] = spec.texts ?? [];
+
+    assert.equal(total?.text, '11');
+    assert.equal(jam?.text, '7');
+    assert.ok((jam?.x ?? 0) < (total?.x ?? 0));
   });
 
   it('holds both panels still as the score climbs', () => {
