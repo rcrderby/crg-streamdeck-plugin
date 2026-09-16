@@ -99,12 +99,12 @@ const SHADOW_OFFSET = 0.06;
 
 const SHADOW_MIN_OFFSET = 0.9;
 
-const MARK_FILL = '#2563eb';
+const MARK_FILL = '#3d5a8a';
 
 /** How far the informational tab reaches in from the key's left and bottom edges. */
-const MARK_SIZE = 24;
+const MARK_SIZE = 19.2;
 
-const MARK_CORNER = 7;
+const MARK_CORNER = 5.6;
 
 /** The dark rule that sets the tab apart from a background of its own blue. */
 const MARK_RULE = 2;
@@ -112,11 +112,11 @@ const MARK_RULE = 2;
 const MARK_RULE_COLOR = '#0b0b0f';
 
 /** Where the "i" is centered, and how tall it is drawn. */
-const MARK_GLYPH_X = 11.94;
+const MARK_GLYPH_X = 9.55;
 
-const MARK_GLYPH_Y = 88.06;
+const MARK_GLYPH_Y = 89.45;
 
-const MARK_GLYPH_HEIGHT = 15;
+const MARK_GLYPH_HEIGHT = 12;
 
 /**
  * An italic "i" in a box 40 wide and 100 tall: a round dot set right, and a
@@ -228,24 +228,24 @@ function text(line: KeyText, foreground: string): string {
 
 /** A tab filling the lower left corner up to a size, its inner corner rounded. */
 function cornerTab(size: number, corner: number, fill: string): string {
-  const top = VIEWBOX - size;
+  const top = round(VIEWBOX - size);
 
   return (
-    `<path d="M 0 ${top} H ${size - corner} A ${corner} ${corner} 0 0 1 ${size} ${top + corner} ` +
+    `<path d="M 0 ${top} H ${round(size - corner)} A ${corner} ${corner} 0 0 1 ${size} ${round(top + corner)} ` +
     `V ${VIEWBOX} H 0 Z" fill="${fill}"/>`
   );
 }
 
-/** The blue tab with a white italic "i", in the lower left corner, over a dark rule. */
+/** The steel blue tab with a white italic "i", in the lower left corner, over a dark rule. */
 function informationalMark(): string {
   const scale = MARK_GLYPH_HEIGHT / 100;
   const left = round(MARK_GLYPH_X - (MARK_GLYPH_WIDTH * scale) / 2);
   const top = round(MARK_GLYPH_Y - MARK_GLYPH_HEIGHT / 2);
 
   return (
-    cornerTab(MARK_SIZE + MARK_RULE, MARK_CORNER + MARK_RULE, MARK_RULE_COLOR) +
+    cornerTab(round(MARK_SIZE + MARK_RULE), round(MARK_CORNER + MARK_RULE), MARK_RULE_COLOR) +
     cornerTab(MARK_SIZE, MARK_CORNER, MARK_FILL) +
-    `<g transform="translate(${left} ${top}) scale(${scale})" fill="#ffffff">` +
+    `<g transform="translate(${left} ${top}) scale(${round(scale)})" fill="#ffffff">` +
     `${MARK_GLYPH_DOT}<path d="${MARK_GLYPH_STEM}"/></g>`
   );
 }
