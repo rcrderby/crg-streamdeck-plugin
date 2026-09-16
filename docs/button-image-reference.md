@@ -11,7 +11,7 @@ This reference includes images of all of the plugin buttons and each of their st
 - [Clocks](#clocks "Clock Buttons")
 - [Pages of Buttons](#pages-of-buttons "Menu Page Buttons")
 
-Buttons for team-specific operations team take a `Team` setting, and appear in the images here in the colors of a team whose CRG `operator` colors are set to purple and white.  See the [Button Action Reference](../README.md#button-action-reference "Button Image Reference") for what each button does.
+Buttons for team-specific operations team take a `Team` setting, and appear in the images here in the colors of teams whose CRG `operator` colors are set to white text on a purple background, and purple text on a white background.  See the [Button Action Reference](../README.md#button-action-reference "Button Image Reference") for what each button does.
 
 ## Game Control
 
