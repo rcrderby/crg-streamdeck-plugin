@@ -1,10 +1,4 @@
-/**
- * The title a clock key shows above the time.
- *
- * This sits outside the action modules because Node strips types to run
- * the tests and cannot parse the decorators the actions carry, so
- * anything worth testing lives in a module without one.
- */
+/** The title a clock key shows above the time. */
 
 import { type ClockName } from '../crg/paths.ts';
 
