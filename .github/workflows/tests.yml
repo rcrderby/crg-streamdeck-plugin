@@ -54,12 +54,22 @@ jobs:
       - name: Check Types
         run: npm run typecheck
 
+      - name: Check Formatting
+        run: npm run format
+
       - name: Run Tests
         run: npm test
 
       # The build proves the bundle Stream Deck loads still compiles
       - name: Build The Plugin
         run: npm run build
+
+      # The build writes the manifest tooltips and the page profiles from
+      # the sources they come from, with fixed identifiers and timestamps,
+      # so an unchanged page rebuilds byte for byte. A difference here is a
+      # committed file that no longer matches what the build makes of it.
+      - name: Check The Generated Files Are Current
+        run: git diff --exit-code
 
       - name: Validate The Plugin
         run: npm run validate
