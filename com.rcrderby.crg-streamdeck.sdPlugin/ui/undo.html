@@ -5,18 +5,22 @@
     <title>Undo</title>
   </head>
   <body>
-    <script src="https://sdpi-components.dev/releases/v4/sdpi-components.js"></script>
+    <script src="sdpi-components.js"></script>
 
     <sdpi-item>
       <div id="description"></div>
+    </sdpi-item>
+    <sdpi-item label="CRG Operator">
+      <sdpi-select global setting="operator" datasource="operators" placeholder="StreamDeck"></sdpi-select>
     </sdpi-item>
     <sdpi-item label="Enable Replace on Undo">
       <button type="button" data-setting="replaceOnUndo"></button>
     </sdpi-item>
     <sdpi-item>
-      <p>Toggles 'Enable Replace on Undo' for the CRG operator profile selected in the connection settings.</p>
+      <p>Toggles 'Enable Replace on Undo' for the CRG operator {operator}.</p>
       <p>When active, this button will display CRG's undo options for you to choose from.</p>
     </sdpi-item>
+    <script src="operators.js"></script>
     <script src="toggle.js"></script>
     <script src="descriptions.js"></script>
   </body>
