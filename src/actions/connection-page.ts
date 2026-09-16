@@ -48,7 +48,10 @@ export class ConnectionToggle extends HoldKeyAction {
   }
 
   protected override describe(_settings: object, actionId: string): KeySpec {
-    return connectionToggleKey(this.context.client.status, this.holdLevel(actionId));
+    // Once the hold has acted, the bar belongs to the state CRG is about to report.
+    const level = this.holdDone(actionId) ? 0 : this.holdLevel(actionId);
+
+    return connectionToggleKey(this.context.client.status, level);
   }
 
   protected override completeHold(_action: KeyAction): Promise<void> {

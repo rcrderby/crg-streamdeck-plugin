@@ -83,35 +83,57 @@ describe('Undo page keys', () => {
     assert.equal(replaceChoiceKey('Timeout', 'timeout').background, TIMEOUT_RED);
   });
 
+  it('run a choice’s hold red across a gray bar, with no dial', () => {
+    for (const kind of ['start', 'stop', 'timeout'] as const) {
+      const spec = replaceChoiceKey('Choice', kind, 0.4);
+
+      assert.deepEqual(spec.bar, { active: false, progress: 0.4, fill: 'danger' }, kind);
+      assert.doesNotMatch(renderKeySvg(spec), /stroke-width="2"/, kind);
+      assert.match(renderKeySvg(spec), /<rect width="40" height="10" fill="#ef4444"\/>/, kind);
+    }
+  });
+
+  it('keep the dial on No Action', () => {
+    assert.match(renderKeySvg(replaceConfirmKey('No Action', 0.5)), /stroke-width="2"/);
+  });
+
   it('leave a choice CRG does not allow blank, like an empty key', () => {
     assert.deepEqual(blankKey(), { background: '#000000' });
   });
 });
 
 describe('connection page keys', () => {
-  it('lead with the state, then say what a hold does', () => {
-    assert.deepEqual(words(connectionToggleKey('connected').texts), ['Connected', 'Hold to', 'disconnect']);
-    assert.deepEqual(words(connectionToggleKey('connecting').texts), ['Connecting', 'Hold to', 'disconnect']);
-    assert.deepEqual(words(connectionToggleKey('disconnected').texts), ['Offline', 'Hold to', 'disconnect']);
-    assert.deepEqual(words(connectionToggleKey('stopped').texts), ['Disconnected', 'Hold to', 'connect']);
+  it('read like CRG Connection, then say what a hold does', () => {
+    assert.deepEqual(words(connectionToggleKey('connected').texts), ['CRG', 'Connected', 'HOLD TO', 'DISCONNECT']);
+    assert.deepEqual(words(connectionToggleKey('connecting').texts), ['CRG', 'Connecting', 'HOLD TO', 'DISCONNECT']);
+    assert.deepEqual(words(connectionToggleKey('disconnected').texts), ['NO CRG', 'Offline', 'HOLD TO', 'DISCONNECT']);
+    assert.deepEqual(words(connectionToggleKey('stopped').texts), ['CRG', 'Disconnected', 'HOLD TO', 'CONNECT']);
   });
 
-  it('fill their dial in red the whole way while it would disconnect a connected deck', () => {
-    assert.match(renderKeySvg(connectionToggleKey('connected', 0.5)), /stroke="#ef4444" stroke-width="2"/);
-    assert.match(renderKeySvg(connectionToggleKey('connected', 0.8)), /stroke="#ef4444" stroke-width="2"/);
-    assert.match(renderKeySvg(connectionToggleKey('stopped', 0.8)), /stroke="#71717a" stroke-width="2"/);
+  it('run a hold to disconnect red across a green bar, and a hold to connect green across a gray one', () => {
+    for (const status of ['connected', 'connecting', 'disconnected', 'unauthorized'] as const) {
+      assert.deepEqual(connectionToggleKey(status, 0.5).bar, { active: true, progress: 0.5, fill: 'danger' }, status);
+    }
+
+    assert.deepEqual(connectionToggleKey('stopped', 0.5).bar, { active: false, progress: 0.5, fill: 'next' });
+    assert.match(renderKeySvg(connectionToggleKey('connected', 0.5)), /<rect width="50" height="10" fill="#ef4444"\/>/);
+    assert.match(renderKeySvg(connectionToggleKey('stopped', 0.5)), /<rect width="50" height="10" fill="#22c55e"\/>/);
   });
 
-  it('mark disconnecting a connected deck in red, and nothing else', () => {
-    assert.equal(connectionToggleKey('connected').texts?.[1]?.color, '#f87171');
-    assert.equal(connectionToggleKey('connecting').texts?.[1]?.color, undefined);
-    assert.equal(connectionToggleKey('stopped').texts?.[2]?.color, undefined);
+  it('draw no dial, since the bar carries the hold', () => {
+    assert.doesNotMatch(renderKeySvg(connectionToggleKey('connected', 0.5)), /stroke-width="2"/);
+    assert.doesNotMatch(renderKeySvg(connectionToggleKey('stopped', 0.5)), /stroke-width="2"/);
   });
 
-  it('look like the CRG Connection key for the same state', () => {
+  it('draw every line in the key’s own text color', () => {
+    for (const status of ['connected', 'connecting', 'disconnected', 'unauthorized', 'stopped'] as const) {
+      assert.ok(connectionToggleKey(status).texts?.every((line) => line.color === undefined), status);
+    }
+  });
+
+  it('share the CRG Connection key’s background for the same state', () => {
     for (const status of ['connected', 'connecting', 'disconnected', 'unauthorized', 'stopped'] as const) {
       assert.equal(connectionToggleKey(status).background, connectionKey(status).background, status);
-      assert.equal(connectionToggleKey(status).accent, connectionKey(status).accent, status);
     }
   });
 

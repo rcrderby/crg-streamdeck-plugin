@@ -410,16 +410,20 @@ export function undoKey(level = 0, waiting?: boolean): KeySpec {
   };
 }
 
-/** The two lines every key on the Undo page but the informational one closes with. */
-function holdToConfirm(color?: string): KeyText[] {
-  return ['HOLD TO', 'CONFIRM'].map((text, index) => ({
+/** The two lines a key held to act closes with, naming what the hold does. */
+function holdTo(verb: string): KeyText[] {
+  return ['HOLD TO', verb.toUpperCase()].map((text, index) => ({
     text,
     y: 76 + index * 12,
     size: 10,
     weight: 'bold' as const,
-    opacity: 0.8,
-    color
+    opacity: 0.8
   }));
+}
+
+/** The two lines every key on the Undo page but the informational one closes with. */
+function holdToConfirm(): KeyText[] {
+  return holdTo('confirm');
 }
 
 /** The first key on the Undo page: the action CRG is waiting to replace, marked as doing nothing when pressed. */
@@ -456,14 +460,17 @@ const CHOICE_BACKGROUNDS: Readonly<Record<ReplaceChoiceKind, string>> = {
   timeout: TIMEOUT_RED
 };
 
-/** One of the choices CRG allows in place of an undone action, in CRG's words, colored by what it does. */
+/**
+ * One of the choices CRG allows in place of an undone action, in CRG's words, colored by what it does.
+ *
+ * A choice replaces what was undone and cannot be taken back, so its hold
+ * runs red across a gray bar.
+ */
 export function replaceChoiceKey(text: string, kind: ReplaceChoiceKind, level = 0): KeySpec {
-  const background = CHOICE_BACKGROUNDS[kind];
-
   return {
-    background,
+    background: CHOICE_BACKGROUNDS[kind],
     foreground: '#ffffff',
-    shapes: [holdDial(level, UNDO_FOREGROUND, background)],
+    bar: { active: false, progress: level, fill: 'danger' },
     texts: [{ text, y: 52, size: 17, weight: 'bold' }, ...holdToConfirm()]
   };
 }
@@ -506,11 +513,6 @@ const CONNECTION_LOOKS: Readonly<Record<ConnectionStatus, ConnectionLook>> = {
   stopped: { background: '#18181b', accent: '#71717a', headline: 'CRG', detail: 'Disconnected', verb: 'connect' }
 };
 
-/** Red for disconnecting a connected deck, which cuts it off from CRG. */
-const SEVERE_TEXT = '#f87171';
-
-const SEVERE_DIAL = '#ef4444';
-
 /**
  * CRG Connection: whether the plugin is connected, apart from a deck disconnected on purpose.
  *
@@ -532,21 +534,26 @@ export function connectionKey(status: ConnectionStatus, operator = ''): KeySpec 
   return { background: look.background, foreground: '#ffffff', accent: look.accent, texts };
 }
 
-/** The connection page's key: the state first, then what a hold does, in red while it would disconnect a connected deck. */
+/**
+ * The connection page's key: drawn like CRG Connection, closing with what a hold does.
+ *
+ * The top bar carries the hold. It is green while the plugin is connected
+ * or trying to be, and a hold to disconnect runs red across it; once the
+ * deck is disconnected on purpose it is gray, and a hold to connect runs
+ * green across it.
+ */
 export function connectionToggleKey(status: ConnectionStatus, level = 0): KeySpec {
   const look = CONNECTION_LOOKS[status];
-  const severe = status === 'connected';
-  const hint: Partial<KeyText> = severe ? { weight: 'bold', color: SEVERE_TEXT } : { opacity: 0.8 };
+  const connecting = look.verb === 'connect';
 
   return {
     background: look.background,
     foreground: '#ffffff',
-    accent: look.accent,
-    shapes: [holdDial(level, severe ? SEVERE_DIAL : look.accent, look.background, 82, 24)],
+    bar: { active: !connecting, progress: level, fill: connecting ? 'next' : 'danger' },
     texts: [
-      { text: look.detail, y: 50, size: 17, weight: 'bold' },
-      { text: 'Hold to', y: 68, size: 12, ...hint },
-      { text: look.verb, y: 82, size: 12, ...hint }
+      { text: look.headline, y: 34, size: 19, weight: 'bold' },
+      { text: look.detail, y: 54, size: 13, opacity: 0.85 },
+      ...holdTo(look.verb)
     ]
   };
 }

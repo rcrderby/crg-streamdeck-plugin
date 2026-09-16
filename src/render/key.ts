@@ -51,8 +51,10 @@ export type KeyBar = {
    * key turning itself on fills green from the left, and one turning
    * itself off empties gray from the right. 'active' always fills green
    * from the left, for a key whose hold leaves the bar where it is.
+   * 'danger' fills red from the left, for a hold that cuts something off
+   * or cannot be taken back.
    */
-  readonly fill?: 'next' | 'active' | undefined;
+  readonly fill?: 'next' | 'active' | 'danger' | undefined;
 };
 
 /** Everything drawn on one key. */
@@ -79,6 +81,8 @@ const ACCENT_HEIGHT = 8;
 export const BAR_ACTIVE = '#22c55e';
 
 export const BAR_INACTIVE = '#52525b';
+
+export const BAR_DANGER = '#ef4444';
 
 const BAR_HEIGHT = 10;
 
@@ -218,8 +222,9 @@ function informationalMark(): string {
 
 function bar(spec: KeyBar): string {
   const color = spec.active ? BAR_ACTIVE : BAR_INACTIVE;
-  const emptying = spec.active && spec.fill !== 'active';
-  const becoming = emptying ? BAR_INACTIVE : BAR_ACTIVE;
+  const fill = spec.fill ?? 'next';
+  const emptying = fill === 'next' && spec.active;
+  const becoming = fill === 'danger' ? BAR_DANGER : emptying ? BAR_INACTIVE : BAR_ACTIVE;
   const progress = clamp(spec.progress ?? 0);
 
   const width = round(VIEWBOX * progress);

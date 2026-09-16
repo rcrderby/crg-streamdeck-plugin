@@ -361,7 +361,8 @@ const SHEET = [
           ['Back', d.backKey()],
           ['Connected', d.connectionToggleKey('connected')],
           ['Pressed', d.connectionToggleKey('connected', 0.6)],
-          ['Disconnected', d.connectionToggleKey('stopped')]
+          ['Disconnected', d.connectionToggleKey('stopped')],
+          ['Pressed', d.connectionToggleKey('stopped', 0.6)]
         ]
       },
       {
@@ -371,6 +372,7 @@ const SHEET = [
           ['Action to replace', d.replaceInfoKey('Stop Jam')],
           ['Confirm undo', d.replaceConfirmKey('No Action')],
           ['Start Jam', d.replaceChoiceKey('Start Jam', 'start')],
+          ['Pressed', d.replaceChoiceKey('Start Jam', 'start', 0.6)],
           ['Stop Jam', d.replaceChoiceKey('Stop Jam', 'stop')],
           ['Timeout', d.replaceChoiceKey('Timeout', 'timeout')],
           ['No choice for this key', d.blankKey()]

@@ -113,7 +113,9 @@ export class ReplaceChoice extends HoldKeyAction<ChoiceSettings> {
   protected override describe(settings: ChoiceSettings, actionId: string): KeySpec {
     const choice = this.#choice(settings);
 
-    return choice === undefined ? blankKey() : replaceChoiceKey(choice.text, choice.kind, this.holdLevel(actionId));
+    const level = this.holdDone(actionId) ? 0 : this.holdLevel(actionId);
+
+    return choice === undefined ? blankKey() : replaceChoiceKey(choice.text, choice.kind, level);
   }
 
   protected override canHold(settings: ChoiceSettings): boolean {
