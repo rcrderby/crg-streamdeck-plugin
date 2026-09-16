@@ -8,6 +8,16 @@ import { clock, game, label, rule } from '../crg/paths.ts';
 /** CRG's own way of saying a control cannot be used now. */
 const NONE = '---';
 
+/** A timeout CRG has recorded and is running, which is what makes End Timeout mean something. */
+const TIMEOUT_RUNNING = { 'ScoreBoard.CurrentGame.Period(2).Timeout(7).Running': true };
+
+/** The words drawn on a key, read back out of the picture it holds. */
+function words(key: FakeKey): string[] {
+  const svg = Buffer.from((key.image ?? '').split(',')[1] ?? '', 'base64').toString('utf8');
+
+  return [...svg.matchAll(/<text[^>]*>([^<]*)<\/text>/g)].map((match) => match[1] ?? '');
+}
+
 describe('the Jam Control key', () => {
   let deck: FakeDeck;
   let keyAction: JamControl;
@@ -40,12 +50,58 @@ describe('the Jam Control key', () => {
   });
 
   it('ends the timeout first while CRG offers both, which is what its own screen does', async () => {
-    deck.hold({ [label('Start')]: 'Start Jam', [label('Stop')]: 'End Timeout', [game('InJam')]: false });
+    deck.hold({
+      [label('Start')]: 'Start Jam',
+      [label('Stop')]: 'End Timeout',
+      [game('InJam')]: false,
+      ...TIMEOUT_RUNNING
+    });
     deck.draw();
 
     await deck.press(keyAction, key);
 
     assert.deepEqual(deck.written, [{ key: game('StopJam'), value: true, flag: '' }]);
+  });
+
+  it('starts the jam once an intermission is over, where CRG offers to run a lineup instead', async () => {
+    // What CRG holds when halftime has expired: nothing running, and its
+    // stop control offering to start the lineup clock.
+    deck.hold({
+      [label('Start')]: 'Start Jam',
+      [label('Stop')]: 'Lineup',
+      [game('InJam')]: false,
+      [clock('Lineup', 'Running')]: false,
+      [clock('Intermission', 'Running')]: false,
+      [clock('Intermission', 'Time')]: 0
+    });
+    deck.draw();
+
+    assert.deepEqual(words(key), ['Start', 'Jam'], 'the key should read Start Jam, not Lineup');
+
+    await deck.press(keyAction, key);
+
+    assert.deepEqual(deck.written, [{ key: game('StartJam'), value: true, flag: '' }]);
+  });
+
+  it('shows no clock when nothing is running, so the wording fills the key', () => {
+    deck.hold({
+      [label('Start')]: 'Start Jam',
+      [label('Stop')]: 'Lineup',
+      [clock('Lineup', 'Running')]: false,
+      [clock('Lineup', 'Time')]: 21_200
+    });
+    deck.draw();
+
+    assert.doesNotMatch(key.image ?? '', /0:21/);
+  });
+
+  it('starts the jam before the game, where CRG offers the same lineup', async () => {
+    deck.hold({ [label('Start')]: 'Start Jam', [label('Stop')]: 'Lineup' });
+    deck.draw();
+
+    await deck.press(keyAction, key);
+
+    assert.deepEqual(deck.written, [{ key: game('StartJam'), value: true, flag: '' }]);
   });
 
   it('does nothing when CRG offers neither', async () => {

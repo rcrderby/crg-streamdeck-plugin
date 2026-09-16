@@ -8,8 +8,8 @@
  * 'End Timeout'.
  */
 
-import { CLOCK_NAMES, type ClockName, clock, game, isUnavailable, label, rule } from '../crg/paths.ts';
-import { jamControlClock, lineupWarning } from '../crg/game-state.ts';
+import { CLOCK_NAMES, TIMEOUTS, type ClockName, clock, game, isUnavailable, label, rule } from '../crg/paths.ts';
+import { jamControlClock, lineupWarning, runningTimeout } from '../crg/game-state.ts';
 import { type KeySpec } from '../render/key.ts';
 import { JAM_IDLE, JAM_STOP, jamControlKey, lineupBackground } from '../render/designs.ts';
 import { clockTitle } from '../render/clock-title.ts';
@@ -36,6 +36,7 @@ export class JamControl extends CrgKeyAction {
       IN_JAM,
       START,
       STOP,
+      TIMEOUTS.running,
       rule('Lineup.Duration'),
       ...CLOCK_NAMES.flatMap((name) => [
         clock(name, 'Time'),
@@ -101,17 +102,22 @@ export class JamControl extends CrgKeyAction {
   /**
    * Decides what the key does from the labels CRG computes.
    *
-   * CRG offers both controls during a timeout, where ending the timeout
-   * comes first; Start Jam is then the key that appears once the lineup
-   * runs. So whichever stop CRG names wins while it is available.
+   * CRG's stop control carries four meanings. Two of them end something
+   * that is running, a jam or a timeout, and those come first, which is
+   * how CRG's own screen puts ending a timeout ahead of starting a jam.
+   * The other two offer to start the lineup clock while nothing runs at
+   * all, before the game and once an intermission is over, and the key
+   * leads with the jam there rather than with a clock nobody is waiting
+   * on.
    */
   #choose(): Choice {
     const state = this.context.client.state;
 
     const startText = state.getString(START);
     const stopText = state.getString(STOP);
+    const ending = state.getBoolean(IN_JAM) || runningTimeout(state).kind !== 'none';
 
-    if (!isUnavailable(stopText)) {
+    if (ending && !isUnavailable(stopText)) {
       return { text: stopText, path: game('StopJam'), stopping: true };
     }
 
