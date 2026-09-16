@@ -26,7 +26,7 @@ import {
   undoArrow,
   type ReviewMark
 } from './icons.ts';
-import { type TeamTheme, blend, panelColor } from './theme.ts';
+import { type TeamTheme, blend, panelColor, readableOpacity } from './theme.ts';
 
 export const TIMEOUT_RED = '#b91c1c';
 
@@ -44,6 +44,15 @@ const TEXT_ROOM = 92;
 /** A resource title's opacity once a team has none left. */
 const SPENT_OPACITY = 0.38;
 
+/**
+ * The ratio text that is meant to read as spent holds.
+ *
+ * It is WCAG's bar for large text and for a graphic, rather than the one
+ * for body text, because saying a team has none left is what the fade is
+ * for and holding the full ratio would undo it.
+ */
+const SPENT_RATIO = 3;
+
 export type JammerKind = 'lead' | 'starPass' | 'noPivot';
 
 const JAMMER: Readonly<Record<JammerKind, { caption: string; icon: (theme: TeamTheme) => string }>> = {
@@ -52,9 +61,28 @@ const JAMMER: Readonly<Record<JammerKind, { caption: string; icon: (theme: TeamT
   noPivot: { caption: 'No Pivot', icon: (theme) => noPivotIcon(theme.foreground, theme.background) }
 };
 
-/** A line of bold text in a team's colors, shadowed in its glow color. */
-function teamText(theme: TeamTheme, text: string, y: number, size: number, extra: Partial<KeyText> = {}): KeyText {
-  return { text, y, size, weight: 'bold', color: theme.foreground, shadow: theme.glow, ...extra };
+/**
+ * A line of bold text in a team's colors, shadowed in its glow color.
+ *
+ * A line asked for faded is faded only as far as it stays readable
+ * against the key, since the team's foreground was chosen against the
+ * key at full strength.
+ */
+function teamText(
+  theme: TeamTheme,
+  text: string,
+  y: number,
+  size: number,
+  extra: Partial<KeyText> = {},
+  minimumRatio?: number
+): KeyText {
+  const line: KeyText = { text, y, size, weight: 'bold', color: theme.foreground, shadow: theme.glow, ...extra };
+
+  if (line.opacity === undefined) {
+    return line;
+  }
+
+  return { ...line, opacity: readableOpacity(theme.background, theme.foreground, line.opacity, minimumRatio) };
 }
 
 /** The team name every scoring key carries at the top. */
@@ -87,7 +115,7 @@ export function jammerKey(theme: TeamTheme, kind: JammerKind, active: boolean, d
   return teamKey(theme, {
     shapes: [design.icon(faded), plate(12, 29, 76, 20, theme.background)],
     texts: [
-      teamText(theme, design.caption, 82, 17, { opacity: SPENT_OPACITY }),
+      teamText(theme, design.caption, 82, 17, { opacity: SPENT_OPACITY }, SPENT_RATIO),
       teamText(theme, disabledReason, 44, 13)
     ],
     bar: { active }
@@ -116,7 +144,7 @@ export function noInitialKey(theme: TeamTheme, active: boolean): KeySpec {
 
 function resourceTitle(theme: TeamTheme, lines: readonly string[], spent: boolean): KeyText[] {
   return lines.map((line, index) =>
-    teamText(theme, line, 40 + index * 17, 14, spent ? { opacity: SPENT_OPACITY } : {})
+    teamText(theme, line, 40 + index * 17, 14, spent ? { opacity: SPENT_OPACITY } : {}, SPENT_RATIO)
   );
 }
 
