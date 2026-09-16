@@ -145,46 +145,45 @@ const SHEET = [
           ['Connecting', d.connectionKey('connecting', 'StreamDeck')],
           ['Offline', d.connectionKey('disconnected', 'StreamDeck')],
           ['Not allowed', d.connectionKey('unauthorized', 'StreamDeck')],
-          ['Disconnected on purpose', d.connectionKey('stopped', 'StreamDeck')]
+          ['Disconnected intentionally', d.connectionKey('stopped', 'StreamDeck')]
         ]
       },
       {
         name: 'Jam Control',
         slugs: ['jam-control'],
         keys: [
-          ['Nothing running', d.jamControlKey('Start Jam', undefined, ['JAM 13'], d.lineupBackground('none'), false)],
+          ['No active jam', d.jamControlKey('Start Jam', undefined, ['JAM 13'], d.lineupBackground('none'), false)],
           ['Lineup', d.jamControlKey('Start Jam', '0:21', ['LINEUP', 'JAM 13'], d.lineupBackground('none'), false)],
           [
             'After a timeout',
             d.jamControlKey('Start Jam', '0:21', ['POST TIMEOUT', 'JAM 13'], d.lineupBackground('none'), false)
           ],
           [
-            'Lineup nearly up',
+            'Lineup time short',
             d.jamControlKey('Start Jam', '0:27', ['LINEUP', 'JAM 13'], d.lineupBackground('due'), false)
           ],
           [
-            'Lineup over',
+            'Lineup expired',
             d.jamControlKey('Start Jam', '0:32', ['LINEUP', 'JAM 13'], d.lineupBackground('over', 0.5), false)
           ],
-          ['In a jam', d.jamControlKey('Stop Jam', '1:04', ['JAM 13'], d.JAM_STOP, false)],
-          ['Timeout', d.jamControlKey('End Timeout', '0:43', ['JAM 13'], d.TIMEOUT_RED, false)],
-          ['Nothing CRG will do', d.jamControlKey('Wait', undefined, [], d.JAM_IDLE, true)]
+          ['Active jam', d.jamControlKey('Stop Jam', '1:04', ['JAM 13'], d.JAM_STOP, false)],
+          ['Timeout active', d.jamControlKey('End Timeout', '0:43', ['JAM 13'], d.TIMEOUT_RED, false)]
         ]
       },
       {
         name: 'Timeout',
         slugs: ['timeout'],
         keys: [
-          ['Ready', d.timeoutKey(['Timeout'], false)],
-          ['Running', d.timeoutKey(['Timeout'], true)]
+          ['Inactive', d.timeoutKey(['Timeout'], false)],
+          ['Active', d.timeoutKey(['Timeout'], true)]
         ]
       },
       {
         name: 'Official Timeout',
         slugs: ['official-timeout'],
         keys: [
-          ['Ready', d.timeoutKey(['Official', 'Timeout'], false)],
-          ['Running', d.timeoutKey(['Official', 'Timeout'], true)]
+          ['Inactive', d.timeoutKey(['Official', 'Timeout'], false)],
+          ['Active', d.timeoutKey(['Official', 'Timeout'], true)]
         ]
       },
       {
@@ -192,10 +191,10 @@ const SHEET = [
         slugs: ['undo'],
         keys: [
           ['Ready', d.undoKey()],
-          ['Held', d.undoKey(0.6)],
+          ['Pressed', d.undoKey(0.6)],
           ['Nothing to undo', { ...d.undoKey(), subdued: true }],
-          ['Replace on undo', d.undoKey(0, false)],
-          ['CRG is waiting', d.undoKey(0, true)]
+          ['Replace enabled', d.undoKey(0, false)],
+          ['Pressed', d.undoKey(0.6, false)]
         ]
       }
     ]
@@ -216,8 +215,8 @@ const SHEET = [
         slugs: ['lost-lead'],
         keys: [
           ['Not lost', d.lostLeadKey(WHEELS, false)],
-          ['Held', d.lostLeadKey(WHEELS, false, 0.6)],
-          ['Lost', d.lostLeadKey(WHEELS, true)]
+          ['Pressed', d.lostLeadKey(WHEELS, false, 0.6)],
+          ['Lead lost', d.lostLeadKey(WHEELS, true)]
         ]
       },
       {
@@ -233,24 +232,24 @@ const SHEET = [
         name: 'No Pivot',
         slugs: ['no-pivot'],
         keys: [
-          ['With a pivot', d.jammerKey(WHEELS, 'noPivot', false)],
-          ['Without a pivot', d.jammerKey(WHEELS, 'noPivot', true)]
+          ['Pivot in lineup', d.jammerKey(WHEELS, 'noPivot', false)],
+          ['No pivot in lineup', d.jammerKey(WHEELS, 'noPivot', true)]
         ]
       },
       {
         name: 'NI',
         slugs: ['no-initial'],
         keys: [
-          ['Initial trip done', d.noInitialKey(WHEELS, false)],
-          ['On the initial trip', d.noInitialKey(WHEELS, true)]
+          ['On initial trip', d.noInitialKey(WHEELS, true)],
+          ['On scoring trip', d.noInitialKey(WHEELS, false)]
         ]
       },
       {
         name: 'Injury',
         slugs: ['injury'],
         keys: [
-          ['No injury', d.injuryKey(false)],
-          ['Injury', d.injuryKey(true)]
+          ['Inactive', d.injuryKey(false)],
+          ['Active', d.injuryKey(true)]
         ]
       }
     ]
@@ -262,21 +261,21 @@ const SHEET = [
         name: 'Team Timeout',
         slugs: ['team-timeout'],
         keys: [
-          ['Three left', d.teamTimeoutKey(WHEELS, 3, 3, false)],
-          ['One left', d.teamTimeoutKey(WHEELS, 3, 1, false)],
-          ['None left', d.teamTimeoutKey(WHEELS, 3, 0, false)],
-          ['Running', d.teamTimeoutKey(WHEELS, 3, 2, true, 0.5)]
+          ['Three remaining', d.teamTimeoutKey(WHEELS, 3, 3, false)],
+          ['One remaining', d.teamTimeoutKey(WHEELS, 3, 1, false)],
+          ['None remaining', d.teamTimeoutKey(WHEELS, 3, 0, false)],
+          ['In progress', d.teamTimeoutKey(WHEELS, 3, 2, true, 0.5)]
         ]
       },
       {
         name: 'Official Review',
         slugs: ['official-review'],
         keys: [
-          ['One left', d.officialReviewKey(WHEELS, 1, 1, undefined, false)],
-          ['Won this period', d.officialReviewKey(WHEELS, 1, 1, 'retained', false)],
-          ['Won twice', d.officialReviewKey(WHEELS, 1, 1, 'twice', false)],
-          ['None left', d.officialReviewKey(WHEELS, 1, 0, undefined, false)],
-          ['Running', d.officialReviewKey(WHEELS, 1, 1, undefined, true, 0.5)]
+          ['One remaining', d.officialReviewKey(WHEELS, 1, 1, undefined, false)],
+          ['First review won', d.officialReviewKey(WHEELS, 1, 1, 'retained', false)],
+          ['Second review won', d.officialReviewKey(WHEELS, 1, 1, 'twice', false)],
+          ['None remaining', d.officialReviewKey(WHEELS, 1, 0, undefined, false)],
+          ['In progress', d.officialReviewKey(WHEELS, 1, 1, undefined, true, 0.5)]
         ]
       }
     ]
@@ -296,8 +295,8 @@ const SHEET = [
         name: 'Up 1 and Down 1',
         slugs: ['trip-points-up', 'trip-points-down'],
         keys: [
-          ['Up 1', d.tripAdjustKey(WHEELS, true)],
-          ['Down 1', d.tripAdjustKey(WHEELS, false)]
+          ['Add 1 point', d.tripAdjustKey(WHEELS, true)],
+          ['Remove 1 point', d.tripAdjustKey(WHEELS, false)]
         ]
       },
       {
@@ -309,7 +308,7 @@ const SHEET = [
         ]
       },
       {
-        name: 'Score',
+        name: 'Score - total and jam total',
         slugs: ['score'],
         keys: [
           ['Early in a game', d.scoreKey(WHEELS, 8, 4, 2)],
@@ -329,8 +328,8 @@ const SHEET = [
           ['Period', d.clockKey('PERIOD 2', '12:26', true)],
           ['Jam', d.clockKey('JAM 13', '1:04', true)],
           ['Lineup', d.clockKey('LINEUP', '0:21', true)],
-          ['After a timeout', d.clockKey('POST TIMEOUT', '0:21', true)],
-          ['Timeout', d.clockKey('TIMEOUT', '0:43', false)],
+          ['Post timeout', d.clockKey('POST TIMEOUT', '0:21', true)],
+          ['Untyped', d.clockKey('TIMEOUT', '0:43', false)],
           ['Intermission', d.clockKey('INTERMISSION', '5:00', true)]
         ]
       },
@@ -340,7 +339,7 @@ const SHEET = [
         keys: [
           ['During a period', d.clockKey('PERIOD 2', '12:26', true)],
           ['Between periods', d.clockKey('INTERMISSION', '5:00', true)],
-          ['No time to show', d.clockKey('COMING UP', undefined, false)]
+          ['Pre-game', d.clockKey('COMING UP', undefined, false)]
         ]
       }
     ]
@@ -354,7 +353,7 @@ const SHEET = [
         keys: [
           ['Back', d.backKey()],
           ['Connected', d.connectionToggleKey('connected')],
-          ['Held', d.connectionToggleKey('connected', 0.6)],
+          ['Pressed', d.connectionToggleKey('connected', 0.6)],
           ['Disconnected', d.connectionToggleKey('stopped')]
         ]
       },
@@ -362,8 +361,8 @@ const SHEET = [
         name: 'Undo page',
         slugs: ['replace-info', 'replace-confirm', 'replace-choice'],
         keys: [
-          ['What is being replaced', d.replaceInfoKey('Stop Jam')],
-          ['No Action', d.replaceConfirmKey('No Action')],
+          ['Action to replace', d.replaceInfoKey('Stop Jam')],
+          ['Confirm undo', d.replaceConfirmKey('No Action')],
           ['Start Jam', d.replaceChoiceKey('Start Jam', 'start')],
           ['Stop Jam', d.replaceChoiceKey('Stop Jam', 'stop')],
           ['Timeout', d.replaceChoiceKey('Timeout', 'timeout')],
@@ -482,12 +481,12 @@ const written = SHEET.map(({ section, actions }) => {
 
 // The page that carries these images is edited by hand, so the build
 // checks it still shows every one of them rather than writing it.
-const PAGE = fileURLToPath(new URL('docs/button-reference.md', ROOT));
+const PAGE = fileURLToPath(new URL('docs/button-image-reference.md', ROOT));
 const page = readFileSync(PAGE, 'utf8');
 const unlinked = written.filter(({ path }) => !page.includes(path));
 
 if (unlinked.length > 0) {
-  throw new Error(`docs/button-reference.md shows no image for: ${unlinked.map((e) => e.section).join(', ')}`);
+  throw new Error(`docs/button-image-reference.md shows no image for: ${unlinked.map((e) => e.section).join(', ')}`);
 }
 
 console.log(
