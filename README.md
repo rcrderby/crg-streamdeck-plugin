@@ -12,7 +12,8 @@
 - [Features](#features "Plugin Features")
 - [Compatibility](#compatibility "Supported Versions And Platforms")
 - [Getting Started](#getting-started "Setup Instructions")
-- [Button Action Reference](#button-action-reference "Every Button And Its Settings")
+- [Button Actions Reference](#button-action-reference "All Button Settings")
+- [Button Images Reference](/docs/button-reference.md "All Buttons and States")
 - [Troubleshooting](#troubleshooting "Troubleshooting Information")
 - [Contributing](#contributing "How To Contribute")
 
@@ -139,7 +140,7 @@ These steps will help you set up the plugin to control CRG from a Stream Deck.  
 
 ## Button Action Reference
 
-Buttons that control one team take a `Team` setting.  You can view Every button, and every state each displays in this image [[reference](/docs/images/key-reference.svg "Button Reference Image")].
+Buttons that control one team take a `Team` setting.  The [Button Reference](/docs/button-reference.md "Button Reference Page") page shows every button, and every state that each displays.
 
 <details>
   <summary>
