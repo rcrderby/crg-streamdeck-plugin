@@ -4,11 +4,14 @@ import { describe, it } from 'node:test';
 import { StateStore } from '../crg/state.ts';
 import {
   PANEL_CONTRAST,
+  READABLE_RATIO,
+  blend,
   contrastRatio,
   escapeXml,
   luminance,
   panelColor,
   readableForeground,
+  readableOpacity,
   safeColor,
   teamTheme
 } from './theme.ts';
@@ -33,8 +36,13 @@ describe('escapeXml', () => {
 describe('safeColor', () => {
   it('accepts the hex forms CRG writes', () => {
     assert.equal(safeColor('#b3122e', '#000000'), '#b3122e');
-    assert.equal(safeColor('#fff', '#000000'), '#fff');
-    assert.equal(safeColor('#b3122e80', '#000000'), '#b3122e80');
+    assert.equal(safeColor('#B3122E', '#000000'), '#B3122E');
+  });
+
+  it('normalizes a short form and drops alpha, so the renderer only ever sees six digits', () => {
+    assert.equal(safeColor('#fff', '#000000'), '#ffffff');
+    assert.equal(safeColor('#f00c', '#000000'), '#ff0000');
+    assert.equal(safeColor('#b3122e80', '#000000'), '#b3122e');
   });
 
   it('trims surrounding space', () => {
@@ -77,6 +85,48 @@ describe('readableForeground', () => {
   it('replaces a foreground that does not read', () => {
     assert.equal(readableForeground('#ffffff', '#fefefe'), '#000000');
     assert.equal(readableForeground('#000000', '#010101'), '#ffffff');
+  });
+});
+
+describe('readableOpacity', () => {
+  const held = (background: string, foreground: string, wanted: number, ratio = READABLE_RATIO): number =>
+    contrastRatio(blend(foreground, background, readableOpacity(background, foreground, wanted, ratio)), background);
+
+  it('leaves a fade alone when the text still reads at it', () => {
+    assert.equal(readableOpacity('#000000', '#ffffff', 0.8), 0.8);
+  });
+
+  it('gives back only as much of the fade as the ratio needs', () => {
+    // A pair that only just clears the ratio at full strength.
+    const marginal = readableForeground('#ffffff', '#767676');
+    const opacity = readableOpacity('#ffffff', marginal, 0.7);
+
+    assert.ok(opacity > 0.7, 'a marginal pair should be faded less');
+    assert.ok(opacity < 1, 'it should still be faded');
+    assert.ok(held('#ffffff', marginal, 0.7) >= READABLE_RATIO);
+  });
+
+  it('holds the ratio at every fade the designs ask for, on backgrounds a league might pick', () => {
+    for (const background of ['#000000', '#ffffff', '#6b7280', '#38205b', '#eab308', '#7dd3fc']) {
+      const foreground = readableForeground(background, '#ffffff');
+
+      for (const wanted of [0.7, 0.75, 0.8, 0.85]) {
+        assert.ok(
+          held(background, foreground, wanted) >= READABLE_RATIO - 0.01,
+          `${background} at ${wanted}: ${held(background, foreground, wanted)}`
+        );
+      }
+    }
+  });
+
+  it('keeps a lower bar where the fade is the point, so spent text still reads as spent', () => {
+    const spent = readableOpacity('#000000', '#ffffff', 0.38, 3);
+
+    assert.equal(spent, 0.38);
+  });
+
+  it('fades nothing at all when the pair cannot reach the ratio even at full strength', () => {
+    assert.equal(readableOpacity('#767676', '#6b7280', 0.8), 1);
   });
 });
 

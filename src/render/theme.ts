@@ -47,9 +47,26 @@ export function escapeXml(value: string): string {
   return value.replace(/[&<>"']/g, (character) => XML_ESCAPES[character] ?? character);
 }
 
-/** Returns the color when it is a hex color, and the fallback when it is not. */
+/**
+ * A hex color as six digits, expanding a short form and dropping alpha.
+ *
+ * CRG accepts a color with an alpha channel, and a key is drawn over an
+ * opaque background, so the alpha is dropped here the way the luminance
+ * and blend helpers already drop it. Passing it on would leave the key
+ * to whatever the Stream Deck renderer makes of eight-digit hex.
+ */
+function sixDigits(color: string): string {
+  const digits = color.slice(1);
+  const full = digits.length <= 4 ? [...digits].map((digit) => digit + digit).join('') : digits;
+
+  return `#${full.slice(0, 6)}`;
+}
+
+/** Returns the color when it is a hex color, normalized to six digits, and the fallback when it is not. */
 export function safeColor(value: string | undefined, fallback: string): string {
-  return value !== undefined && HEX_COLOR.test(value.trim()) ? value.trim() : fallback;
+  const trimmed = value?.trim() ?? '';
+
+  return HEX_COLOR.test(trimmed) ? sixDigits(trimmed) : fallback;
 }
 
 /**
@@ -78,6 +95,12 @@ export function contrastRatio(first: string, second: string): number {
   return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
 }
 
+/** The ratio text holds against the key behind it, which is WCAG's bar for small text. */
+export const READABLE_RATIO = 4.5;
+
+/** How finely a faded text's opacity is searched for. */
+const FADE_STEPS = 12;
+
 /**
  * Picks the readable foreground for a background.
  *
@@ -85,12 +108,53 @@ export function contrastRatio(first: string, second: string): number {
  * can be unreadable on a key. The requested color is kept when it
  * clears the ratio, and black or white replaces it when it does not.
  */
-export function readableForeground(background: string, requested: string, minimumRatio = 4.5): string {
+export function readableForeground(background: string, requested: string, minimumRatio = READABLE_RATIO): string {
   if (contrastRatio(background, requested) >= minimumRatio) {
     return requested;
   }
 
   return contrastRatio(background, '#ffffff') >= contrastRatio(background, '#000000') ? '#ffffff' : '#000000';
+}
+
+/**
+ * The opacity to draw faded text at, raised until the text stays readable.
+ *
+ * A foreground is chosen against the key at full strength, but a caption
+ * or a team name is then drawn faded, and a pair that only just cleared
+ * the ratio falls below it once it is. The fade is kept where it can be
+ * and given back only as far as the ratio needs.
+ */
+export function readableOpacity(
+  background: string,
+  foreground: string,
+  wanted: number,
+  minimumRatio = READABLE_RATIO
+): number {
+  const key = safeColor(background, DEFAULT_BACKGROUND);
+  const holds = (opacity: number): boolean => contrastRatio(blend(foreground, key, opacity), key) >= minimumRatio;
+
+  if (wanted >= 1 || holds(wanted)) {
+    return wanted;
+  }
+
+  if (!holds(1)) {
+    return 1;
+  }
+
+  let low = wanted;
+  let high = 1;
+
+  for (let step = 0; step < FADE_STEPS; step += 1) {
+    const middle = (low + high) / 2;
+
+    if (holds(middle)) {
+      high = middle;
+    } else {
+      low = middle;
+    }
+  }
+
+  return high;
 }
 
 /** The six hex digits of a color, for mixing. */
@@ -198,7 +262,7 @@ export function teamTheme(state: StateStore, number: TeamNumber): TeamTheme {
   return {
     background,
     foreground: readableForeground(background, requested),
-    glow: HEX_COLOR.test(glow.trim()) ? glow.trim() : undefined,
+    glow: HEX_COLOR.test(glow.trim()) ? sixDigits(glow.trim()) : undefined,
     name
   };
 }
