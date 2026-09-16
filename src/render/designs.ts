@@ -317,17 +317,27 @@ export function lineupBackground(warning: LineupWarning, phase = 0): string {
 export function jamControlKey(
   text: string,
   time: string | undefined,
-  foot: string,
+  foot: readonly string[],
   background: string,
   dimmed: boolean
 ): KeySpec {
   const opacity = dimmed ? 0.45 : 1;
-  const footLine: KeyText[] =
-    foot === '' ? [] : [{ text: foot, y: 90, size: 10, weight: 'bold', opacity: opacity * 0.6 }];
+  const stacked = foot.length > 1;
+
+  // Two lines start higher and leave the clock less room, so a long clock
+  // name and the jam number both read at the size one line would.
+  const footBase = stacked ? 82 : 90;
+  const footLines: KeyText[] = foot.map((line, index) => ({
+    text: line,
+    y: footBase + index * 12,
+    size: 10,
+    weight: 'bold',
+    opacity: opacity * 0.6
+  }));
 
   if (time === undefined) {
     const lines = splitWords(text.toUpperCase());
-    const middle = foot === '' ? 56 : 52;
+    const middle = foot.length === 0 ? 56 : 52;
 
     return {
       background,
@@ -340,7 +350,7 @@ export function jamControlKey(
           weight: 'bold' as const,
           opacity
         })),
-        ...footLine
+        ...footLines
       ]
     };
   }
@@ -350,8 +360,8 @@ export function jamControlKey(
     foreground: '#ffffff',
     texts: [
       { text: text.toUpperCase(), y: 26, size: 13, weight: 'bold', opacity },
-      { text: time, y: 66, size: 28, opacity },
-      ...footLine
+      { text: time, y: stacked ? 62 : 66, size: stacked ? 26 : 28, opacity },
+      ...footLines
     ]
   };
 }

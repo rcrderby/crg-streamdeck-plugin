@@ -97,7 +97,7 @@ describe('the Jam Control key', () => {
     deck.hold({ [clock('Lineup', 'Running')]: true, [clock('Lineup', 'Time')]: 21_000 });
     deck.draw();
 
-    assert.deepEqual(words(key), ['START JAM', '0:21', 'JAM 13 \u00b7 LINEUP'], 'during a lineup');
+    assert.deepEqual(words(key), ['START JAM', '0:21', 'LINEUP', 'JAM 13'], 'during a lineup');
 
     deck.hold({
       [label('Stop')]: 'End Timeout',
@@ -109,6 +109,21 @@ describe('the Jam Control key', () => {
     deck.draw();
 
     assert.deepEqual(words(key), ['END TIMEOUT', '0:43', 'JAM 13'], 'during a timeout');
+  });
+
+  it('keeps the clock name and the jam number readable after a timeout, where CRG renames the lineup', () => {
+    deck.hold({
+      [label('Start')]: 'Start Jam',
+      [label('Stop')]: 'Lineup',
+      [clock('Jam', 'Number')]: 13,
+      [clock('Lineup', 'Running')]: true,
+      [clock('Lineup', 'Time')]: 21_000,
+      [clock('Lineup', 'Name')]: 'Post Timeout'
+    });
+    deck.draw();
+
+    assert.deepEqual(words(key), ['START JAM', '0:21', 'POST TIMEOUT', 'JAM 13']);
+    assert.doesNotMatch(key.image ?? '', /font-size="[0-9.]*[0-8]\.[0-9]*" font-weight="bold"/);
   });
 
   it('says nothing of the jam before the first one of a period, rather than naming jam zero', () => {

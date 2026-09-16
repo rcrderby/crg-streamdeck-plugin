@@ -67,33 +67,35 @@ export class JamControl extends CrgKeyAction {
     return jamControlKey(
       online ? choice.text : 'No CRG',
       running === undefined ? undefined : this.#time(running),
-      online ? this.#foot(running) : '',
+      online ? this.#foot(running) : [],
       background,
       !available
     );
   }
 
   /**
-   * The foot line: the jam CRG holds, and the clock's own name beside it.
+   * The foot: the clock's own name, and the jam CRG holds beneath it.
    *
    * A jam clock already names its jam, so it says it alone. A lineup says
-   * both, since the number belongs to the jam that just ran and the name
-   * to the clock counting now. CRG numbers jams within a period, so
-   * before the first jam of one there is no jam to name.
+   * both, since the name belongs to the clock counting now and the number
+   * to the jam that just ran. It takes two lines because CRG calls the
+   * lineup Post Timeout after a timeout, which is too long to share one.
+   * CRG numbers jams within a period, so before the first jam of one
+   * there is no jam to name.
    */
-  #foot(running: ClockName | undefined): string {
+  #foot(running: ClockName | undefined): string[] {
     const number = this.context.client.state.getNumber(clock('Jam', 'Number'));
     const jam = number > 0 ? `JAM ${number}` : '';
 
     if (running === 'Jam') {
-      return this.#clockName(running);
+      return [this.#clockName(running)];
     }
 
     if (running === 'Lineup') {
-      return jam === '' ? this.#clockName(running) : `${jam} \u00b7 ${this.#clockName(running)}`;
+      return jam === '' ? [this.#clockName(running)] : [this.#clockName(running), jam];
     }
 
-    return jam;
+    return jam === '' ? [] : [jam];
   }
 
   /** Start Jam moves between green and orange once the lineup is over its time. */

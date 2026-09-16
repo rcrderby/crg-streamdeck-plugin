@@ -252,7 +252,7 @@ describe('clockKey', () => {
 
 describe('the Jam Control key', () => {
   it('leads with what a press does, and closes with the clock it shows', () => {
-    const texts = jamControlKey('Start Jam', '0:12', 'LINEUP', '#14532d', false).texts ?? [];
+    const texts = jamControlKey('Start Jam', '0:12', ['LINEUP'], '#14532d', false).texts ?? [];
 
     assert.deepEqual(
       texts.map((line) => line.text),
@@ -261,12 +261,29 @@ describe('the Jam Control key', () => {
   });
 
   it('fills the key with the wording alone when no clock is running', () => {
-    const texts = jamControlKey('Start Jam', undefined, '', '#14532d', false).texts ?? [];
+    const texts = jamControlKey('Start Jam', undefined, [], '#14532d', false).texts ?? [];
 
     assert.deepEqual(
       texts.map((line) => line.text),
       ['START', 'JAM']
     );
+  });
+
+  it('stacks a two line foot, and gives the clock less room so both read at one size', () => {
+    const one = jamControlKey('Start Jam', '0:21', ['LINEUP'], '#14532d', false).texts ?? [];
+    const two = jamControlKey('Start Jam', '0:21', ['POST TIMEOUT', 'JAM 13'], '#14532d', false).texts ?? [];
+
+    assert.deepEqual(
+      two.map((line) => line.text),
+      ['START JAM', '0:21', 'POST TIMEOUT', 'JAM 13']
+    );
+
+    for (const line of two.slice(2)) {
+      assert.equal(line.size, 10, 'a stacked foot line keeps the size one line has');
+    }
+
+    assert.ok((two[1]?.y ?? 0) < (one[1]?.y ?? 0), 'the clock moves up to make room');
+    assert.ok((two[2]?.y ?? 0) < (two[3]?.y ?? 0), 'the clock name sits above the jam number');
   });
 
   it('turns orange as the lineup falls due, and moves between the two once it is over', () => {
