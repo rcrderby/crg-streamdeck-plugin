@@ -20,4 +20,14 @@ describe('clockTitle', () => {
     assert.equal(clockTitle('Period', 0), 'PERIOD');
     assert.equal(clockTitle('Jam', 0), 'JAM');
   });
+
+  it('follows the name CRG gives a clock, such as the lineup clock after a timeout', () => {
+    assert.equal(clockTitle('Lineup', 3, 'Post Timeout'), 'POST TIMEOUT');
+    assert.equal(clockTitle('Lineup', 3, 'Lineup'), 'LINEUP');
+    assert.equal(clockTitle('Period', 2, 'Period'), 'PERIOD 2');
+  });
+
+  it('falls back to the clock’s own name when CRG sends none', () => {
+    assert.equal(clockTitle('Lineup', 3, '  '), 'LINEUP');
+  });
 });

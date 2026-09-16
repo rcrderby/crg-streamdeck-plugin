@@ -2,7 +2,16 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import { StateStore } from '../crg/state.ts';
-import { contrastRatio, escapeXml, luminance, readableForeground, safeColor, teamTheme } from './theme.ts';
+import {
+  PANEL_CONTRAST,
+  contrastRatio,
+  escapeXml,
+  luminance,
+  panelColor,
+  readableForeground,
+  safeColor,
+  teamTheme
+} from './theme.ts';
 
 describe('escapeXml', () => {
   it('escapes every character that can change markup', () => {
@@ -167,5 +176,26 @@ describe('teamTheme', () => {
     state.apply({ [path(1, 'Color(operator.glow)')]: 'rgb(1,2,3)' });
 
     assert.equal(teamTheme(state, 1).glow, undefined);
+  });
+});
+
+describe('panelColor', () => {
+  it('stands the same step from every key a league might pick', () => {
+    const keys = ['#000000', '#ffffff', '#6b7280', '#38205b', '#eab308', '#84cc16', '#7dd3fc', '#78350f'];
+
+    for (const background of keys) {
+      const foreground = readableForeground(background, '#ffffff');
+      const panel = panelColor(background, foreground);
+
+      assert.ok(
+        Math.abs(contrastRatio(panel, background) - PANEL_CONTRAST) < 0.02,
+        `${background} should carry a panel at ${PANEL_CONTRAST} to 1, not ${contrastRatio(panel, background)}`
+      );
+    }
+  });
+
+  it('lifts a dark key toward its foreground, and drops a light one', () => {
+    assert.ok(luminance(panelColor('#000000', '#ffffff')) > luminance('#000000'));
+    assert.ok(luminance(panelColor('#ffffff', '#000000')) < luminance('#ffffff'));
   });
 });

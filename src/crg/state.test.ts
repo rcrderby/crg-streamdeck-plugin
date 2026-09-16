@@ -80,6 +80,32 @@ describe('StateStore values', () => {
   });
 });
 
+describe('StateStore matching', () => {
+  it('finds every held path a pattern names, with its value', () => {
+    const store = new StateStore();
+
+    store.apply({
+      'g.Period(1).Timeout(a).Running': false,
+      'g.Period(1).Timeout(b).Running': true,
+      'g.Period(2).Timeout(c).Running': false,
+      'g.Period(1).Timeout(b).Owner': 'O'
+    });
+
+    const found = store.matching('g.Period(*).Timeout(*).Running');
+
+    assert.deepEqual(found.map(([path]) => path).sort(), [
+      'g.Period(1).Timeout(a).Running',
+      'g.Period(1).Timeout(b).Running',
+      'g.Period(2).Timeout(c).Running'
+    ]);
+    assert.ok(found.some(([, value]) => value === true));
+  });
+
+  it('finds nothing when nothing matches', () => {
+    assert.deepEqual(new StateStore().matching('g.Team(*).Score'), []);
+  });
+});
+
 describe('StateStore deltas', () => {
   it('reports only the paths whose value changed', () => {
     const store = new StateStore();

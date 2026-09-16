@@ -187,7 +187,24 @@ describe('CrgClient', () => {
     await until(() => client.status === 'connected');
     crg.sockets[0]?.terminate();
     await until(() => crg.open.length === 1 && crg.sockets.length === 2);
+    await until(() => crg.actions.get(crg.sockets[1] as WebSocket)?.includes('Register') === true);
 
     assert.deepEqual(crg.actions.get(crg.sockets[1] as WebSocket), ['Register']);
+  });
+
+  it('stays disconnected after stopping on purpose, until connect is called', async () => {
+    client.connect(connection);
+    await until(() => client.status === 'connected');
+    await client.stop();
+    await until(() => crg.open.length === 0);
+    await delay(SETTLE_MS);
+
+    assert.equal(client.status, 'stopped');
+    assert.equal(crg.sockets.length, 1);
+
+    client.connect(connection);
+    await until(() => client.status === 'connected');
+
+    assert.equal(crg.sockets.length, 2);
   });
 });

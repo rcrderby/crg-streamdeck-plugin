@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { VIEWBOX, estimateTextWidth, fittedSize, renderKey, renderKeySvg } from './key.ts';
+import { BAR_ACTIVE, BAR_INACTIVE, VIEWBOX, estimateTextWidth, fittedSize, renderKey, renderKeySvg } from './key.ts';
 
 describe('renderKeySvg', () => {
   it('draws in a square viewBox so any model can scale it', () => {
@@ -31,17 +31,94 @@ describe('renderKeySvg', () => {
     assert.match(svg, /&lt;script&gt;/);
   });
 
-  it('draws an accent bar and an outline only when asked', () => {
+  it('draws an accent only when asked', () => {
     assert.equal((renderKeySvg({}).match(/<rect/g) ?? []).length, 1);
-
-    const marked = renderKeySvg({ accent: '#ff0000', outline: '#00ff00' });
-
-    assert.equal((marked.match(/<rect/g) ?? []).length, 3);
+    assert.equal((renderKeySvg({ accent: '#ff0000' }).match(/<rect/g) ?? []).length, 2);
   });
 
   it('holds opacity inside its range', () => {
     assert.match(renderKeySvg({ texts: [{ text: 'x', y: 50, size: 10, opacity: -2 }] }), /opacity="0"/);
     assert.ok(!renderKeySvg({ texts: [{ text: 'x', y: 50, size: 10, opacity: 9 }] }).includes('opacity='));
+  });
+
+  it('draws a line of text where it is placed', () => {
+    assert.match(renderKeySvg({ texts: [{ text: '1', x: 66, y: 71, size: 30 }] }), /<text x="66" y="71"/);
+  });
+
+  it('includes the drawings it is given', () => {
+    assert.match(renderKeySvg({ shapes: ['<circle cx="50" cy="50" r="10"/>'] }), /<circle cx="50" cy="50" r="10"\/>/);
+  });
+});
+
+describe('text shadow', () => {
+  it('draws a copy of the text in the shadow color, offset down and to the right', () => {
+    const svg = renderKeySvg({ texts: [{ text: 'Lead', y: 82, size: 17, shadow: '#000000', color: '#ffffff' }] });
+    const lines = [...svg.matchAll(/<text x="([\d.]+)" y="([\d.]+)" fill="(#[0-9a-f]+)"/g)];
+
+    assert.equal(lines.length, 2);
+    assert.equal(lines[0]?.[3], '#000000');
+    assert.ok(Number(lines[0]?.[1]) > 50 && Number(lines[0]?.[2]) > 82);
+    assert.deepEqual([lines[1]?.[1], lines[1]?.[2], lines[1]?.[3]], ['50', '82', '#ffffff']);
+  });
+
+  it('draws the shadow beneath the text', () => {
+    const svg = renderKeySvg({ texts: [{ text: 'x', y: 50, size: 10, shadow: '#123456', color: '#ffffff' }] });
+
+    assert.ok(svg.indexOf('#123456') < svg.indexOf('fill="#ffffff"'));
+  });
+
+  it('drops a shadow whose color is not a hex color', () => {
+    const svg = renderKeySvg({ texts: [{ text: 'x', y: 50, size: 10, shadow: 'red"/><script>' }] });
+
+    assert.equal((svg.match(/<text/g) ?? []).length, 1);
+    assert.ok(!svg.includes('<script>'));
+  });
+
+  it('escapes the shadow copy too', () => {
+    const svg = renderKeySvg({ texts: [{ text: '<b>', y: 50, size: 10, shadow: '#000000' }] });
+
+    assert.equal((svg.match(/&lt;b&gt;/g) ?? []).length, 2);
+  });
+});
+
+describe('top bar', () => {
+  it('draws a green bar over a dark rule when active', () => {
+    const svg = renderKeySvg({ bar: { active: true } });
+
+    assert.match(svg, new RegExp(`<rect width="100" height="10" fill="${BAR_ACTIVE}"/><rect y="10"`));
+  });
+
+  it('draws a gray bar when inactive', () => {
+    assert.match(renderKeySvg({ bar: { active: false } }), new RegExp(`fill="${BAR_INACTIVE}"`));
+  });
+
+  it('moves the key’s content down to sit below the bar', () => {
+    const svg = renderKeySvg({ bar: { active: true }, texts: [{ text: 'Lead', y: 82, size: 17 }] });
+
+    assert.match(svg, /<g transform="translate\(0 3\)"><text/);
+  });
+
+  it('leaves content where it is on a key without a bar', () => {
+    assert.ok(!renderKeySvg({ texts: [{ text: 'x', y: 50, size: 10 }] }).includes('<g'));
+  });
+});
+
+describe('informational mark', () => {
+  it('draws the blue mark only when asked', () => {
+    assert.ok(!renderKeySvg({}).includes('#2563eb'));
+    assert.match(renderKeySvg({ informational: true }), /<circle cx="15.5" cy="84.5" r="7.5" fill="#2563eb"\/>/);
+  });
+});
+
+describe('subdued', () => {
+  it('draws a dark veil over everything else on the key', () => {
+    const svg = renderKeySvg({ informational: true, subdued: true, texts: [{ text: 'x', y: 50, size: 10 }] });
+
+    assert.ok(svg.endsWith('<rect width="100" height="100" fill="#000000" opacity="0.62"/></svg>'));
+  });
+
+  it('draws no veil unless asked', () => {
+    assert.ok(!renderKeySvg({}).includes('opacity="0.62"'));
   });
 });
 
@@ -54,6 +131,17 @@ describe('renderKey', () => {
     const decoded = Buffer.from(image.slice('data:image/svg+xml;base64,'.length), 'base64').toString('utf8');
 
     assert.match(decoded, /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg"/);
+  });
+
+  it('uses nothing Stream Deck’s renderer ignores', () => {
+    const svg = renderKeySvg({
+      bar: { active: true },
+      informational: true,
+      subdued: true,
+      texts: [{ text: 'Lead', y: 82, size: 17, shadow: '#000000' }]
+    });
+
+    assert.ok(!/<filter|clip-path|mask=/.test(svg));
   });
 });
 
@@ -81,6 +169,12 @@ describe('fittedSize', () => {
     const size = fittedSize('Wheels of Justice', 11, 'bold');
 
     assert.ok(estimateTextWidth('Wheels of Justice', size, 'bold') <= 92);
+  });
+
+  it('keeps the jammer captions at one size', () => {
+    for (const caption of ['Lead', 'Lost Lead', 'Star Pass', 'No Pivot']) {
+      assert.equal(fittedSize(caption, 17, 'bold'), 17, caption);
+    }
   });
 
   it('stops shrinking rather than becoming unreadable', () => {
