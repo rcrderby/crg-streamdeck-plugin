@@ -106,7 +106,7 @@ describe('tripSign', () => {
 
 describe('the Star Pass arrow', () => {
   /** Reads the arc and the arrowhead back out of the drawing. */
-  function parts(): { centre: [number, number]; radius: number; arms: [number, number][] } {
+  function parts(): { center: [number, number]; radius: number; arms: [number, number][] } {
     const markup = starPassIcon('#ffffff');
     const arc = /M ([\d.]+) ([\d.]+) A ([\d.]+) [\d.]+ 0 0 1 ([\d.]+) ([\d.]+)/.exec(markup);
     const head = /M ([\d.]+),([\d.]+) L ([\d.]+) ([\d.]+) L ([\d.]+),([\d.]+)/.exec(markup);
@@ -121,7 +121,7 @@ describe('the Star Pass arrow', () => {
     const [, x1, y1, , , x3, y3] = (head as RegExpExecArray).map(Number);
 
     return {
-      centre: [(sx as number) + half, (sy as number) + drop],
+      center: [(sx as number) + half, (sy as number) + drop],
       radius: r as number,
       arms: [
         [x1 as number, y1 as number],
@@ -131,9 +131,9 @@ describe('the Star Pass arrow', () => {
   }
 
   it('leaves the same gap between the arc and each arm of its head', () => {
-    const { centre, radius, arms } = parts();
+    const { center, radius, arms } = parts();
 
-    const [first, second] = arms.map(([x, y]) => Math.abs(Math.hypot(x - centre[0], y - centre[1]) - radius));
+    const [first, second] = arms.map(([x, y]) => Math.abs(Math.hypot(x - center[0], y - center[1]) - radius));
 
     assert.ok(
       Math.abs((first as number) - (second as number)) < 0.01,
@@ -142,9 +142,9 @@ describe('the Star Pass arrow', () => {
   });
 
   it('puts one arm inside the arc and the other outside it', () => {
-    const { centre, radius, arms } = parts();
+    const { center, radius, arms } = parts();
 
-    const [first, second] = arms.map(([x, y]) => Math.hypot(x - centre[0], y - centre[1]) - radius);
+    const [first, second] = arms.map(([x, y]) => Math.hypot(x - center[0], y - center[1]) - radius);
 
     assert.ok(
       (first as number) * (second as number) < 0,
