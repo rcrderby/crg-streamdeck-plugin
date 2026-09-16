@@ -76,11 +76,69 @@ describe('the Jam Control key', () => {
     });
     deck.draw();
 
-    assert.deepEqual(words(key), ['Start', 'Jam'], 'the key should read Start Jam, not Lineup');
+    assert.deepEqual(words(key), ['START', 'JAM'], 'the key should read Start Jam, not Lineup');
 
     await deck.press(keyAction, key);
 
     assert.deepEqual(deck.written, [{ key: game('StartJam'), value: true, flag: '' }]);
+  });
+
+  it('names the jam CRG holds in the foot, in every state but a jam of its own', () => {
+    deck.hold({
+      [label('Start')]: 'Start Jam',
+      [label('Stop')]: 'Lineup',
+      [clock('Jam', 'Number')]: 13,
+      [clock('Lineup', 'Running')]: false
+    });
+    deck.draw();
+
+    assert.deepEqual(words(key), ['START', 'JAM', 'JAM 13'], 'with nothing running');
+
+    deck.hold({ [clock('Lineup', 'Running')]: true, [clock('Lineup', 'Time')]: 21_000 });
+    deck.draw();
+
+    assert.deepEqual(words(key), ['START JAM', '0:21', 'JAM 13 \u00b7 LINEUP'], 'during a lineup');
+
+    deck.hold({
+      [label('Stop')]: 'End Timeout',
+      'ScoreBoard.CurrentGame.Period(2).Timeout(7).Running': true,
+      [clock('Lineup', 'Running')]: false,
+      [clock('Timeout', 'Running')]: true,
+      [clock('Timeout', 'Time')]: 43_000
+    });
+    deck.draw();
+
+    assert.deepEqual(words(key), ['END TIMEOUT', '0:43', 'JAM 13'], 'during a timeout');
+  });
+
+  it('says nothing of the jam before the first one of a period, rather than naming jam zero', () => {
+    deck.hold({
+      [label('Start')]: 'Start Jam',
+      [label('Stop')]: 'Lineup',
+      [clock('Jam', 'Number')]: 0,
+      [clock('Lineup', 'Running')]: false
+    });
+    deck.draw();
+
+    assert.deepEqual(words(key), ['START', 'JAM']);
+
+    deck.hold({ [clock('Lineup', 'Running')]: true, [clock('Lineup', 'Time')]: 21_000 });
+    deck.draw();
+
+    assert.deepEqual(words(key), ['START JAM', '0:21', 'LINEUP']);
+  });
+
+  it('lets a jam clock name its own jam, as it already did', () => {
+    deck.hold({
+      [label('Stop')]: 'Stop Jam',
+      [game('InJam')]: true,
+      [clock('Jam', 'Number')]: 13,
+      [clock('Jam', 'Running')]: true,
+      [clock('Jam', 'Time')]: 64_000
+    });
+    deck.draw();
+
+    assert.deepEqual(words(key), ['STOP JAM', '1:04', 'JAM 13']);
   });
 
   it('shows no clock when nothing is running, so the wording fills the key', () => {

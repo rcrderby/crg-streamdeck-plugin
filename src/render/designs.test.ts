@@ -265,7 +265,7 @@ describe('the Jam Control key', () => {
 
     assert.deepEqual(
       texts.map((line) => line.text),
-      ['Start', 'Jam']
+      ['START', 'JAM']
     );
   });
 

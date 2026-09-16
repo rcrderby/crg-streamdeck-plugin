@@ -317,25 +317,31 @@ export function lineupBackground(warning: LineupWarning, phase = 0): string {
 export function jamControlKey(
   text: string,
   time: string | undefined,
-  clockName: string,
+  foot: string,
   background: string,
   dimmed: boolean
 ): KeySpec {
   const opacity = dimmed ? 0.45 : 1;
+  const footLine: KeyText[] =
+    foot === '' ? [] : [{ text: foot, y: 90, size: 10, weight: 'bold', opacity: opacity * 0.6 }];
 
   if (time === undefined) {
-    const lines = splitWords(text);
+    const lines = splitWords(text.toUpperCase());
+    const middle = foot === '' ? 56 : 52;
 
     return {
       background,
       foreground: '#ffffff',
-      texts: lines.map((line, index) => ({
-        text: line,
-        y: 56 + (index - (lines.length - 1) / 2) * 20,
-        size: 17,
-        weight: 'bold' as const,
-        opacity
-      }))
+      texts: [
+        ...lines.map((line, index) => ({
+          text: line,
+          y: middle + (index - (lines.length - 1) / 2) * 20,
+          size: 17,
+          weight: 'bold' as const,
+          opacity
+        })),
+        ...footLine
+      ]
     };
   }
 
@@ -345,7 +351,7 @@ export function jamControlKey(
     texts: [
       { text: text.toUpperCase(), y: 26, size: 13, weight: 'bold', opacity },
       { text: time, y: 66, size: 28, opacity },
-      { text: clockName, y: 90, size: 10, weight: 'bold', opacity: opacity * 0.6 }
+      ...footLine
     ]
   };
 }
