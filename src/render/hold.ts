@@ -7,9 +7,6 @@
 
 export const HOLD_MS = 1000;
 
-/** The share of a hold after which the dial changes color, so the operator knows it is nearly done. */
-export const HOLD_WARNING = 0.75;
-
 /** How far along a hold that started at one time is at another, from 0 to 1. */
 export function holdProgress(startedAt: number, now: number): number {
   return Math.min(1, Math.max(0, (now - startedAt) / HOLD_MS));

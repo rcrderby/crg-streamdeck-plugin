@@ -365,9 +365,6 @@ export function timeoutKey(lines: readonly string[], active: boolean): KeySpec {
   };
 }
 
-/** A hold dial fills in white, and takes the key's own color once the hold is nearly done. */
-const HOLD_START = '#ffffff';
-
 /**
  * Undo: an amber U turn on hazard striping, so it stands apart from every other key.
  *
@@ -385,7 +382,7 @@ export function undoKey(level = 0, waiting?: boolean): KeySpec {
     shapes: [
       hazardStripes(UNDO_FOREGROUND),
       undoArrow(50, 38, 17, UNDO_FOREGROUND),
-      ...(carries ? [] : [holdDial(level, HOLD_START, UNDO_FOREGROUND, UNDO_BACKGROUND)])
+      ...(carries ? [] : [holdDial(level, UNDO_FOREGROUND, UNDO_BACKGROUND)])
     ],
     texts: [
       { text: 'Undo', y: 72, size: 14, weight: 'bold' },
@@ -429,7 +426,7 @@ export function replaceConfirmKey(labelText: string, level = 0): KeySpec {
     shapes: [
       hazardStripes(UNDO_FOREGROUND),
       undoArrow(50, 30, 14, UNDO_FOREGROUND),
-      holdDial(level, HOLD_START, UNDO_FOREGROUND, UNDO_BACKGROUND)
+      holdDial(level, UNDO_FOREGROUND, UNDO_BACKGROUND)
     ],
     texts: [{ text: labelText, y: 58, size: 15, weight: 'bold' }, ...holdToConfirm()]
   };
@@ -448,7 +445,7 @@ export function replaceChoiceKey(text: string, kind: ReplaceChoiceKind, level = 
   return {
     background,
     foreground: '#ffffff',
-    shapes: [holdDial(level, HOLD_START, UNDO_FOREGROUND, background)],
+    shapes: [holdDial(level, UNDO_FOREGROUND, background)],
     texts: [{ text, y: 52, size: 17, weight: 'bold' }, ...holdToConfirm()]
   };
 }
@@ -527,7 +524,7 @@ export function connectionToggleKey(status: ConnectionStatus, level = 0): KeySpe
     background: look.background,
     foreground: '#ffffff',
     accent: look.accent,
-    shapes: [holdDial(level, HOLD_START, severe ? SEVERE_DIAL : look.accent, look.background, 82, 24)],
+    shapes: [holdDial(level, severe ? SEVERE_DIAL : look.accent, look.background, 82, 24)],
     texts: [
       { text: look.detail, y: 50, size: 17, weight: 'bold' },
       { text: 'Hold to', y: 68, size: 12, ...hint },

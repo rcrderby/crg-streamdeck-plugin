@@ -1,11 +1,10 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { HOLD_MS, HOLD_WARNING, holdProgress } from './hold.ts';
+import { HOLD_MS, holdProgress } from './hold.ts';
 import { holdDial } from './icons.ts';
 
 const AMBER = '#fbbf24';
-const WHITE = '#ffffff';
 const GROUND = '#1c1917';
 
 describe('holdProgress', () => {
@@ -20,25 +19,24 @@ describe('holdProgress', () => {
 
 describe('holdDial', () => {
   it('draws nothing until the key is held', () => {
-    assert.equal(holdDial(0, AMBER, WHITE, GROUND), '');
+    assert.equal(holdDial(0, AMBER, GROUND), '');
   });
 
-  it('fills in its own color, then takes its second color at three quarters of the hold', () => {
-    const early = holdDial(0.5, AMBER, WHITE, GROUND);
-    const late = holdDial(HOLD_WARNING, AMBER, WHITE, GROUND);
+  it('keeps one color for the whole hold', () => {
+    for (const level of [0.1, 0.5, 0.75, 0.9, 1]) {
+      const dial = holdDial(level, AMBER, GROUND);
 
-    assert.match(early, /stroke="#fbbf24"/);
-    assert.doesNotMatch(early, /#ffffff/);
-    assert.match(late, /stroke="#ffffff"/);
-    assert.doesNotMatch(late, /#fbbf24/);
+      assert.match(dial, /stroke="#fbbf24"/, `at ${level}`);
+      assert.doesNotMatch(dial, /#ffffff/, `at ${level}`);
+    }
   });
 
   it('fills in many small steps rather than in quarters', () => {
-    assert.notEqual(holdDial(0.3, AMBER, WHITE, GROUND), holdDial(0.35, AMBER, WHITE, GROUND));
+    assert.notEqual(holdDial(0.3, AMBER, GROUND), holdDial(0.35, AMBER, GROUND));
   });
 
   it('shows a full circle once the hold is complete', () => {
-    const done = holdDial(1, AMBER, WHITE, GROUND);
+    const done = holdDial(1, AMBER, GROUND);
 
     assert.equal((done.match(/<circle/g) ?? []).length, 3);
     assert.doesNotMatch(done, /<path/);

@@ -10,7 +10,6 @@
  * color never reaches the markup.
  */
 
-import { HOLD_WARNING } from './hold.ts';
 import { safeColor } from './theme.ts';
 
 /** Jammer icons share one circle, center, and stroke, so they read as a family. */
@@ -299,24 +298,15 @@ export function hazardStripes(color: string): string {
 /**
  * The dial a held key shows: a ring whose inside fills clockwise as the hold goes on.
  *
- * Nothing is drawn before the key is held. Once the hold passes
- * HOLD_WARNING, the dial takes its second color. It sits on a disc in
- * the key's background, so it reads over whatever is beneath it.
+ * Nothing is drawn before the key is held. It sits on a disc in the key's
+ * background, so it reads over whatever is beneath it.
  */
-export function holdDial(
-  level: number,
-  color: string,
-  nearlyDone: string,
-  backing: string,
-  cx = 82,
-  cy = 21,
-  radius = 8
-): string {
+export function holdDial(level: number, color: string, backing: string, cx = 82, cy = 21, radius = 8): string {
   if (level <= 0) {
     return '';
   }
 
-  const ink = hex(level >= HOLD_WARNING ? nearlyDone : color);
+  const ink = hex(color);
   const inner = radius - 2.5;
   const dial =
     `<circle cx="${n(cx)}" cy="${n(cy)}" r="${n(radius + 3.5)}" fill="${hex(backing)}"/>` +

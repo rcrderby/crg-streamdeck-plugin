@@ -30,8 +30,8 @@ describe('undoKey', () => {
     assert.match(renderKeySvg(undoKey(0.5)), /stroke-width="2"/);
   });
 
-  it('fills its dial in white, then the key’s own color near the end of the hold', () => {
-    assert.match(renderKeySvg(undoKey(0.5)), /stroke="#ffffff" stroke-width="2"/);
+  it('fills its dial in the key’s own color, the whole way', () => {
+    assert.match(renderKeySvg(undoKey(0.5)), /stroke="#fbbf24" stroke-width="2"/);
     assert.match(renderKeySvg(undoKey(0.8)), /stroke="#fbbf24" stroke-width="2"/);
   });
 
@@ -96,8 +96,8 @@ describe('connection page keys', () => {
     assert.deepEqual(words(connectionToggleKey('stopped').texts), ['Disconnected', 'Hold to', 'connect']);
   });
 
-  it('fill their dial in white, then red while it would disconnect a connected deck', () => {
-    assert.match(renderKeySvg(connectionToggleKey('connected', 0.5)), /stroke="#ffffff" stroke-width="2"/);
+  it('fill their dial in red the whole way while it would disconnect a connected deck', () => {
+    assert.match(renderKeySvg(connectionToggleKey('connected', 0.5)), /stroke="#ef4444" stroke-width="2"/);
     assert.match(renderKeySvg(connectionToggleKey('connected', 0.8)), /stroke="#ef4444" stroke-width="2"/);
     assert.match(renderKeySvg(connectionToggleKey('stopped', 0.8)), /stroke="#71717a" stroke-width="2"/);
   });
