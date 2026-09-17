@@ -56,6 +56,9 @@ export type PluginSettingsParts = {
 export class PluginSettings {
   readonly #parts: PluginSettingsParts;
 
+  /** The write in progress, which the next one waits on. */
+  #writing: Promise<void> = Promise.resolve();
+
   constructor(parts: PluginSettingsParts) {
     this.#parts = parts;
   }
@@ -94,7 +97,7 @@ export class PluginSettings {
    * settings and never to the log.
    */
   async rememberSession(): Promise<void> {
-    const { client, store } = this.#parts;
+    const { client } = this.#parts;
     const session = client.session;
     const sessionOrigin = client.origin;
 
@@ -102,11 +105,11 @@ export class PluginSettings {
       return;
     }
 
-    const settings = await store.getGlobalSettings<GlobalSettings>();
-
-    if (settings.session !== session || settings.sessionOrigin !== sessionOrigin) {
-      await store.setGlobalSettings({ ...settings, session, sessionOrigin });
-    }
+    await this.#update((settings) =>
+      settings.session !== session || settings.sessionOrigin !== sessionOrigin
+        ? { ...settings, session, sessionOrigin }
+        : undefined
+    );
   }
 
   /**
@@ -120,12 +123,9 @@ export class PluginSettings {
       return;
     }
 
-    const store = this.#parts.store;
-    const settings = await store.getGlobalSettings<GlobalSettings>();
-
-    if (!same(settings.operators ?? [], names)) {
-      await store.setGlobalSettings({ ...settings, operators: [...names] });
-    }
+    await this.#update((settings) =>
+      same(settings.operators ?? [], names) ? undefined : { ...settings, operators: [...names] }
+    );
   }
 
   /**
@@ -135,12 +135,37 @@ export class PluginSettings {
    * until someone connects it again.
    */
   async setStopped(stopped: boolean): Promise<void> {
-    const store = this.#parts.store;
-    const settings = await store.getGlobalSettings<GlobalSettings>();
-    const next: GlobalSettings = { ...settings, stopped };
+    let next: GlobalSettings = {};
 
-    await store.setGlobalSettings(next);
+    await this.#update((settings) => {
+      next = { ...settings, stopped };
+
+      return next;
+    });
     this.apply(next);
+  }
+
+  /**
+   * Reads the settings, changes them, and writes them back, one change at a time.
+   *
+   * Every change rewrites the whole settings object, so two made at once
+   * would each start from the same copy and the later would erase the
+   * earlier. A change that returns nothing writes nothing. A failed write
+   * is reported to its caller and does not hold up the next.
+   */
+  #update(change: (settings: GlobalSettings) => GlobalSettings | undefined): Promise<void> {
+    const store = this.#parts.store;
+    const run = this.#writing.then(async () => {
+      const next = change(await store.getGlobalSettings<GlobalSettings>());
+
+      if (next !== undefined) {
+        await store.setGlobalSettings(next);
+      }
+    });
+
+    this.#writing = run.catch(() => undefined);
+
+    return run;
   }
 }
 

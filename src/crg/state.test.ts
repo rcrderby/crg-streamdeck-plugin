@@ -187,3 +187,29 @@ describe('StateStore subscriptions', () => {
     assert.equal(calls, 1);
   });
 });
+
+describe('StateStore.replace', () => {
+  it('drops what the snapshot leaves out, keeps what it is told to, and reports both', () => {
+    const store = new StateStore();
+    const heard: string[][] = [];
+
+    store.apply({ 'A.One': 1, 'A.Two': 2, 'WS.Device': 'deck' });
+    store.subscribe(['A.*'], (changed) => heard.push([...changed].sort()));
+
+    const changed = store.replace({ 'A.One': 1, 'A.Three': 3 }, (path) => path.startsWith('WS.'));
+
+    assert.deepEqual([...changed].sort(), ['A.Three', 'A.Two']);
+    assert.equal(store.get('A.Two'), undefined);
+    assert.equal(store.get('A.Three'), 3);
+    assert.equal(store.get('WS.Device'), 'deck');
+    assert.deepEqual(heard, [['A.Three', 'A.Two']]);
+  });
+
+  it('reports nothing when the snapshot matches what is held', () => {
+    const store = new StateStore();
+
+    store.apply({ 'A.One': 1 });
+
+    assert.equal(store.replace({ 'A.One': 1 }).size, 0);
+  });
+});

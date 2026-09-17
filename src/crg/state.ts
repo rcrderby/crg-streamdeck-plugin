@@ -153,7 +153,12 @@ export class StateStore {
    * repeats what is already held redraws nothing.
    */
   apply(delta: Readonly<Record<string, StateValue>>): ReadonlySet<string> {
-    const changed = new Set<string>();
+    return this.#merge(delta, new Set());
+  }
+
+  /** Writes a delta over what is held, and reports it with the paths already changed on the way. */
+  #merge(delta: Readonly<Record<string, StateValue>>, alreadyChanged: ReadonlySet<string>): ReadonlySet<string> {
+    const changed = new Set<string>(alreadyChanged);
 
     for (const [path, value] of Object.entries(delta)) {
       if (value === null) {
@@ -175,6 +180,30 @@ export class StateStore {
     }
 
     return changed;
+  }
+
+  /**
+   * Replaces what is held with a full snapshot, and tells the subscriptions every path that changed or went.
+   *
+   * A path the snapshot leaves out is deleted, unless it is one to keep.
+   */
+  replace(
+    snapshot: Readonly<Record<string, StateValue>>,
+    keep: (path: string) => boolean = () => false
+  ): ReadonlySet<string> {
+    const gone = new Set<string>();
+
+    for (const path of this.#values.keys()) {
+      if (!Object.hasOwn(snapshot, path) && !keep(path)) {
+        gone.add(path);
+      }
+    }
+
+    for (const path of gone) {
+      this.#values.delete(path);
+    }
+
+    return this.#merge(snapshot, gone);
   }
 
   /** Forgets everything, so a reconnect starts from what CRG sends next. */

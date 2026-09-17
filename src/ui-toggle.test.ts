@@ -38,7 +38,13 @@ function fakeSwitch(setting: string): FakeSwitch {
   };
 }
 
-type Inspector = { element: FakeSwitch; saved: Settings[]; arrive: () => Promise<void> };
+type Inspector = {
+  element: FakeSwitch;
+  saved: Settings[];
+  arrive: () => Promise<void>;
+  /** Sends the page settings the plugin wrote, as Stream Deck does. */
+  receive: (settings: Settings) => void;
+};
 
 /**
  * Runs ui/toggle.js on a stand-in property inspector holding one switch.
@@ -52,13 +58,15 @@ function open(stored: Settings): Inspector {
   const style = { textContent: '' };
   let answer: (settings: { settings: Settings }) => void = () => undefined;
   const settings = new Promise<{ settings: Settings }>((resolve) => (answer = resolve));
+  const listeners: ((message: { payload: { settings: Settings } }) => void)[] = [];
 
   runInNewContext(toggleScript, {
     window: {
       SDPIComponents: {
         streamDeckClient: {
           getSettings: () => settings,
-          setSettings: async (next: Settings) => void saved.push(next)
+          setSettings: async (next: Settings) => void saved.push(next),
+          didReceiveSettings: { subscribe: (listener: (typeof listeners)[number]) => void listeners.push(listener) }
         }
       }
     },
@@ -75,7 +83,8 @@ function open(stored: Settings): Inspector {
     arrive: async () => {
       answer({ settings: stored });
       await setImmediate();
-    }
+    },
+    receive: (next) => listeners.forEach((listener) => listener({ payload: { settings: next } }))
   };
 }
 
@@ -140,6 +149,20 @@ describe('the property inspector switch', () => {
     inspector.element.click();
 
     assert.deepEqual({ ...inspector.saved[0] }, { replaceOnUndo: false, other: 'kept' });
+  });
+});
+
+describe('the property inspector switch, while the page is open', () => {
+  it('follows a value the plugin writes, and saves from it', async () => {
+    const { element, saved, receive } = await connect({ replaceOnUndo: false, other: 'kept' });
+
+    receive({ replaceOnUndo: true, other: 'kept' });
+
+    assert.equal(element.attributes.get('aria-checked'), 'true');
+
+    element.click();
+
+    assert.deepEqual({ ...saved[0] }, { replaceOnUndo: false, other: 'kept' });
   });
 });
 

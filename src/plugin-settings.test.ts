@@ -201,3 +201,19 @@ describe('PluginSettings.setStopped', () => {
     assert.equal(client.opened[0]?.connection.origin, 'http://localhost:8000');
   });
 });
+
+describe('PluginSettings writes', () => {
+  it('keeps every change when two are saved at once', async () => {
+    const { plugin, settings } = build(
+      { url: 'http://localhost:8000' },
+      scoreboard('CRG_SCOREBOARD=abc', 'http://localhost:8000')
+    );
+
+    await Promise.all([plugin.rememberSession(), plugin.rememberOperators(['Rose_City']), plugin.setStopped(true)]);
+
+    assert.equal(settings.held.session, 'CRG_SCOREBOARD=abc');
+    assert.deepEqual(settings.held.operators, ['Rose_City']);
+    assert.equal(settings.held.stopped, true);
+    assert.equal(settings.held.url, 'http://localhost:8000');
+  });
+});
