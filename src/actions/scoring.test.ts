@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { afterEach, beforeEach, describe, it } from 'node:test';
 
 import { FakeDeck, type FakeKey } from '../test-support/fake-deck.ts';
-import { Score } from './scoring.ts';
+import { AddTrip, RemoveTrip, Score, TripPointsDown, TripPointsUp } from './scoring.ts';
 import { type TeamSettings } from './team-key-action.ts';
 import { team } from '../crg/paths.ts';
 
@@ -43,5 +43,42 @@ describe('the Score key', () => {
     const key = deck.place(keyAction, { team: 2 });
 
     assert.ok(across(key, '4') < across(key, '109'));
+  });
+});
+
+describe('the trip keys', () => {
+  let deck: FakeDeck;
+
+  beforeEach(() => {
+    deck = new FakeDeck();
+  });
+
+  afterEach(() => deck.stop());
+
+  it('add a point to the trip, or take one away, relative to what it holds', async () => {
+    const up = new TripPointsUp(deck.context);
+    const down = new TripPointsDown(deck.context);
+    const settings: TeamSettings = { team: 2 };
+
+    await deck.press(up, deck.place(up, settings), settings);
+    await deck.press(down, deck.place(down), {});
+
+    assert.deepEqual(deck.written, [
+      { key: team(2, 'TripScore'), value: 1, flag: 'change' },
+      { key: team(1, 'TripScore'), value: -1, flag: 'change' }
+    ]);
+  });
+
+  it('add a trip, or remove one, with CRG’s own controls', async () => {
+    const add = new AddTrip(deck.context);
+    const remove = new RemoveTrip(deck.context);
+
+    await deck.press(add, deck.place(add));
+    await deck.press(remove, deck.place(remove));
+
+    assert.deepEqual(deck.written, [
+      { key: team(1, 'AddTrip'), value: true, flag: '' },
+      { key: team(1, 'RemoveTrip'), value: true, flag: '' }
+    ]);
   });
 });
