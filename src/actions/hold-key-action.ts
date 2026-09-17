@@ -1,9 +1,10 @@
 /**
  * A key that acts only once it has been held for a full second.
  *
- * Pressing starts the hold, and the key draws its dial filling. Letting
- * go early cancels it. At the full second the action runs while the key
- * is still down, so the operator does not have to judge when to let go.
+ * Pressing starts the hold, and the key draws it filling: on its top
+ * bar, or on a dial when the key has no bar. Letting go early cancels
+ * it. At the full second the action runs while the key is still down,
+ * so the operator does not have to judge when to let go.
  */
 
 import type { KeyAction, KeyDownEvent, KeyUpEvent, WillDisappearEvent } from '@elgato/streamdeck';
@@ -78,7 +79,7 @@ export abstract class HoldKeyAction<T extends JsonObject = JsonObject> extends C
       timer: setTimeout(() => {
         hold.done = true;
         this.redraw(action);
-        void Promise.resolve(this.completeHold(action, settings)).catch(() => action.showAlert());
+        void this.#complete(action, settings).catch(() => action.showAlert());
       }, HOLD_MS)
     };
 
@@ -96,6 +97,15 @@ export abstract class HoldKeyAction<T extends JsonObject = JsonObject> extends C
   override onWillDisappear(event: WillDisappearEvent<T>): void {
     this.#cancel(event.action.id);
     super.onWillDisappear(event);
+  }
+
+  /** Runs the hold's action at once, turning a failure it throws into one it reports. */
+  #complete(action: KeyAction<T>, settings: T): Promise<void> {
+    try {
+      return Promise.resolve(this.completeHold(action, settings));
+    } catch (cause) {
+      return Promise.reject(cause instanceof Error ? cause : new Error(String(cause)));
+    }
   }
 
   #cancel(actionId: string): void {

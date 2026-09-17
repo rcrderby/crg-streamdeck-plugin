@@ -127,4 +127,20 @@ describe('a key that acts on a hold', () => {
 
     assert.deepEqual(keyAction.completed, [key.id, second.id]);
   });
+
+  it('shows an alert, rather than throwing, when the action fails at once', async () => {
+    const failing = new (class extends CountingHold {
+      protected override completeHold(): void {
+        throw new Error('CRG is gone');
+      }
+    })(deck.context);
+    const broken = deck.place(failing);
+
+    await deck.holdDown(failing, broken);
+    mock.timers.tick(HOLD_MS);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    assert.equal(broken.alerts, 1);
+  });
 });
