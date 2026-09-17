@@ -66,10 +66,22 @@
       void client.setSettings(settings);
     });
 
-    void client.getSettings().then((payload) => {
-      settings = payload?.settings ?? payload ?? {};
+    const take = (next) => {
+      settings = next;
       show(settings[name]);
       element.setAttribute('aria-busy', 'false');
+    };
+
+    void client.getSettings().then((payload) => take(payload?.settings ?? payload ?? {}));
+
+    // The plugin writes CRG's value into the settings when it changes, so
+    // an open page follows it rather than showing where it was.
+    client.didReceiveSettings?.subscribe((message) => {
+      const next = message?.payload?.settings;
+
+      if (next !== undefined && next !== null) {
+        take(next);
+      }
     });
   }
 
