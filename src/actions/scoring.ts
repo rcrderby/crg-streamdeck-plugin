@@ -2,8 +2,8 @@
  * Keys that change a team's trips and trip points, and the Score key.
  *
  * Every scoring key carries the team name at the top, in the team's
- * colors. Score only displays, so it carries the blue mark instead of
- * doing anything when pressed.
+ * colors. Score only displays, so it carries the informational tab
+ * instead of doing anything when pressed.
  */
 
 import { type KeyDownEvent } from '@elgato/streamdeck';
