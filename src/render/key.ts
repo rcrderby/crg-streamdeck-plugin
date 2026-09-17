@@ -61,16 +61,16 @@ export type KeyBar = {
 export type KeySpec = {
   readonly background?: string | undefined;
   readonly foreground?: string | undefined;
-  /** A thin bar across the top, used by the clocks and the connection key. */
+  /** A thin strip across the top, used by the clocks and the CRG Connection key. */
   readonly accent?: string | undefined;
   /** Drawings from icons.ts, which build their markup only from checked colors. */
   readonly shapes?: readonly string[] | undefined;
   readonly texts?: readonly KeyText[] | undefined;
   /** The active bar; the rest of the key moves down to sit below it. */
   readonly bar?: KeyBar | undefined;
-  /** The blue mark on a key that does nothing when pressed. */
+  /** The corner tab with an "i", on a key that does nothing when pressed. */
   readonly informational?: boolean | undefined;
-  /** A dark veil over the whole key, while CRG is disconnected. */
+  /** A dark veil over the whole key, while CRG is disconnected or the key has nothing to act on. */
   readonly subdued?: boolean | undefined;
 };
 
@@ -138,6 +138,9 @@ const TEXT_WIDTH = 92;
 /** How small a line may be shrunk before it stops being worth reading. */
 const MIN_FONT_SCALE = 0.5;
 
+/** Characters drawn about a full em wide: Chinese, Japanese, and Korean script, and emoji. */
+const WIDE = /[\u2e80-\ua4cf\uac00-\ud7a3\uf900-\ufaff\uff00-\uff60\uffe0-\uffe6]|\p{Extended_Pictographic}/u;
+
 /**
  * Rough character widths, as a fraction of the font size.
  *
@@ -146,6 +149,10 @@ const MIN_FONT_SCALE = 0.5;
  * is a size that fits rather than one that fills the key precisely.
  */
 function characterWidth(character: string): number {
+  if (WIDE.test(character)) {
+    return 1;
+  }
+
   if (":.,'| ".includes(character)) {
     return 0.28;
   }

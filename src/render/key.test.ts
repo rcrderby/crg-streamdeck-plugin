@@ -104,7 +104,7 @@ describe('top bar', () => {
 });
 
 describe('informational mark', () => {
-  it('draws the blue mark only when asked', () => {
+  it('draws the informational tab only when asked', () => {
     assert.ok(!renderKeySvg({}).includes('#3d5a8a'));
     assert.match(
       renderKeySvg({ informational: true }),
@@ -159,6 +159,14 @@ describe('renderKey', () => {
     });
 
     assert.ok(!/<filter|clip-path|mask=/.test(svg));
+  });
+});
+
+describe('estimateTextWidth', () => {
+  it('counts wide script and emoji as a full em each, so a name in them still fits', () => {
+    assert.equal(estimateTextWidth('東京', 10), 20);
+    assert.equal(estimateTextWidth('🛼🛼', 10), 20);
+    assert.ok(fittedSize('ローズシティローラーズ', 11, 'bold') < 11);
   });
 });
 
