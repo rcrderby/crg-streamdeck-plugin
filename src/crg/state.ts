@@ -15,20 +15,39 @@ export type StateValue = string | number | boolean | null;
 export type StateListener = (changed: ReadonlySet<string>) => void;
 
 type Subscription = {
-  readonly patterns: readonly RegExp[];
+  readonly matches: (path: string) => boolean;
   readonly listener: StateListener;
 };
+
+/** Patterns already built, since the same paths are matched on every message CRG sends. */
+const patterns = new Map<string, RegExp>();
 
 /**
  * Builds a matcher for a CRG path pattern.
  *
  * A '*' stands for one path component or one argument inside
  * parentheses, which is how CRG's own pages register for a group of
- * paths such as 'Team(*).Score'.
+ * paths such as 'Team(*).Score'. Patterns are kept, because the paths
+ * come from the code rather than from CRG and so are few.
  */
 export function toPattern(path: string): RegExp {
+  const built = patterns.get(path);
+
+  if (built !== undefined) {
+    return built;
+  }
+
   const escaped = path.replace(/[.+?^${}()|[\]\\]/g, '\\$&');
-  return new RegExp(`^${escaped.replace(/\*/g, '[^.()]*')}$`);
+  const pattern = new RegExp(`^${escaped.replace(/\*/g, '[^.()]*')}$`);
+
+  patterns.set(path, pattern);
+
+  return pattern;
+}
+
+/** The part of a pattern before its first star, which every match starts with. */
+function literalPrefix(path: string): string {
+  return path.split('*')[0] ?? '';
 }
 
 export class StateStore {
@@ -89,6 +108,44 @@ export class StateStore {
     return fallback;
   }
 
+  /** Every held path under a prefix, with its value. */
+  startingWith(prefix: string): [string, StateValue][] {
+    const found: [string, StateValue][] = [];
+
+    for (const entry of this.#values) {
+      if (entry[0].startsWith(prefix)) {
+        found.push(entry);
+      }
+    }
+
+    return found;
+  }
+
+  /**
+   * Every held path that matches a pattern, with its value.
+   *
+   * A star matches one path component or argument, as in a
+   * subscription, so 'Period(*).Timeout(*).Running' finds every timeout
+   * in every period.
+   *
+   * The store holds every scoring trip of a whole game by the end of it,
+   * and this runs once a key per redraw, so the held paths are cut down
+   * by the pattern's leading text before the pattern itself is tried.
+   */
+  matching(path: string): [string, StateValue][] {
+    const pattern = toPattern(path);
+    const prefix = literalPrefix(path);
+    const found: [string, StateValue][] = [];
+
+    for (const entry of this.#values) {
+      if (entry[0].startsWith(prefix) && pattern.test(entry[0])) {
+        found.push(entry);
+      }
+    }
+
+    return found;
+  }
+
   /**
    * Applies one delta from CRG and tells the subscriptions it touched.
    *
@@ -96,7 +153,12 @@ export class StateStore {
    * repeats what is already held redraws nothing.
    */
   apply(delta: Readonly<Record<string, StateValue>>): ReadonlySet<string> {
-    const changed = new Set<string>();
+    return this.#merge(delta, new Set());
+  }
+
+  /** Writes a delta over what is held, and reports it with the paths already changed on the way. */
+  #merge(delta: Readonly<Record<string, StateValue>>, alreadyChanged: ReadonlySet<string>): ReadonlySet<string> {
+    const changed = new Set<string>(alreadyChanged);
 
     for (const [path, value] of Object.entries(delta)) {
       if (value === null) {
@@ -120,6 +182,30 @@ export class StateStore {
     return changed;
   }
 
+  /**
+   * Replaces what is held with a full snapshot, and tells the subscriptions every path that changed or went.
+   *
+   * A path the snapshot leaves out is deleted, unless it is one to keep.
+   */
+  replace(
+    snapshot: Readonly<Record<string, StateValue>>,
+    keep: (path: string) => boolean = () => false
+  ): ReadonlySet<string> {
+    const gone = new Set<string>();
+
+    for (const path of this.#values.keys()) {
+      if (!Object.hasOwn(snapshot, path) && !keep(path)) {
+        gone.add(path);
+      }
+    }
+
+    for (const path of gone) {
+      this.#values.delete(path);
+    }
+
+    return this.#merge(snapshot, gone);
+  }
+
   /** Forgets everything, so a reconnect starts from what CRG sends next. */
   clear(): void {
     this.#values.clear();
@@ -131,8 +217,22 @@ export class StateStore {
    * Returns the function that ends the subscription.
    */
   subscribe(paths: readonly string[], listener: StateListener): () => void {
-    const subscription: Subscription = { patterns: paths.map(toPattern), listener };
+    const patterns = paths.map(toPattern);
 
+    return this.#add({ matches: (path) => patterns.some((pattern) => pattern.test(path)), listener });
+  }
+
+  /**
+   * Calls the listener whenever any path under a prefix changes.
+   *
+   * CRG keeps a settings name inside parentheses, dots and all, which no
+   * wildcard reaches, so a subtree is followed by its prefix instead.
+   */
+  subscribePrefix(prefix: string, listener: StateListener): () => void {
+    return this.#add({ matches: (path) => path.startsWith(prefix), listener });
+  }
+
+  #add(subscription: Subscription): () => void {
     this.#subscriptions.add(subscription);
 
     return () => {
@@ -141,10 +241,10 @@ export class StateStore {
   }
 
   #notify(changed: ReadonlySet<string>): void {
-    for (const subscription of this.#subscriptions) {
-      const matched = subscription.patterns.some((pattern) => [...changed].some((path) => pattern.test(path)));
+    const paths = [...changed];
 
-      if (matched) {
+    for (const subscription of this.#subscriptions) {
+      if (paths.some((path) => subscription.matches(path))) {
         subscription.listener(changed);
       }
     }

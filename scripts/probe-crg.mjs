@@ -10,31 +10,23 @@
 import { CrgClient } from '../src/crg/client.ts';
 import { formatClock } from '../src/render/time.ts';
 import { isUnavailable, label, team } from '../src/crg/paths.ts';
-import { normalizeHost, normalizePort, resolveConnection } from '../src/crg/settings.ts';
+import { resolveConnection } from '../src/crg/settings.ts';
 import { teamTheme } from '../src/render/theme.ts';
 
 const origin = process.env.CRG_ORIGIN ?? 'http://localhost:8000';
-const url = new URL(origin);
 
 const client = new CrgClient();
 
 client.on('error', (cause) => console.error('error:', cause.message));
 client.on('unauthorized', (message) => console.error('unauthorized:', message));
 
-client.connect(
-  resolveConnection({
-    host: normalizeHost(url.hostname),
-    port: normalizePort(url.port),
-    secure: url.protocol === 'https:'
-  })
-);
+client.connect(resolveConnection({ url: origin }));
 
 await new Promise((resolve) => setTimeout(resolve, 3000));
 
 console.log(`status: ${client.status}`);
 console.log(`device CRG lists: ${client.deviceName ?? '(unknown)'}`);
 console.log(`paths held: ${client.state.size}`);
-console.log(`CRG version: ${client.state.getString('ScoreBoard.Version(release)', '(unknown)')}`);
 
 const startText = client.state.getString(label('Start'));
 const stopText = client.state.getString(label('Stop'));
@@ -56,5 +48,5 @@ for (const number of [1, 2]) {
   );
 }
 
-client.disconnect();
+await client.disconnect();
 process.exit(0);

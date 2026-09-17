@@ -42,14 +42,41 @@ const XML_ESCAPES: Readonly<Record<string, string>> = {
   "'": '&apos;'
 };
 
+/**
+ * Characters XML 1.0 cannot carry at all, escaped or not.
+ *
+ * A control character pasted into a team name would otherwise make the
+ * whole picture unreadable, and the key would draw nothing.
+ */
+const NOT_XML =
+  // eslint-disable-next-line no-control-regex
+  /[\u0000-\u0008\u000b\u000c\u000e-\u001f\ufffe\uffff]|[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/g;
+
 /** Escapes text so it cannot change the markup it is placed in. */
 export function escapeXml(value: string): string {
-  return value.replace(/[&<>"']/g, (character) => XML_ESCAPES[character] ?? character);
+  return value.replace(NOT_XML, '').replace(/[&<>"']/g, (character) => XML_ESCAPES[character] ?? character);
 }
 
-/** Returns the color when it is a hex color, and the fallback when it is not. */
+/**
+ * A hex color as six digits, expanding a short form and dropping alpha.
+ *
+ * CRG accepts a color with an alpha channel, and a key is drawn over an
+ * opaque background, so the alpha is dropped here the way the luminance
+ * and blend helpers already drop it. Passing it on would leave the key
+ * to whatever the Stream Deck renderer makes of eight-digit hex.
+ */
+function sixDigits(color: string): string {
+  const digits = color.slice(1);
+  const full = digits.length <= 4 ? [...digits].map((digit) => digit + digit).join('') : digits;
+
+  return `#${full.slice(0, 6)}`;
+}
+
+/** Returns the color when it is a hex color, normalized to six digits, and the fallback when it is not. */
 export function safeColor(value: string | undefined, fallback: string): string {
-  return value !== undefined && HEX_COLOR.test(value.trim()) ? value.trim() : fallback;
+  const trimmed = value?.trim() ?? '';
+
+  return HEX_COLOR.test(trimmed) ? sixDigits(trimmed) : fallback;
 }
 
 /**
@@ -78,6 +105,12 @@ export function contrastRatio(first: string, second: string): number {
   return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
 }
 
+/** The ratio text holds against the key behind it, which is WCAG's bar for small text. */
+export const READABLE_RATIO = 4.5;
+
+/** How finely a faded text's opacity is searched for. */
+const FADE_STEPS = 12;
+
 /**
  * Picks the readable foreground for a background.
  *
@@ -85,7 +118,7 @@ export function contrastRatio(first: string, second: string): number {
  * can be unreadable on a key. The requested color is kept when it
  * clears the ratio, and black or white replaces it when it does not.
  */
-export function readableForeground(background: string, requested: string, minimumRatio = 4.5): string {
+export function readableForeground(background: string, requested: string, minimumRatio = READABLE_RATIO): string {
   if (contrastRatio(background, requested) >= minimumRatio) {
     return requested;
   }
@@ -94,16 +127,122 @@ export function readableForeground(background: string, requested: string, minimu
 }
 
 /**
+ * The opacity to draw faded text at, raised until the text stays readable.
+ *
+ * A foreground is chosen against the key at full strength, but a caption
+ * or a team name is then drawn faded, and a pair that only just cleared
+ * the ratio falls below it once it is. The fade is kept where it can be
+ * and given back only as far as the ratio needs.
+ */
+export function readableOpacity(
+  background: string,
+  foreground: string,
+  wanted: number,
+  minimumRatio = READABLE_RATIO
+): number {
+  const key = safeColor(background, DEFAULT_BACKGROUND);
+  const holds = (opacity: number): boolean => contrastRatio(blend(foreground, key, opacity), key) >= minimumRatio;
+
+  if (wanted >= 1 || holds(wanted)) {
+    return wanted;
+  }
+
+  if (!holds(1)) {
+    return 1;
+  }
+
+  let low = wanted;
+  let high = 1;
+
+  for (let step = 0; step < FADE_STEPS; step += 1) {
+    const middle = (low + high) / 2;
+
+    if (holds(middle)) {
+      high = middle;
+    } else {
+      low = middle;
+    }
+  }
+
+  return high;
+}
+
+/** The six hex digits of a color, for mixing. */
+function channels(color: string): number[] {
+  const digits = safeColor(color, '#000000').slice(1);
+  const full = digits.length <= 4 ? [...digits].map((digit) => digit + digit).join('') : digits;
+
+  return [0, 2, 4].map((index) => parseInt(full.slice(index, index + 2), 16));
+}
+
+/**
+ * A color partway from a background to a foreground.
+ *
+ * It stands in for opacity on a drawing made of overlapping parts, which
+ * would show their overlaps if each part were made transparent.
+ */
+export function blend(foreground: string, background: string, amount: number): string {
+  const from = channels(background);
+  const to = channels(foreground);
+
+  return `#${to
+    .map((value, index) => {
+      const base = from[index] ?? 0;
+
+      return Math.round(base + (value - base) * amount)
+        .toString(16)
+        .padStart(2, '0');
+    })
+    .join('')}`;
+}
+
+/** How far a panel stands from the key behind it. */
+export const PANEL_CONTRAST = 1.35;
+
+/** The most of the way toward the foreground a panel is ever mixed. */
+const PANEL_MOST_LIFT = 0.5;
+
+/** How finely the mix is searched for. */
+const PANEL_STEPS = 24;
+
+/**
+ * A panel set the same step apart from whatever key it sits on.
+ *
+ * Mixing in a fixed share of the foreground leaves the step varying with
+ * the color underneath, so the share is searched for instead. Every
+ * league's colors then carry the same panel, rather than one that reads
+ * on some and washes out on others.
+ */
+export function panelColor(background: string, foreground: string): string {
+  const key = safeColor(background, DEFAULT_BACKGROUND);
+  let low = 0;
+  let high = PANEL_MOST_LIFT;
+
+  for (let step = 0; step < PANEL_STEPS; step += 1) {
+    const middle = (low + high) / 2;
+
+    if (contrastRatio(blend(foreground, key, middle), key) < PANEL_CONTRAST) {
+      low = middle;
+    } else {
+      high = middle;
+    }
+  }
+
+  return blend(foreground, key, (low + high) / 2);
+}
+
+/**
  * Reads one color slot across the sets, in order of preference.
  *
  * A game that nobody has configured holds a preset set but no operator
- * set, so a key still comes out in the team's colors.
+ * set, so a key still comes out in the team's colors. A value that is
+ * not a hex color is passed over, so the next set can stand in for it.
  */
 function colorSlot(state: StateStore, number: TeamNumber, slot: ColorSlot): string {
   for (const set of COLOR_SETS) {
-    const value = state.getString(teamColor(number, slot, set));
+    const value = state.getString(teamColor(number, slot, set)).trim();
 
-    if (value !== '') {
+    if (HEX_COLOR.test(value)) {
       return value;
     }
   }
@@ -134,7 +273,7 @@ export function teamTheme(state: StateStore, number: TeamNumber): TeamTheme {
   return {
     background,
     foreground: readableForeground(background, requested),
-    glow: HEX_COLOR.test(glow.trim()) ? glow.trim() : undefined,
+    glow: glow === '' ? undefined : sixDigits(glow),
     name
   };
 }

@@ -28,6 +28,8 @@ export default defineConfig([
     // Rollup writes the bundle Stream Deck loads
     '**/*.sdPlugin/bin/**',
     '**/*.sdPlugin/logs/**',
+    // A vendored library, kept byte for byte as its author published it
+    '**/ui/sdpi-components.js',
     'dist/**'
   ]),
 

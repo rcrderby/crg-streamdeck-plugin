@@ -1,5 +1,5 @@
 /**
- * Runs the jam and timeout controls from one key.
+ * Runs the jam and timeout controls from one key, over the clock that moment runs on.
  *
  * Stream Deck cannot reassign a key's action while a game runs, so the
  * key reads what CRG says is available and does that. CRG writes '---'
@@ -8,17 +8,25 @@
  * 'End Timeout'.
  */
 
-import { action, type KeyDownEvent } from '@elgato/streamdeck';
-
+import { CLOCK_NAMES, TIMEOUTS, type ClockName, clock, game, isUnavailable, label, rule } from '../crg/paths.ts';
+import { jamControlClock, lineupWarning, runningTimeout } from '../crg/game-state.ts';
 import { type KeySpec } from '../render/key.ts';
-import { CrgKeyAction } from './key-action.ts';
-import { game, isUnavailable, label } from '../crg/paths.ts';
+import { JAM_IDLE, JAM_STOP, jamControlKey, lineupBackground } from '../render/designs.ts';
+import { clockTitle } from '../render/clock-title.ts';
+import { SECOND_PULSE_MS, pulsePhase } from '../render/pulse.ts';
+import { formatClock } from '../render/time.ts';
+import { CrgKeyAction, isOnline } from './key-action.ts';
 
 const IN_JAM = game('InJam');
 
 const START = label('Start');
 
 const STOP = label('Stop');
+
+const OFFICIAL_SCORE = game('OfficialScore');
+
+/** What the key reads while CRG will act on none of its controls: its usual action, drawn faded. */
+const START_JAM = 'Start Jam';
 
 /** What the key does when pressed, and what it says. */
 type Choice = {
@@ -27,96 +35,132 @@ type Choice = {
   readonly stopping: boolean;
 };
 
-const STOPPING_BACKGROUND = '#8c1d1d';
-
-const STARTING_BACKGROUND = '#14532d';
-
-const IDLE_BACKGROUND = '#26262b';
-
-@action({ UUID: 'com.rcrderby.crg-streamdeck.jam-control' })
 export class JamControl extends CrgKeyAction {
   protected override watchedPaths(): readonly string[] {
-    return [IN_JAM, START, STOP];
+    return [
+      IN_JAM,
+      START,
+      STOP,
+      OFFICIAL_SCORE,
+      TIMEOUTS.running,
+      rule('Lineup.Duration'),
+      ...CLOCK_NAMES.flatMap((name) => [
+        clock(name, 'Time'),
+        clock(name, 'Running'),
+        clock(name, 'Direction'),
+        clock(name, 'InvertedTime'),
+        clock(name, 'Name'),
+        clock(name, 'Number')
+      ])
+    ];
   }
 
   protected override describe(): KeySpec {
-    const connected = this.context.client.status === 'connected';
+    // Every key reads the game while a write is refused, so this one
+    // does too rather than reading No CRG beside clocks that are live.
+    const online = isOnline(this.context.client.status);
     const choice = this.#choose();
-    const available = connected && choice.path !== undefined;
+    const available = online && choice.path !== undefined;
 
-    const background = !available ? IDLE_BACKGROUND : choice.stopping ? STOPPING_BACKGROUND : STARTING_BACKGROUND;
+    const background = !available
+      ? JAM_IDLE
+      : choice.stopping
+        ? JAM_STOP
+        : lineupBackground(lineupWarning(this.context.client.state), pulsePhase(Date.now(), SECOND_PULSE_MS));
 
-    const lines = wrap(connected ? choice.text : 'No CRG');
+    const running = online ? jamControlClock(this.context.client.state, choice.stopping) : undefined;
 
-    return {
+    return jamControlKey(
+      online ? choice.text : 'No CRG',
+      running === undefined ? undefined : this.#time(running),
+      online ? this.#foot(running) : [],
       background,
-      foreground: '#ffffff',
-      texts: lines.map((line, index) => ({
-        text: line,
-        y: 56 + (index - (lines.length - 1) / 2) * 20,
-        size: 17,
-        weight: 'bold' as const,
-        opacity: available ? 1 : 0.45
-      }))
-    };
+      !available
+    );
   }
 
-  override onKeyDown(event: KeyDownEvent): void | Promise<void> {
-    const choice = this.#choose();
+  /**
+   * The foot: the clock's own name, and the jam CRG holds beneath it.
+   *
+   * A jam clock already names its jam, so it says it alone. A lineup says
+   * both, since the name belongs to the clock counting now and the number
+   * to the jam that just ran. It takes two lines because CRG calls the
+   * lineup Post Timeout after a timeout, which is too long to share one.
+   * CRG numbers jams within a period, so before the first jam of one
+   * there is no jam to name.
+   */
+  #foot(running: ClockName | undefined): string[] {
+    const number = this.context.client.state.getNumber(clock('Jam', 'Number'));
+    const jam = number > 0 ? `JAM ${number}` : '';
 
-    if (choice.path === undefined) {
-      return event.action.showAlert();
+    if (running === 'Jam') {
+      return [this.#clockName(running)];
     }
 
-    this.context.client.trigger(choice.path);
+    if (running === 'Lineup') {
+      return jam === '' ? [this.#clockName(running)] : [this.#clockName(running), jam];
+    }
 
-    return undefined;
+    return jam === '' ? [] : [jam];
+  }
+
+  /** Start Jam moves between green and orange once the lineup is over its time. */
+  protected override animates(): boolean {
+    return lineupWarning(this.context.client.state) === 'over';
+  }
+
+  /** What CRG calls that clock, which reads Post Timeout after a timeout. */
+  #clockName(running: ClockName): string {
+    const state = this.context.client.state;
+
+    return clockTitle(running, state.getNumber(clock(running, 'Number'), 0), state.getString(clock(running, 'Name')));
+  }
+
+  /** A key CRG has nothing for does nothing, and already reads as dimmed. */
+  override onKeyDown(): void {
+    const choice = this.#choose();
+
+    if (choice.path !== undefined) {
+      this.context.client.trigger(choice.path);
+    }
+  }
+
+  /** The time on the clock the key's own action runs against. */
+  #time(running: ClockName): string {
+    const state = this.context.client.state;
+
+    return formatClock(state.getNumber(clock(running, 'Time')), state.getBoolean(clock(running, 'Direction')));
   }
 
   /**
    * Decides what the key does from the labels CRG computes.
    *
-   * When both controls are available, the jam clock decides, which is
-   * what CRG's own jam timer page shows.
+   * Ending a running jam or timeout comes first, as on CRG's own screen.
+   * CRG's stop control also offers to start the lineup clock while
+   * nothing runs, and the key leads with the jam there instead. Once the
+   * official score is set, or before CRG has sent its labels, the key
+   * reads Start Jam, faded, and does nothing.
    */
   #choose(): Choice {
     const state = this.context.client.state;
+    const disabled: Choice = { text: START_JAM, path: undefined, stopping: false };
+
+    if (state.getBoolean(OFFICIAL_SCORE)) {
+      return disabled;
+    }
 
     const startText = state.getString(START);
     const stopText = state.getString(STOP);
+    const ending = state.getBoolean(IN_JAM) || runningTimeout(state).kind !== 'none';
 
-    const canStart = !isUnavailable(startText);
-    const canStop = !isUnavailable(stopText);
-
-    if (canStart && canStop) {
-      const inJam = state.getBoolean(IN_JAM);
-
-      return inJam
-        ? { text: stopText, path: game('StopJam'), stopping: true }
-        : { text: startText, path: game('StartJam'), stopping: false };
-    }
-
-    if (canStop) {
+    if (ending && !isUnavailable(stopText)) {
       return { text: stopText, path: game('StopJam'), stopping: true };
     }
 
-    if (canStart) {
+    if (!isUnavailable(startText)) {
       return { text: startText, path: game('StartJam'), stopping: false };
     }
 
-    return { text: 'Wait', path: undefined, stopping: false };
+    return disabled;
   }
-}
-
-/** Breaks a CRG label into the two lines a key has room for. */
-function wrap(text: string): string[] {
-  const words = text.split(/\s+/).filter(Boolean);
-
-  if (words.length < 2) {
-    return words.length === 0 ? [''] : words;
-  }
-
-  const middle = Math.ceil(words.length / 2);
-
-  return [words.slice(0, middle).join(' '), words.slice(middle).join(' ')];
 }

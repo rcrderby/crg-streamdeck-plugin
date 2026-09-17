@@ -1,12 +1,15 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <title>Trip Points</title>
   </head>
   <body>
-    <script src="https://sdpi-components.dev/releases/v4/sdpi-components.js"></script>
+    <script src="sdpi-components.js"></script>
 
+    <sdpi-item>
+      <div id="description"></div>
+    </sdpi-item>
     <sdpi-item label="Team">
       <sdpi-select setting="team" default="1">
         <option value="1">Team 1</option>
@@ -22,5 +25,6 @@
         <option value="4">4</option>
       </sdpi-select>
     </sdpi-item>
+    <script src="descriptions.js"></script>
   </body>
 </html>

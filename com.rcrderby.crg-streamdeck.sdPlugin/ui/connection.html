@@ -1,17 +1,50 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <title>CRG Connection</title>
   </head>
   <body>
-    <script src="https://sdpi-components.dev/releases/v4/sdpi-components.js"></script>
+    <script src="sdpi-components.js"></script>
 
+    <sdpi-item>
+      <div id="description"></div>
+    </sdpi-item>
     <sdpi-item label="CRG URL">
       <sdpi-textfield global setting="url" placeholder="http://localhost:8000"></sdpi-textfield>
     </sdpi-item>
     <sdpi-item>
-      <p>One address for every CRG key on this Stream Deck. Set it here, on a CRG Connection key.</p>
+      <p>The URL applies to every CRG button, in every profile.</p>
     </sdpi-item>
+    <sdpi-item label="CRG Operator">
+      <sdpi-select global setting="operator" datasource="operators" placeholder="StreamDeck"></sdpi-select>
+    </sdpi-item>
+    <sdpi-item>
+      <sdpi-button id="operator-reveal">Create CRG Operator</sdpi-button>
+    </sdpi-item>
+    <sdpi-item label="New Profile" id="operator-form" hidden>
+      <div class="operator-row">
+        <input
+          id="operator-name"
+          type="text"
+          placeholder="Profile name"
+          aria-label="New CRG operator profile name"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <sdpi-button id="operator-create" disabled>Create</sdpi-button>
+      </div>
+    </sdpi-item>
+    <sdpi-item id="operator-note-item" hidden>
+      <p id="operator-note"></p>
+    </sdpi-item>
+    <sdpi-item>
+      <p>The deck keeps its settings under the CRG operator {operator}, and leaves the default profile alone.</p>
+    </sdpi-item>
+    <sdpi-item>
+      <p>While connected to CRG, your computer will remain awake.</p>
+    </sdpi-item>
+    <script src="operators.js"></script>
+    <script src="descriptions.js"></script>
   </body>
 </html>

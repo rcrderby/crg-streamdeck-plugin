@@ -4,6 +4,9 @@ node_modules/
 dist/
 LICENSE
 
+# A vendored library, kept byte for byte as its author published it
+*.sdPlugin/ui/sdpi-components.js
+
 # yamllint and markdownlint own these, through the Super Linter
 # configuration in .github/linters
 *.yml

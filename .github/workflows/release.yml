@@ -1,0 +1,91 @@
+# Attach the packaged plugin and its checksums to a published release
+# https://docs.github.com/en/repositories/releasing-projects-on-github
+# https://docs.elgato.com/streamdeck/cli/commands/pack
+
+---
+# Name of the action
+name: Publish Release Assets
+
+# Events that trigger the action
+on:
+  release:
+    types: [published]
+
+# Uploading a release asset is the only write this workflow needs
+permissions:
+  contents: write
+
+jobs:
+  publish-assets:
+    name: Publish Release Assets
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      # checkout action documentation
+      # https://github.com/marketplace/actions/checkout
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      # Stream Deck shows the manifest version, and npm reads package.json,
+      # so a release that disagrees with either would misreport itself
+      - name: Verify The Plugin Version Matches The Release Tag
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          release="${TAG#v}"
+          manifest="$(jq -r '.Version' com.rcrderby.crg-streamdeck.sdPlugin/manifest.json)"
+          package="$(jq -r '.version' package.json)"
+
+          if [ "${manifest}" != "${release}.0" ] ||
+            [ "${package}" != "${release}" ]; then
+            echo "Tag ${TAG} does not match manifest ${manifest}" \
+              "and package.json ${package}" >&2
+            exit 1
+          fi
+
+          echo "Plugin version ${release} matches release tag ${TAG}"
+
+      # setup-node action documentation
+      # https://github.com/marketplace/actions/setup-node-js-environment
+      - name: Set Up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+        with:
+          # The version the plugin manifest asks Stream Deck to run
+          node-version: '24'
+          cache: npm
+
+      - name: Install Dependencies
+        run: npm ci
+
+      # The same checks as the test workflow, so a release is never packed
+      # from a commit that would fail them
+      - name: Check Types
+        run: npm run typecheck
+
+      - name: Run Tests
+        run: npm test
+
+      - name: Build The Plugin
+        run: npm run build
+
+      - name: Check The Generated Files Are Current
+        run: git diff --exit-code
+
+      # Packing validates the plugin, and writes one file that installs on
+      # both macOS and Windows when opened
+      - name: Package The Plugin
+        run: npm run pack
+
+      - name: Generate Checksums
+        working-directory: dist
+        run: sha256sum com.rcrderby.crg-streamdeck.streamDeckPlugin > SHA256SUMS
+
+      # The file keeps the same name in every release, so the README can
+      # link to the latest one
+      - name: Attach The Assets To The Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.event.release.tag_name }}
+          PLUGIN: dist/com.rcrderby.crg-streamdeck.streamDeckPlugin
+        run: gh release upload "${TAG}" "${PLUGIN}" dist/SHA256SUMS

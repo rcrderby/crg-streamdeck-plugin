@@ -19,8 +19,13 @@ jobs:
   auto-merge:
     name: Auto-merge
     # Nothing from the pull request is checked out or run, so the only
-    # thing this workflow trusts is the identity of its author
-    if: github.actor == 'dependabot[bot]'
+    # thing this workflow trusts is the identity of its author. The
+    # author is read from the pull request itself, since the actor is
+    # whoever caused this run and Dependabot can be made to act on a
+    # pull request somebody else opened
+    if: >-
+      github.event.pull_request.user.login == 'dependabot[bot]' &&
+      github.repository == 'rcrderby/crg-streamdeck-plugin'
     runs-on: ubuntu-latest
 
     steps:

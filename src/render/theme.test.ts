@@ -2,11 +2,29 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import { StateStore } from '../crg/state.ts';
-import { contrastRatio, escapeXml, luminance, readableForeground, safeColor, teamTheme } from './theme.ts';
+import {
+  PANEL_CONTRAST,
+  READABLE_RATIO,
+  blend,
+  contrastRatio,
+  escapeXml,
+  luminance,
+  panelColor,
+  readableForeground,
+  readableOpacity,
+  safeColor,
+  teamTheme
+} from './theme.ts';
 
 describe('escapeXml', () => {
   it('escapes every character that can change markup', () => {
     assert.equal(escapeXml(`&<>"'`), '&amp;&lt;&gt;&quot;&apos;');
+  });
+
+  it('drops characters XML cannot carry, so a pasted name still draws', () => {
+    assert.equal(escapeXml('Rose\u0000 City\u000b'), 'Rose City');
+    assert.equal(escapeXml('Tab\tand newline\n stay'), 'Tab\tand newline\n stay');
+    assert.equal(escapeXml('half \ud83d pair, whole \ud83d\udee1'), 'half  pair, whole \ud83d\udee1');
   });
 
   it('neutralizes a team name that carries markup', () => {
@@ -24,8 +42,13 @@ describe('escapeXml', () => {
 describe('safeColor', () => {
   it('accepts the hex forms CRG writes', () => {
     assert.equal(safeColor('#b3122e', '#000000'), '#b3122e');
-    assert.equal(safeColor('#fff', '#000000'), '#fff');
-    assert.equal(safeColor('#b3122e80', '#000000'), '#b3122e80');
+    assert.equal(safeColor('#B3122E', '#000000'), '#B3122E');
+  });
+
+  it('normalizes a short form and drops alpha, so the renderer only ever sees six digits', () => {
+    assert.equal(safeColor('#fff', '#000000'), '#ffffff');
+    assert.equal(safeColor('#f00c', '#000000'), '#ff0000');
+    assert.equal(safeColor('#b3122e80', '#000000'), '#b3122e');
   });
 
   it('trims surrounding space', () => {
@@ -68,6 +91,48 @@ describe('readableForeground', () => {
   it('replaces a foreground that does not read', () => {
     assert.equal(readableForeground('#ffffff', '#fefefe'), '#000000');
     assert.equal(readableForeground('#000000', '#010101'), '#ffffff');
+  });
+});
+
+describe('readableOpacity', () => {
+  const held = (background: string, foreground: string, wanted: number, ratio = READABLE_RATIO): number =>
+    contrastRatio(blend(foreground, background, readableOpacity(background, foreground, wanted, ratio)), background);
+
+  it('leaves a fade alone when the text still reads at it', () => {
+    assert.equal(readableOpacity('#000000', '#ffffff', 0.8), 0.8);
+  });
+
+  it('gives back only as much of the fade as the ratio needs', () => {
+    // A pair that only just clears the ratio at full strength.
+    const marginal = readableForeground('#ffffff', '#767676');
+    const opacity = readableOpacity('#ffffff', marginal, 0.7);
+
+    assert.ok(opacity > 0.7, 'a marginal pair should be faded less');
+    assert.ok(opacity < 1, 'it should still be faded');
+    assert.ok(held('#ffffff', marginal, 0.7) >= READABLE_RATIO);
+  });
+
+  it('holds the ratio at every fade the designs ask for, on backgrounds a league might pick', () => {
+    for (const background of ['#000000', '#ffffff', '#6b7280', '#38205b', '#eab308', '#7dd3fc']) {
+      const foreground = readableForeground(background, '#ffffff');
+
+      for (const wanted of [0.7, 0.75, 0.8, 0.85]) {
+        assert.ok(
+          held(background, foreground, wanted) >= READABLE_RATIO - 0.01,
+          `${background} at ${wanted}: ${held(background, foreground, wanted)}`
+        );
+      }
+    }
+  });
+
+  it('keeps a lower bar where the fade is the point, so spent text still reads as spent', () => {
+    const spent = readableOpacity('#000000', '#ffffff', 0.38, 3);
+
+    assert.equal(spent, 0.38);
+  });
+
+  it('fades nothing at all when the pair cannot reach the ratio even at full strength', () => {
+    assert.equal(readableOpacity('#767676', '#6b7280', 0.8), 1);
   });
 });
 
@@ -121,6 +186,17 @@ describe('teamTheme', () => {
     assert.equal(teamTheme(state, 1).background, '#b3122e');
   });
 
+  it('passes over an operator color that is not a hex color, to the preset set', () => {
+    const state = new StateStore();
+
+    state.apply({
+      [path(1, 'Color(operator.bg)')]: 'crimson',
+      [path(1, 'Color(preset.bg)')]: '#38205b'
+    });
+
+    assert.equal(teamTheme(state, 1).background, '#38205b');
+  });
+
   it('ignores a set that is neither operator nor preset', () => {
     const state = new StateStore();
 
@@ -167,5 +243,26 @@ describe('teamTheme', () => {
     state.apply({ [path(1, 'Color(operator.glow)')]: 'rgb(1,2,3)' });
 
     assert.equal(teamTheme(state, 1).glow, undefined);
+  });
+});
+
+describe('panelColor', () => {
+  it('stands the same step from every key a league might pick', () => {
+    const keys = ['#000000', '#ffffff', '#6b7280', '#38205b', '#eab308', '#84cc16', '#7dd3fc', '#78350f'];
+
+    for (const background of keys) {
+      const foreground = readableForeground(background, '#ffffff');
+      const panel = panelColor(background, foreground);
+
+      assert.ok(
+        Math.abs(contrastRatio(panel, background) - PANEL_CONTRAST) < 0.02,
+        `${background} should carry a panel at ${PANEL_CONTRAST} to 1, not ${contrastRatio(panel, background)}`
+      );
+    }
+  });
+
+  it('lifts a dark key toward its foreground, and drops a light one', () => {
+    assert.ok(luminance(panelColor('#000000', '#ffffff')) > luminance('#000000'));
+    assert.ok(luminance(panelColor('#ffffff', '#000000')) < luminance('#ffffff'));
   });
 });

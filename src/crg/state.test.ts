@@ -4,6 +4,10 @@ import { describe, it } from 'node:test';
 import { StateStore, toPattern } from './state.ts';
 
 describe('toPattern', () => {
+  it('keeps a pattern it has already built, since the same paths are matched on every message', () => {
+    assert.equal(toPattern('ScoreBoard.CurrentGame.Team(*).Score'), toPattern('ScoreBoard.CurrentGame.Team(*).Score'));
+  });
+
   it('matches a literal path', () => {
     assert.ok(toPattern('ScoreBoard.CurrentGame.InJam').test('ScoreBoard.CurrentGame.InJam'));
   });
@@ -77,6 +81,32 @@ describe('StateStore values', () => {
 
     assert.equal(store.getBoolean('a.Lead'), true);
     assert.equal(store.getBoolean('a.Lost'), false);
+  });
+});
+
+describe('StateStore matching', () => {
+  it('finds every held path a pattern names, with its value', () => {
+    const store = new StateStore();
+
+    store.apply({
+      'g.Period(1).Timeout(a).Running': false,
+      'g.Period(1).Timeout(b).Running': true,
+      'g.Period(2).Timeout(c).Running': false,
+      'g.Period(1).Timeout(b).Owner': 'O'
+    });
+
+    const found = store.matching('g.Period(*).Timeout(*).Running');
+
+    assert.deepEqual(found.map(([path]) => path).sort(), [
+      'g.Period(1).Timeout(a).Running',
+      'g.Period(1).Timeout(b).Running',
+      'g.Period(2).Timeout(c).Running'
+    ]);
+    assert.ok(found.some(([, value]) => value === true));
+  });
+
+  it('finds nothing when nothing matches', () => {
+    assert.deepEqual(new StateStore().matching('g.Team(*).Score'), []);
   });
 });
 
@@ -155,5 +185,31 @@ describe('StateStore subscriptions', () => {
     store.apply({ 'a.Score': 2 });
 
     assert.equal(calls, 1);
+  });
+});
+
+describe('StateStore.replace', () => {
+  it('drops what the snapshot leaves out, keeps what it is told to, and reports both', () => {
+    const store = new StateStore();
+    const heard: string[][] = [];
+
+    store.apply({ 'A.One': 1, 'A.Two': 2, 'WS.Device': 'deck' });
+    store.subscribe(['A.*'], (changed) => heard.push([...changed].sort()));
+
+    const changed = store.replace({ 'A.One': 1, 'A.Three': 3 }, (path) => path.startsWith('WS.'));
+
+    assert.deepEqual([...changed].sort(), ['A.Three', 'A.Two']);
+    assert.equal(store.get('A.Two'), undefined);
+    assert.equal(store.get('A.Three'), 3);
+    assert.equal(store.get('WS.Device'), 'deck');
+    assert.deepEqual(heard, [['A.Three', 'A.Two']]);
+  });
+
+  it('reports nothing when the snapshot matches what is held', () => {
+    const store = new StateStore();
+
+    store.apply({ 'A.One': 1 });
+
+    assert.equal(store.replace({ 'A.One': 1 }).size, 0);
   });
 });
