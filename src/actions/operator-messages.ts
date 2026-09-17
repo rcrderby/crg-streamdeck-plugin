@@ -37,7 +37,10 @@ export async function answerOperatorMessage<T extends JsonObject>(
   if (message.event === 'createOperator' && typeof message.name === 'string') {
     const name = crgOperatorName(message.name);
 
-    if (name !== '') {
+    // The inspector offers Create only for a new name, but its list can
+    // be behind CRG's, and writing to a profile that exists would change
+    // its Replace on Undo.
+    if (name !== '' && !operatorNames(context.client.state).includes(name)) {
       context.client.set(replaceOnUndo(name), false);
     }
   }
