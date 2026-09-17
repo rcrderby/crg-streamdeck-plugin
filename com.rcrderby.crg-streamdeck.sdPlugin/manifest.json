@@ -333,6 +333,13 @@
       "AutoInstall": false
     },
     {
+      "Name": "profiles/connection-mobile",
+      "DeviceType": 3,
+      "Readonly": true,
+      "DontAutoSwitchWhenInstalled": true,
+      "AutoInstall": false
+    },
+    {
       "Name": "profiles/connection-plus",
       "DeviceType": 7,
       "Readonly": true,
@@ -347,8 +354,22 @@
       "AutoInstall": false
     },
     {
+      "Name": "profiles/connection-studio",
+      "DeviceType": 10,
+      "Readonly": true,
+      "DontAutoSwitchWhenInstalled": true,
+      "AutoInstall": false
+    },
+    {
       "Name": "profiles/connection-virtual",
       "DeviceType": 11,
+      "Readonly": true,
+      "DontAutoSwitchWhenInstalled": true,
+      "AutoInstall": false
+    },
+    {
+      "Name": "profiles/connection-plus-xl",
+      "DeviceType": 13,
       "Readonly": true,
       "DontAutoSwitchWhenInstalled": true,
       "AutoInstall": false
@@ -375,6 +396,13 @@
       "AutoInstall": false
     },
     {
+      "Name": "profiles/undo-mobile",
+      "DeviceType": 3,
+      "Readonly": true,
+      "DontAutoSwitchWhenInstalled": true,
+      "AutoInstall": false
+    },
+    {
       "Name": "profiles/undo-plus",
       "DeviceType": 7,
       "Readonly": true,
@@ -389,8 +417,22 @@
       "AutoInstall": false
     },
     {
+      "Name": "profiles/undo-studio",
+      "DeviceType": 10,
+      "Readonly": true,
+      "DontAutoSwitchWhenInstalled": true,
+      "AutoInstall": false
+    },
+    {
       "Name": "profiles/undo-virtual",
       "DeviceType": 11,
+      "Readonly": true,
+      "DontAutoSwitchWhenInstalled": true,
+      "AutoInstall": false
+    },
+    {
+      "Name": "profiles/undo-plus-xl",
+      "DeviceType": 13,
       "Readonly": true,
       "DontAutoSwitchWhenInstalled": true,
       "AutoInstall": false
