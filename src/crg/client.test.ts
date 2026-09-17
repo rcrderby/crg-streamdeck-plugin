@@ -16,6 +16,12 @@ class FakeCrg {
   readonly sockets: WebSocket[] = [];
   readonly actions = new Map<WebSocket, string[]>();
 
+  /** Whether this scoreboard answers a ping, as CRG does. */
+  answersPings = true;
+
+  /** What this scoreboard sends in answer to a Register. */
+  holds: Record<string, unknown> = {};
+
   #http = createServer((_request, response) => {
     response.setHeader('Set-Cookie', 'CRG_SCOREBOARD=test; Path=/');
     response.end();
@@ -29,8 +35,17 @@ class FakeCrg {
 
       this.sockets.push(socket);
       this.actions.set(socket, actions);
+      socket.send(JSON.stringify({ state: { 'WS.Device.Name': 'Test deck' } }));
       socket.on('message', (data) => {
-        actions.push((JSON.parse(data.toString()) as { action: string }).action);
+        const { action } = JSON.parse(data.toString()) as { action: string };
+
+        actions.push(action);
+
+        if (action === 'Register') {
+          socket.send(JSON.stringify({ state: this.holds }));
+        } else if (action === 'Ping' && this.answersPings) {
+          socket.send(JSON.stringify({ Pong: '' }));
+        }
       });
     });
   }
@@ -257,5 +272,72 @@ describe('CrgClient', () => {
     await until(() => client.status === 'connected');
 
     assert.equal(crg.sockets.length, 2);
+  });
+
+  it('keeps a connection CRG keeps answering', async () => {
+    const pinging = new CrgClient({ pingIntervalMs: 20, silenceLimitMs: 60 });
+
+    try {
+      pinging.connect(connection);
+      await until(() => pinging.status === 'connected');
+      await delay(SETTLE_MS);
+
+      assert.equal(crg.sockets.length, 1);
+      assert.equal(pinging.status, 'connected');
+    } finally {
+      await pinging.disconnect();
+    }
+  });
+
+  it('drops and reopens a connection CRG has stopped answering', async () => {
+    const pinging = new CrgClient({ pingIntervalMs: 20, silenceLimitMs: 60 });
+    const errors: string[] = [];
+
+    pinging.on('error', (cause) => errors.push(cause.message));
+    crg.answersPings = false;
+
+    try {
+      pinging.connect(connection);
+      await until(() => crg.sockets.length === 2);
+
+      assert.match(errors[0] ?? '', /sent nothing/);
+    } finally {
+      await pinging.disconnect();
+    }
+  });
+
+  it('forgets what CRG deleted while the deck was away', async () => {
+    const running = 'ScoreBoard.CurrentGame.Period(1).Timeout(a).Running';
+    const score = 'ScoreBoard.CurrentGame.Team(1).Score';
+    let told = 0;
+
+    crg.holds = { [running]: true, [score]: 4 };
+    client.state.subscribe([running], (changed) => {
+      told += changed.has(running) ? 1 : 0;
+    });
+    client.connect(connection);
+    await until(() => client.state.get(running) === true);
+
+    crg.holds = { [score]: 4 };
+    crg.sockets[0]?.terminate();
+    await until(() => crg.sockets.length === 2 && client.state.get(running) === undefined);
+
+    assert.equal(client.state.get(score), 4);
+    assert.equal(client.state.get('WS.Device.Name'), 'Test deck');
+    assert.equal(told, 2);
+  });
+
+  it('applies what CRG sends after its snapshot as changes', async () => {
+    const score = 'ScoreBoard.CurrentGame.Team(1).Score';
+    const jam = 'ScoreBoard.CurrentGame.Team(1).JamScore';
+
+    crg.holds = { [score]: 4, [jam]: 1 };
+    client.connect(connection);
+    await until(() => client.state.get(jam) === 1);
+
+    crg.sockets[0]?.send(JSON.stringify({ state: { [score]: 8 } }));
+    await until(() => client.state.get(score) === 8);
+
+    assert.equal(client.state.get(jam), 1);
   });
 });

@@ -30,7 +30,21 @@ export type CrgClientEvents = {
   error: [Error];
 };
 
-const PING_INTERVAL_MS = 30_000;
+/** How often the client pings CRG, which answers each ping. */
+const PING_INTERVAL_MS = 10_000;
+
+/**
+ * How long CRG may say nothing before the connection is given up as dead.
+ *
+ * A connection that drops without closing, as when an access point
+ * restarts, otherwise reads as connected while every clock freezes and
+ * every press is lost. CRG answers each ping, so a healthy connection
+ * is never quiet for longer than one ping interval.
+ */
+const SILENCE_LIMIT_MS = 25_000;
+
+/** How long the session request and the socket handshake may each take before the attempt is retried. */
+const OPEN_TIMEOUT_MS = 10_000;
 
 const RECONNECT_MIN_MS = 1_000;
 
@@ -54,10 +68,15 @@ export const REFUSAL_SHOWN_MS = 30_000;
  */
 const MAX_LISTENERS = 100;
 
-/** What a client can be built with, so a test need not wait out the refusal. */
+/** What a client can be built with, so a test need not wait out the refusal or the silence. */
 export type CrgClientOptions = {
   refusalShownMs?: number;
+  pingIntervalMs?: number;
+  silenceLimitMs?: number;
 };
+
+/** Device details CRG sends on its own when a socket opens, ahead of anything registered. */
+const DEVICE_PREFIX = 'WS.';
 
 /** Names that carry a cookie's attributes rather than its value. */
 const COOKIE_ATTRIBUTES = new Set([
@@ -142,6 +161,12 @@ export class CrgClient extends EventEmitter<CrgClientEvents> {
   /** Runs out the time a refused write is reported for. */
   #refusal: NodeJS.Timeout | undefined;
   readonly #refusalShownMs: number;
+  readonly #pingIntervalMs: number;
+  readonly #silenceLimitMs: number;
+  /** When CRG last sent anything on the current socket. */
+  #lastHeard = 0;
+  /** True from a socket opening until CRG answers its Register with what it holds. */
+  #awaitingSnapshot = false;
 
   /**
    * Reports failures rather than throwing them.
@@ -154,6 +179,8 @@ export class CrgClient extends EventEmitter<CrgClientEvents> {
 
     this.setMaxListeners(MAX_LISTENERS);
     this.#refusalShownMs = options.refusalShownMs ?? REFUSAL_SHOWN_MS;
+    this.#pingIntervalMs = options.pingIntervalMs ?? PING_INTERVAL_MS;
+    this.#silenceLimitMs = options.silenceLimitMs ?? SILENCE_LIMIT_MS;
     this.on('error', () => undefined);
   }
 
@@ -346,7 +373,11 @@ export class CrgClient extends EventEmitter<CrgClientEvents> {
       headers['Cookie'] = this.#session;
     }
 
-    const response = await fetch(`${connection.origin}/`, { headers, redirect: 'manual' });
+    const response = await fetch(`${connection.origin}/`, {
+      headers,
+      redirect: 'manual',
+      signal: AbortSignal.timeout(OPEN_TIMEOUT_MS)
+    });
     const issued = readSessionCookies(response.headers.getSetCookie());
 
     if (issued) {
@@ -362,7 +393,7 @@ export class CrgClient extends EventEmitter<CrgClientEvents> {
       headers['Cookie'] = this.#session;
     }
 
-    const socket = new WebSocket(connection.webSocketUrl, { headers });
+    const socket = new WebSocket(connection.webSocketUrl, { headers, handshakeTimeout: OPEN_TIMEOUT_MS });
     const current = (): boolean => this.#socket === socket;
 
     this.#socket = socket;
@@ -373,13 +404,16 @@ export class CrgClient extends EventEmitter<CrgClientEvents> {
       }
 
       this.#reconnectDelayMs = RECONNECT_MIN_MS;
+      this.#lastHeard = Date.now();
+      this.#awaitingSnapshot = true;
       this.#setStatus('connected');
       this.#send({ action: 'Register', paths: [...REGISTERED_PATHS] });
-      this.#ping = setInterval(() => this.#send({ action: 'Ping' }), PING_INTERVAL_MS);
+      this.#ping = setInterval(() => this.#keepAlive(socket), this.#pingIntervalMs);
     });
 
     socket.on('message', (data: RawData) => {
       if (current()) {
+        this.#lastHeard = Date.now();
         this.#receive(data);
       }
     });
@@ -429,9 +463,40 @@ export class CrgClient extends EventEmitter<CrgClientEvents> {
       return;
     }
 
-    if (typeof state === 'object' && state !== null) {
-      this.state.apply(state as Record<string, StateValue>);
+    if (typeof state !== 'object' || state === null) {
+      return;
     }
+
+    const delta = state as Record<string, StateValue>;
+
+    // CRG answers Register with everything it holds under those paths,
+    // and says nothing of paths deleted while the deck was away, so that
+    // answer replaces what the store held rather than adding to it.
+    if (this.#awaitingSnapshot && Object.keys(delta).some((path) => !path.startsWith(DEVICE_PREFIX))) {
+      this.#awaitingSnapshot = false;
+      this.state.replace(delta, (path) => path.startsWith(DEVICE_PREFIX));
+
+      return;
+    }
+
+    this.state.apply(delta);
+  }
+
+  /**
+   * Pings CRG, or drops a socket CRG has stopped answering.
+   *
+   * Dropping it closes it at once, and the close starts the usual
+   * reconnect.
+   */
+  #keepAlive(socket: WebSocket): void {
+    if (Date.now() - this.#lastHeard > this.#silenceLimitMs) {
+      this.emit('error', new Error(`CRG sent nothing for ${Math.round(this.#silenceLimitMs / 1000)} seconds`));
+      socket.terminate();
+
+      return;
+    }
+
+    this.#send({ action: 'Ping' });
   }
 
   #send(payload: Record<string, unknown>): void {
