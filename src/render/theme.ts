@@ -42,9 +42,19 @@ const XML_ESCAPES: Readonly<Record<string, string>> = {
   "'": '&apos;'
 };
 
+/**
+ * Characters XML 1.0 cannot carry at all, escaped or not.
+ *
+ * A control character pasted into a team name would otherwise make the
+ * whole picture unreadable, and the key would draw nothing.
+ */
+const NOT_XML =
+  // eslint-disable-next-line no-control-regex
+  /[\u0000-\u0008\u000b\u000c\u000e-\u001f\ufffe\uffff]|[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/g;
+
 /** Escapes text so it cannot change the markup it is placed in. */
 export function escapeXml(value: string): string {
-  return value.replace(/[&<>"']/g, (character) => XML_ESCAPES[character] ?? character);
+  return value.replace(NOT_XML, '').replace(/[&<>"']/g, (character) => XML_ESCAPES[character] ?? character);
 }
 
 /**
@@ -225,13 +235,14 @@ export function panelColor(background: string, foreground: string): string {
  * Reads one color slot across the sets, in order of preference.
  *
  * A game that nobody has configured holds a preset set but no operator
- * set, so a key still comes out in the team's colors.
+ * set, so a key still comes out in the team's colors. A value that is
+ * not a hex color is passed over, so the next set can stand in for it.
  */
 function colorSlot(state: StateStore, number: TeamNumber, slot: ColorSlot): string {
   for (const set of COLOR_SETS) {
-    const value = state.getString(teamColor(number, slot, set));
+    const value = state.getString(teamColor(number, slot, set)).trim();
 
-    if (value !== '') {
+    if (HEX_COLOR.test(value)) {
       return value;
     }
   }
@@ -262,7 +273,7 @@ export function teamTheme(state: StateStore, number: TeamNumber): TeamTheme {
   return {
     background,
     foreground: readableForeground(background, requested),
-    glow: HEX_COLOR.test(glow.trim()) ? sixDigits(glow.trim()) : undefined,
+    glow: glow === '' ? undefined : sixDigits(glow),
     name
   };
 }

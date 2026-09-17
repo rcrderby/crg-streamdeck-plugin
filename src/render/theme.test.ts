@@ -21,6 +21,12 @@ describe('escapeXml', () => {
     assert.equal(escapeXml(`&<>"'`), '&amp;&lt;&gt;&quot;&apos;');
   });
 
+  it('drops characters XML cannot carry, so a pasted name still draws', () => {
+    assert.equal(escapeXml('Rose\u0000 City\u000b'), 'Rose City');
+    assert.equal(escapeXml('Tab\tand newline\n stay'), 'Tab\tand newline\n stay');
+    assert.equal(escapeXml('half \ud83d pair, whole \ud83d\udee1'), 'half  pair, whole \ud83d\udee1');
+  });
+
   it('neutralizes a team name that carries markup', () => {
     const escaped = escapeXml('</text><script>alert(1)</script>');
 
@@ -178,6 +184,17 @@ describe('teamTheme', () => {
     });
 
     assert.equal(teamTheme(state, 1).background, '#b3122e');
+  });
+
+  it('passes over an operator color that is not a hex color, to the preset set', () => {
+    const state = new StateStore();
+
+    state.apply({
+      [path(1, 'Color(operator.bg)')]: 'crimson',
+      [path(1, 'Color(preset.bg)')]: '#38205b'
+    });
+
+    assert.equal(teamTheme(state, 1).background, '#38205b');
   });
 
   it('ignores a set that is neither operator nor preset', () => {
