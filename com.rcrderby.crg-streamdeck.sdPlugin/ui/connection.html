@@ -1,5 +1,5 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <title>CRG Connection</title>
@@ -14,7 +14,7 @@
       <sdpi-textfield global setting="url" placeholder="http://localhost:8000"></sdpi-textfield>
     </sdpi-item>
     <sdpi-item>
-      <p>The URL applies to all CRG keys in this Stream Deck Profile</p>
+      <p>The URL applies to every CRG button, in every profile.</p>
     </sdpi-item>
     <sdpi-item label="CRG Operator">
       <sdpi-select global setting="operator" datasource="operators" placeholder="StreamDeck"></sdpi-select>
@@ -24,7 +24,14 @@
     </sdpi-item>
     <sdpi-item label="New Profile" id="operator-form" hidden>
       <div class="operator-row">
-        <input id="operator-name" type="text" placeholder="Profile name" autocomplete="off" spellcheck="false" />
+        <input
+          id="operator-name"
+          type="text"
+          placeholder="Profile name"
+          aria-label="New CRG operator profile name"
+          autocomplete="off"
+          spellcheck="false"
+        />
         <sdpi-button id="operator-create" disabled>Create</sdpi-button>
       </div>
     </sdpi-item>
