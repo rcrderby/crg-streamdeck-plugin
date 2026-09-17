@@ -7,8 +7,9 @@
     "context": ".."
   },
   "name": "crg-streamdeck-plugin",
-  // Install the Node packages the build, tests, and editor need
-  "postCreateCommand": "npm ci || npm install",
+  // Install the Node packages the build, tests, and editor need, exactly
+  // as the lockfile records them
+  "postCreateCommand": "npm ci",
   // Wait for those packages before the editor starts its language
   // servers. The default, "updateContentCommand", lets TypeScript
   // start first, fail to resolve the tsconfig base this project
