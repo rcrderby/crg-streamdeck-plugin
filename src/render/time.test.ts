@@ -13,8 +13,14 @@ describe('formatClock', () => {
     assert.equal(formatClock(5_000), '0:05');
   });
 
-  it('rounds down to the second, as a scoreboard does', () => {
+  it('rounds a clock counting up down to the second, as CRG’s scoreboard does', () => {
     assert.equal(formatClock(5_999), '0:05');
+  });
+
+  it('rounds a clock counting down up to the second, as CRG’s scoreboard does', () => {
+    assert.equal(formatClock(119_001, true), '2:00');
+    assert.equal(formatClock(400, true), '0:01');
+    assert.equal(formatClock(0, true), '0:00');
   });
 
   it('shows hours only once there are hours', () => {
