@@ -53,6 +53,13 @@ Each button holds its own action, and you can customize a button layout that mee
 | 7.1 to 7.3           | Not Tested         |
 | Earlier              | :x:                |
 
+| Operating System     | Description        |
+| -------------------- | ------------------ |
+| macOS 12 or later    | :white_check_mark: |
+| Windows 10 or later  | Not Tested         |
+
+On Windows, keeping the computer awake while connected to CRG is a beta feature.
+
 The plugin buttons should work with any Stream Deck Platform, although they've only been tested on a Stream Deck XL.  The plugin includes expandable menu profiles for the following Stream Deck platforms:
 
 |        **Platform**         |    **Tested**      | **Number of Buttons** | **Number of Dials** |
@@ -91,7 +98,20 @@ These steps will help you set up the plugin to control CRG from a Stream Deck.  
     <strong>Download and install the CRG plugin</strong>
   </summary>
 
-  TBD
+  The plugin is a single file that installs on both macOS and Windows.
+
+  1. Open the [latest release](https://github.com/rcrderby/crg-streamdeck-plugin/releases/latest "Latest Plugin Release") page.
+
+  2. Under `Assets`, download `com.rcrderby.crg-streamdeck.streamDeckPlugin`.
+
+  3. Open the downloaded file.  The Stream Deck software opens and asks you to confirm the installation.
+
+  4. Confirm the `CRG Scoreboard` category appears in the actions list on the right side of the Stream Deck software.
+
+  To update the plugin, download the file from a newer release and open it.  The new version replaces the installed version.
+
+  > [!TIP]
+  > Each release also includes a `SHA256SUMS` file, which you can use to confirm the plugin file downloaded completely.
 
 </details>
 
