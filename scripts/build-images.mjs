@@ -3,7 +3,8 @@
 //
 //     node scripts/build-images.mjs
 //
-// Writes the deck preview and the key reference sheet under docs/images.
+// Writes the deck preview, the key reference sheets, and the legend's
+// examples under docs/images.
 
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -13,6 +14,7 @@ const IMAGES = new URL('docs/images/', ROOT);
 
 const { renderKeySvg, VIEWBOX } = await import('../src/render/key.ts');
 const d = await import('../src/render/designs.ts');
+const { holdDial } = await import('../src/render/icons.ts');
 
 export const IMAGE_SOURCES = ['src/render/designs.ts', 'src/render/icons.ts', 'src/render/key.ts'];
 
@@ -488,6 +490,157 @@ const written = SHEET.map(({ section, actions }) => {
   return { section, path: `images/button-reference/${file}` };
 });
 
+// ---------------------------------------------------------------------
+// The legend: each symbol and color shown on a button, as a deck shows it.
+// ---------------------------------------------------------------------
+
+const GENERIC_BACKGROUND = '#27272a';
+
+/** A plain key, so a symbol that any key can carry is shown on its own. */
+function generic({ hold = [], ...extra } = {}) {
+  const label = { text: 'Button', y: hold.length > 0 ? 50 : 56, size: 17, weight: 'bold' };
+  const captions = hold.map((line, index) => ({
+    text: line,
+    y: 76 + index * 12,
+    size: 10,
+    weight: 'bold',
+    opacity: 0.8
+  }));
+
+  return { background: GENERIC_BACKGROUND, foreground: '#ffffff', texts: [label, ...captions], ...extra };
+}
+
+const LEGEND = [
+  // Symbols any button can carry.
+  ['informational', [['', generic({ informational: true })]]],
+  [
+    'top-bar',
+    [
+      ['Off', generic({ bar: { active: false } })],
+      ['On', generic({ bar: { active: true } })]
+    ]
+  ],
+  [
+    'hold-bar',
+    [
+      ['Turning on', generic({ hold: ['HOLD'], bar: { active: false, progress: 0.6 } })],
+      ['Turning off', generic({ hold: ['HOLD'], bar: { active: true, progress: 0.6 } })]
+    ]
+  ],
+  [
+    'hold-bar-red',
+    [
+      ['From on', generic({ hold: ['HOLD TO', 'DISCONNECT'], bar: { active: true, progress: 0.6, fill: 'danger' } })],
+      ['From off', generic({ hold: ['HOLD TO', 'CONFIRM'], bar: { active: false, progress: 0.6, fill: 'danger' } })]
+    ]
+  ],
+  [
+    'hold-dial',
+    [
+      ['Held briefly', generic({ hold: ['HOLD'], shapes: [holdDial(0.3, d.UNDO_FOREGROUND, GENERIC_BACKGROUND)] })],
+      ['Nearly done', generic({ hold: ['HOLD'], shapes: [holdDial(0.85, d.UNDO_FOREGROUND, GENERIC_BACKGROUND)] })]
+    ]
+  ],
+  [
+    'hold-caption',
+    [
+      ['', generic({ hold: ['HOLD'] })],
+      ['', generic({ hold: ['HOLD TO', 'CONFIRM'] })]
+    ]
+  ],
+  [
+    'darkened',
+    [
+      ['Available', generic()],
+      ['Darkened', generic({ subdued: true })]
+    ]
+  ],
+  // Symbols and colors particular to one kind of button.
+  [
+    'dots',
+    [
+      ['Three left', d.teamTimeoutKey(WHEELS, 3, 3, false)],
+      ['One left', d.teamTimeoutKey(WHEELS, 3, 1, false)],
+      ['In use', d.teamTimeoutKey(WHEELS, 3, 2, true, 0.5)]
+    ]
+  ],
+  [
+    'review-marks',
+    [
+      ['Plus sign', d.officialReviewKey(WHEELS, 1, 1, 'retained', false)],
+      ['Line', d.officialReviewKey(WHEELS, 1, 1, 'twice', false)]
+    ]
+  ],
+  ['faded-title', [['None left', d.teamTimeoutKey(WHEELS, 3, 0, false)]]],
+  ['reason', [['', d.jammerKey(WHEELS, 'starPass', false, 'NO PIVOT')]]],
+  [
+    'score-panels',
+    [
+      ['Team 1', d.scoreKey(WHEELS, 113, 4, 2)],
+      ['Team 2', d.scoreKey(JUSTICE, 109, 4, 3, true)]
+    ]
+  ],
+  [
+    'jam-control-colors',
+    [
+      ['Start', d.jamControlKey('Start Jam', '0:21', ['LINEUP', 'JAM 13'], d.lineupBackground('none'), false)],
+      ['Start soon', d.jamControlKey('Start Jam', '0:27', ['LINEUP', 'JAM 13'], d.lineupBackground('due'), false)],
+      ['Stop', d.jamControlKey('Stop Jam', '1:04', ['JAM 13'], d.JAM_STOP, false)],
+      ['End timeout', d.jamControlKey('End Timeout', '0:43', ['JAM 13'], d.TIMEOUT_RED, false)]
+    ]
+  ],
+  [
+    'connection-colors',
+    [
+      ['Connected', d.connectionKey('connected')],
+      ['Connecting', d.connectionKey('connecting')],
+      ['Offline', d.connectionKey('disconnected')],
+      ['Not allowed', d.connectionKey('unauthorized')],
+      ['Disconnected', d.connectionKey('stopped')]
+    ]
+  ],
+  ['operator-name', [['', d.connectionKey('connected', 'StreamDeck')]]]
+];
+
+const LEGEND_MARGIN = 10;
+
+/** A legend example: its keys in a row, each captioned when a caption is given. */
+function drawExample(keys) {
+  const captioned = keys.some(([caption]) => caption !== '');
+  const width = LEGEND_MARGIN * 2 + keys.length * VIEWBOX + (keys.length - 1) * GAP;
+  const height = LEGEND_MARGIN * 2 + VIEWBOX + (captioned ? CAPTION_DROP : 0);
+  const parts = keys.flatMap(([caption, spec], index) => {
+    const x = LEGEND_MARGIN + index * (VIEWBOX + GAP);
+    const label =
+      caption === ''
+        ? []
+        : [
+            text(caption, x + VIEWBOX / 2, LEGEND_MARGIN + VIEWBOX + CAPTION_DROP - 6, {
+              size: 11,
+              color: CAPTION,
+              anchor: 'middle'
+            })
+          ];
+
+    return [tile(spec, x, LEGEND_MARGIN), ...label];
+  });
+
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" ` +
+    `width="${width}" height="${height}" role="img" aria-label="Example buttons">` +
+    `<rect width="${width}" height="${height}" rx="${RADIUS}" fill="${PAPER}"/>${parts.join('')}</svg>\n`
+  );
+}
+
+const LEGEND_IMAGES = new URL('legend/', REFERENCE);
+
+mkdirSync(fileURLToPath(LEGEND_IMAGES), { recursive: true });
+
+for (const [name, keys] of LEGEND) {
+  writeFileSync(fileURLToPath(new URL(`${name}.svg`, LEGEND_IMAGES)), drawExample(keys));
+  written.push({ section: `the legend's ${name} example`, path: `images/button-reference/legend/${name}.svg` });
+}
+
 // The page that carries these images is edited by hand, so the build
 // checks it still shows every one of them rather than writing it.
 const PAGE = fileURLToPath(new URL('docs/button-image-reference.md', ROOT));
@@ -500,5 +653,5 @@ if (unlinked.length > 0) {
 
 console.log(
   `wrote crg-streamdeck-plugin-preview.svg (${preview.width} by ${preview.height}) ` +
-    `and ${written.length} reference images`
+    `and ${written.length - LEGEND.length} reference images, with ${LEGEND.length} legend examples`
 );
