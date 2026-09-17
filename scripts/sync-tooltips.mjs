@@ -23,9 +23,9 @@ export async function readDescriptions() {
     window: { SDPIComponents: { streamDeckClient: { getConnectionInfo: () => new Promise(() => undefined) } } }
   };
 
-  runInNewContext(`${source}\nglobalThis.descriptions = DESCRIPTIONS;`, context);
+  runInNewContext(source, context);
 
-  return context.descriptions;
+  return context.CRG_DESCRIPTIONS;
 }
 
 /** A description as the single line Stream Deck shows on hover. */

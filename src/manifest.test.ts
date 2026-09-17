@@ -24,9 +24,9 @@ function streamDeckClient(getConnectionInfo: () => Promise<unknown>): unknown {
 function descriptions(): Record<string, Description> {
   const context: Record<string, unknown> = { window: streamDeckClient(() => new Promise(() => undefined)) };
 
-  runInNewContext(`${descriptionsScript}\nglobalThis.descriptions = DESCRIPTIONS;`, context);
+  runInNewContext(descriptionsScript, context);
 
-  return context['descriptions'] as Record<string, Description>;
+  return context['CRG_DESCRIPTIONS'] as Record<string, Description>;
 }
 
 function fakeElement(): FakeElement & { replaceChildren: (...children: FakeElement[]) => void } {
