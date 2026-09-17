@@ -60,9 +60,12 @@ The plugin buttons should work with any Stream Deck Platform, although they've o
 | Stream Deck XL [^2]         | :white_check_mark: |          32           |         N/A         |
 | Stream Deck MK.2 [^3]       | :grey_question:    |          15           |         N/A         |
 | Stream Deck + [^4]          | :grey_question:    |           8           |          4          |
-| Stream Deck Mini [^5]       | :grey_question:    |           6           |         N/A         |
-| Stream Deck Neo [^6]        | :grey_question:    |           8           |         N/A         |
-| Stream Deck Virtual [^7]    | :white_check_mark  |        Variable       |         N/A         |
+| Stream Deck + XL [^5]       | :grey_question:    |          36           |          6          |
+| Stream Deck Mini [^6]       | :grey_question:    |           6           |         N/A         |
+| Stream Deck Neo [^7]        | :grey_question:    |           8           |         N/A         |
+| Stream Deck Studio [^8]     | :grey_question:    |          32           |          2          |
+| Stream Deck Mobile [^9]     | :grey_question:    |        Variable       |         N/A         |
+| Stream Deck Virtual [^10]   | :white_check_mark: |        Variable       |         N/A         |
 
 ## Getting Started
 
@@ -150,7 +153,7 @@ Buttons that control one team take a `Team` setting.  The [Button Image Referenc
 | Action | Description |
 | ------ | ----------- |
 | `CRG Connection` | Shows whether the plugin is connected to CRG: connected, connecting, offline, not allowed to write, or disconnected on purpose.  Pressing it opens the connection page.  This button holds the `CRG URL` and `CRG Operator` settings for every CRG button. |
-| `Jam Control` | Starts a jam, stops a jam, or ends a timeout, and shows the relevant clock and jam data.  It turns orange five seconds before a jam should start, and pulses if the lineup clock goes past the prescribed time in the active CRG ruleset. |
+| `Jam Control` | Starts a jam, stops a jam, or ends a timeout, and shows the relevant clock and jam data.  It turns orange five seconds before a jam should start, and pulses if the lineup clock goes past the prescribed time in the active CRG ruleset.  It shows a faded `Start Jam` and takes no action while CRG will not start or stop a jam, such as after the official score is set. |
 | `Timeout` | Starts an untyped timeout.  Its activity indicator turns green while a timeout runs without an assigned type. |
 | `Official Timeout` | Starts an official timeout.  Its activity indicator is green while an official timeout is running. |
 | `Undo` | Undoes CRG's last clock action after a one-second hold.  It is subdued when there is nothing to undo.  Its `Enable Replace on Undo` toggle configures that setting for the specified CRG operator profile.  While the setting is on, the hold opens an `Undo` menu instead of immediately performing an undo action. |
@@ -270,6 +273,9 @@ Please open an [Issue](https://github.com/rcrderby/crg-streamdeck-plugin/issues 
 [^2]: [Stream Deck XL](https://www.elgato.com/us/en/p/stream-deck-xl "Stream Deck XL")
 [^3]: [Stream Deck MK.2](https://www.elgato.com/us/en/p/stream-deck-mk2-black "Stream Deck MK.2")
 [^4]: [Stream Deck +](https://www.elgato.com/us/en/p/stream-deck-plus-black "Stream Deck +")
-[^5]: [Stream Deck Mini](https://www.elgato.com/us/en/p/stream-deck-mini "Stream Deck Mini")
-[^6]: [Stream Deck Neo](https://www.elgato.com/us/en/p/stream-deck-neo "Stream Deck Neo")
-[^7]: [Stream Deck Virtual](https://www.elgato.com/us/en/s/downloads "Stream Deck Virtual, included with the Stream Deck software")
+[^5]: [Stream Deck + XL](https://www.elgato.com/us/en/p/stream-deck-plus-xl "Stream Deck + XL")
+[^6]: [Stream Deck Mini](https://www.elgato.com/us/en/p/stream-deck-mini "Stream Deck Mini")
+[^7]: [Stream Deck Neo](https://www.elgato.com/us/en/p/stream-deck-neo "Stream Deck Neo")
+[^8]: [Stream Deck Studio](https://www.elgato.com/us/en/p/stream-deck-studio "Stream Deck Studio")
+[^9]: [Stream Deck Mobile](https://www.elgato.com/us/en/s/stream-deck-mobile "Stream Deck Mobile")
+[^10]: [Stream Deck Virtual](https://www.elgato.com/us/en/s/downloads "Stream Deck Virtual, included with the Stream Deck software")
