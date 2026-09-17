@@ -28,7 +28,7 @@ describe('pages', () => {
       Object.keys(PAGE_DEVICES)
         .map(Number)
         .sort((a, b) => a - b),
-      [0, 1, 2, 7, 9, 11]
+      [0, 1, 2, 3, 7, 9, 10, 11, 13]
     );
   });
 

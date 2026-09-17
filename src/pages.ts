@@ -15,9 +15,12 @@ export const PAGE_DEVICES: Readonly<Record<number, string>> = {
   0: 'stream-deck',
   1: 'mini',
   2: 'xl',
+  3: 'mobile',
   7: 'plus',
   9: 'neo',
-  11: 'virtual'
+  10: 'studio',
+  11: 'virtual',
+  13: 'plus-xl'
 };
 
 /** The manifest name of a page for one device type, or undefined when none ships for that model. */
