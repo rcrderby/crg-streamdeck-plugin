@@ -48,6 +48,13 @@ const WINDOWS_STAY_AWAKE = '0x80000003';
 /** How often the Windows helper checks that the plugin is still running. */
 const WINDOWS_WATCH_SECONDS = 15;
 
+const CAFFEINATE = '/usr/bin/caffeinate';
+
+/** Windows PowerShell location */
+function powerShell(systemRoot: string): string {
+  return `${systemRoot.replace(/\\+$/, '')}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`;
+}
+
 function spawnHelper(command: string, args: readonly string[]): Helper {
   const child = spawn(command, [...args], { stdio: 'ignore', windowsHide: true });
 
@@ -75,17 +82,24 @@ function windowsScript(pid: number): string {
 }
 
 /** The helper that holds a stay-awake request on this platform, if there is one. */
-export function holdCommand(platform: NodeJS.Platform, pid: number): Command | undefined {
+export function holdCommand(
+  platform: NodeJS.Platform,
+  pid: number,
+  systemRoot: string = process.env['SystemRoot'] ?? 'C:\\Windows'
+): Command | undefined {
   if (!Number.isInteger(pid) || pid <= 0) {
     return undefined;
   }
 
   if (platform === 'darwin') {
-    return { command: 'caffeinate', args: ['-d', '-i', '-w', String(pid)] };
+    return { command: CAFFEINATE, args: ['-d', '-i', '-w', String(pid)] };
   }
 
   if (platform === 'win32') {
-    return { command: 'powershell.exe', args: ['-NoProfile', '-NonInteractive', '-Command', windowsScript(pid)] };
+    return {
+      command: powerShell(systemRoot),
+      args: ['-NoProfile', '-NonInteractive', '-Command', windowsScript(pid)]
+    };
   }
 
   return undefined;
@@ -93,7 +107,7 @@ export function holdCommand(platform: NodeJS.Platform, pid: number): Command | u
 
 /** The helper that declares user activity on this platform, if there is one. */
 export function activityCommand(platform: NodeJS.Platform): Command | undefined {
-  return platform === 'darwin' ? { command: 'caffeinate', args: ['-u', '-t', '1'] } : undefined;
+  return platform === 'darwin' ? { command: CAFFEINATE, args: ['-u', '-t', '1'] } : undefined;
 }
 
 export class KeepAwake {

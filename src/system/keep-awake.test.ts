@@ -42,13 +42,16 @@ class FakeSpawn {
 
 describe('holdCommand', () => {
   it('runs caffeinate on macOS, keeping display and system awake until the plugin exits', () => {
-    assert.deepEqual(holdCommand('darwin', 4242), { command: 'caffeinate', args: ['-d', '-i', '-w', '4242'] });
+    assert.deepEqual(holdCommand('darwin', 4242), {
+      command: '/usr/bin/caffeinate',
+      args: ['-d', '-i', '-w', '4242']
+    });
   });
 
   it('holds a power request through PowerShell on Windows, watching the plugin', () => {
-    const command = holdCommand('win32', 4242);
+    const command = holdCommand('win32', 4242, 'D:\\Windows\\');
 
-    assert.equal(command?.command, 'powershell.exe');
+    assert.equal(command?.command, 'D:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe');
     assert.match(command?.args.at(-1) ?? '', /SetThreadExecutionState\(0x80000003\)/);
     assert.match(command?.args.at(-1) ?? '', /Get-Process -Id 4242/);
   });
@@ -62,7 +65,7 @@ describe('holdCommand', () => {
 
 describe('activityCommand', () => {
   it('declares user activity on macOS only', () => {
-    assert.deepEqual(activityCommand('darwin'), { command: 'caffeinate', args: ['-u', '-t', '1'] });
+    assert.deepEqual(activityCommand('darwin'), { command: '/usr/bin/caffeinate', args: ['-u', '-t', '1'] });
     assert.equal(activityCommand('win32'), undefined);
   });
 });
