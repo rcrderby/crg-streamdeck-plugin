@@ -23,6 +23,11 @@ const START = label('Start');
 
 const STOP = label('Stop');
 
+const OFFICIAL_SCORE = game('OfficialScore');
+
+/** What the key reads while CRG will act on none of its controls: its usual action, drawn faded. */
+const START_JAM = 'Start Jam';
+
 /** What the key does when pressed, and what it says. */
 type Choice = {
   readonly text: string;
@@ -36,6 +41,7 @@ export class JamControl extends CrgKeyAction {
       IN_JAM,
       START,
       STOP,
+      OFFICIAL_SCORE,
       TIMEOUTS.running,
       rule('Lineup.Duration'),
       ...CLOCK_NAMES.flatMap((name) => [
@@ -121,22 +127,27 @@ export class JamControl extends CrgKeyAction {
 
   /** The time on the clock the key's own action runs against. */
   #time(running: ClockName): string {
-    return formatClock(this.context.client.state.getNumber(clock(running, 'Time')));
+    const state = this.context.client.state;
+
+    return formatClock(state.getNumber(clock(running, 'Time')), state.getBoolean(clock(running, 'Direction')));
   }
 
   /**
    * Decides what the key does from the labels CRG computes.
    *
-   * CRG's stop control carries four meanings. Two of them end something
-   * that is running, a jam or a timeout, and those come first, which is
-   * how CRG's own screen puts ending a timeout ahead of starting a jam.
-   * The other two offer to start the lineup clock while nothing runs at
-   * all, before the game and once an intermission is over, and the key
-   * leads with the jam there rather than with a clock nobody is waiting
-   * on.
+   * Ending a running jam or timeout comes first, as on CRG's own screen.
+   * CRG's stop control also offers to start the lineup clock while
+   * nothing runs, and the key leads with the jam there instead. Once the
+   * official score is set, or before CRG has sent its labels, the key
+   * reads Start Jam, faded, and does nothing.
    */
   #choose(): Choice {
     const state = this.context.client.state;
+    const disabled: Choice = { text: START_JAM, path: undefined, stopping: false };
+
+    if (state.getBoolean(OFFICIAL_SCORE)) {
+      return disabled;
+    }
 
     const startText = state.getString(START);
     const stopText = state.getString(STOP);
@@ -150,6 +161,6 @@ export class JamControl extends CrgKeyAction {
       return { text: startText, path: game('StartJam'), stopping: false };
     }
 
-    return { text: 'Wait', path: undefined, stopping: false };
+    return disabled;
   }
 }

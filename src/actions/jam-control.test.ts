@@ -269,4 +269,29 @@ describe('the Jam Control key', () => {
 
     assert.equal(deck.scheduler.pending, 0);
   });
+
+  it('reads Start Jam, faded, and does nothing once the official score is set', async () => {
+    deck.hold({ [label('Start')]: 'Start Jam', [label('Stop')]: 'Lineup', [game('OfficialScore')]: true });
+    deck.draw();
+
+    const faded = key.image;
+
+    await deck.press(keyAction, key);
+
+    assert.deepEqual(words(key), ['START', 'JAM']);
+    assert.deepEqual(deck.written, []);
+
+    deck.hold({ [game('OfficialScore')]: false });
+    deck.draw();
+
+    assert.notEqual(key.image, faded, 'the key should brighten once CRG will act again');
+  });
+
+  it('reads Start Jam, faded, and does nothing before CRG has sent its labels', async () => {
+    await deck.press(keyAction, key);
+
+    assert.deepEqual(words(key), ['START', 'JAM']);
+    assert.match(Buffer.from((key.image ?? '').split(',')[1] ?? '', 'base64').toString('utf8'), /opacity="0.45"/);
+    assert.deepEqual(deck.written, []);
+  });
 });
