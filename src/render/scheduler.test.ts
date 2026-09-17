@@ -70,4 +70,19 @@ describe('RenderScheduler', () => {
 
     assert.equal(drawn, 0);
   });
+
+  it('draws the other keys when one fails, and reports the one that failed', () => {
+    const failed: string[] = [];
+    const drawn: string[] = [];
+    const scheduler = new RenderScheduler(100, setTimeout, (key) => failed.push(key));
+
+    scheduler.request('broken', () => {
+      throw new Error('no picture');
+    });
+    scheduler.request('fine', () => drawn.push('fine'));
+    scheduler.flush();
+
+    assert.deepEqual(failed, ['broken']);
+    assert.deepEqual(drawn, ['fine']);
+  });
 });

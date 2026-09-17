@@ -10,16 +10,25 @@
 /** Ten redraws a second is as fast as a key is worth updating. */
 export const DEFAULT_INTERVAL_MS = 100;
 
+/** Told when a key could not be drawn, so the failure is reported rather than thrown out of a timer. */
+export type RenderFailure = (key: string, cause: unknown) => void;
+
 export class RenderScheduler {
   readonly #intervalMs: number;
   readonly #pending = new Map<string, () => void>();
   readonly #setTimer: typeof setTimeout;
+  readonly #onError: RenderFailure;
 
   #timer: ReturnType<typeof setTimeout> | undefined;
 
-  constructor(intervalMs: number = DEFAULT_INTERVAL_MS, setTimer: typeof setTimeout = setTimeout) {
+  constructor(
+    intervalMs: number = DEFAULT_INTERVAL_MS,
+    setTimer: typeof setTimeout = setTimeout,
+    onError: RenderFailure = () => undefined
+  ) {
     this.#intervalMs = intervalMs;
     this.#setTimer = setTimer;
+    this.#onError = onError;
   }
 
   /** How many keys are waiting to redraw. */
@@ -42,19 +51,28 @@ export class RenderScheduler {
     }
   }
 
-  /** Runs every queued redraw now. */
+  /**
+   * Runs every queued redraw now.
+   *
+   * A key that fails to draw is reported and skipped, so the keys queued
+   * behind it still draw and the failure never leaves the timer.
+   */
   flush(): void {
     if (this.#timer !== undefined) {
       clearTimeout(this.#timer);
       this.#timer = undefined;
     }
 
-    const due = [...this.#pending.values()];
+    const due = [...this.#pending];
 
     this.#pending.clear();
 
-    for (const render of due) {
-      render();
+    for (const [key, render] of due) {
+      try {
+        render();
+      } catch (cause) {
+        this.#onError(key, cause);
+      }
     }
   }
 
