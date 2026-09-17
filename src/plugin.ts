@@ -28,9 +28,22 @@ const SHUTDOWN_GRACE_MS = 1_000;
 
 const logger = streamDeck.logger.createScope('plugin');
 
+/** An error's message, whatever was thrown. */
+function messageOf(cause: unknown): string {
+  return cause instanceof Error ? cause.message : String(cause);
+}
+
+// A game is running, so an unexpected error is logged and the plugin
+// carries on. Stream Deck's own handler logs only the first one, and
+// with it gone the next would end the plugin.
+process.on('uncaughtException', (cause) => logger.error(`Unexpected error: ${messageOf(cause)}`));
+process.on('unhandledRejection', (cause) => logger.error(`Unhandled failure: ${messageOf(cause)}`));
+
 const context: PluginContext = {
   client: new CrgClient(),
-  scheduler: new RenderScheduler(),
+  scheduler: new RenderScheduler(undefined, undefined, (key, cause) =>
+    logger.error(`Could not draw key ${key}: ${messageOf(cause)}`)
+  ),
   connection: {
     connect: () => settings.setStopped(false),
     disconnect: () => settings.setStopped(true)
@@ -132,8 +145,13 @@ streamDeck.settings.onDidReceiveGlobalSettings<GlobalSettings>((event) => {
 
 let settling: NodeJS.Timeout | undefined;
 
+/** Logs a settings write that failed, which would otherwise go unhandled. */
+function reportSettingsFailure(cause: unknown): void {
+  logger.warn(`Could not save the plugin settings: ${messageOf(cause)}`);
+}
+
 context.client.state.subscribePrefix(OPERATOR_PREFIX, () => {
-  void settings.rememberOperators(operatorNames(context.client.state));
+  settings.rememberOperators(operatorNames(context.client.state)).catch(reportSettingsFailure);
 
   clearTimeout(settling);
   settling = setTimeout(createOwnOperator, OPERATOR_SETTLE_MS);
@@ -141,7 +159,7 @@ context.client.state.subscribePrefix(OPERATOR_PREFIX, () => {
 
 context.client.on('status', (status) => {
   if (status === 'connected') {
-    void settings.rememberSession();
+    settings.rememberSession().catch(reportSettingsFailure);
   }
 });
 
