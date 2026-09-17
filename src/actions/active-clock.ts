@@ -25,6 +25,7 @@ export class ActiveClock extends CrgKeyAction {
         clock(name, 'Time'),
         clock(name, 'Number'),
         clock(name, 'Running'),
+        clock(name, 'Direction'),
         clock(name, 'Name')
       ]),
       game('InPeriod'),
@@ -45,7 +46,8 @@ export class ActiveClock extends CrgKeyAction {
         : choice.label.toUpperCase();
 
     const online = isOnline(this.context.client.status);
-    const time = online ? formatClock(state.getNumber(clock(choice.clock, 'Time'))) : '--:--';
+    const countingDown = state.getBoolean(clock(choice.clock, 'Direction'));
+    const time = online ? formatClock(state.getNumber(clock(choice.clock, 'Time')), countingDown) : '--:--';
 
     return clockKey(
       title,

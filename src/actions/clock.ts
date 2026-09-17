@@ -26,6 +26,7 @@ export class Clock extends CrgKeyAction<ClockSettings> {
       clock(name, 'Time'),
       clock(name, 'Number'),
       clock(name, 'Running'),
+      clock(name, 'Direction'),
       clock(name, 'Name')
     ]);
   }
@@ -49,13 +50,17 @@ export class Clock extends CrgKeyAction<ClockSettings> {
 
     return clockKey(
       clockTitle(name, state.getNumber(clock(name, 'Number'), 0), state.getString(clock(name, 'Name'))),
-      isOnline(this.context.client.status) ? formatClock(state.getNumber(clock(name, 'Time'))) : '--:--',
+      isOnline(this.context.client.status)
+        ? formatClock(state.getNumber(clock(name, 'Time')), state.getBoolean(clock(name, 'Direction')))
+        : '--:--',
       state.getBoolean(clock(name, 'Running'))
     );
   }
 }
 
-/** The clock a key is set to, which is the jam clock until someone changes it. */
+/** The clock a key is set to, which is the jam clock until someone sets one CRG has. */
 function chosenClock(settings: ClockSettings | undefined): ClockName {
-  return settings?.clock ?? 'Jam';
+  const chosen = settings?.clock;
+
+  return CLOCK_NAMES.find((name) => name === chosen) ?? 'Jam';
 }
