@@ -169,7 +169,8 @@ const SHEET = [
             d.jamControlKey('Start Jam', '0:32', ['LINEUP', 'JAM 13'], d.lineupBackground('over', 0.5), false)
           ],
           ['Jam active', d.jamControlKey('Stop Jam', '1:04', ['JAM 13'], d.JAM_STOP, false)],
-          ['Timeout active', d.jamControlKey('End Timeout', '0:43', ['JAM 13'], d.TIMEOUT_RED, false)]
+          ['Timeout active', d.jamControlKey('End Timeout', '0:43', ['JAM 13'], d.TIMEOUT_RED, false)],
+          ['Unavailable', d.jamControlKey('Start Jam', undefined, ['JAM 13'], d.JAM_IDLE, true)]
         ]
       },
       {
@@ -338,7 +339,7 @@ const SHEET = [
           ['Jam', d.clockKey('JAM 13', '1:04', true)],
           ['Lineup', d.clockKey('LINEUP', '0:21', true)],
           ['Post timeout', d.clockKey('POST TIMEOUT', '0:21', true)],
-          ['Untyped', d.clockKey('TIMEOUT', '0:43', false)],
+          ['Untyped', d.clockKey('TIMEOUT', '0:43', true)],
           ['Intermission', d.clockKey('INTERMISSION', '5:00', true)]
         ]
       },
@@ -597,6 +598,13 @@ const LEGEND = [
       ['Offline', d.connectionKey('disconnected')],
       ['Not allowed', d.connectionKey('unauthorized')],
       ['Disconnected', d.connectionKey('stopped')]
+    ]
+  ],
+  [
+    'clock-strip',
+    [
+      ['Running', d.clockKey('PERIOD 2', '12:26', true)],
+      ['Stopped', d.clockKey('PERIOD 2', '12:26', false)]
     ]
   ],
   ['operator-name', [['', d.connectionKey('connected', 'StreamDeck')]]]
