@@ -8,8 +8,9 @@ node_modules/
 *.sdPlugin/bin/
 *.sdPlugin/logs/
 
-# Packaged plugin
+# Packaged plugin, and the folder npm run pack writes it to
 *.streamDeckPlugin
+dist/
 
 # Environments
 .env
