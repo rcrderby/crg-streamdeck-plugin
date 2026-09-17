@@ -30,9 +30,12 @@ const DEVICES = [
   { type: 0, name: 'stream-deck', model: '20GBA9901' },
   { type: 1, name: 'mini', model: '20GAI9902' },
   { type: 2, name: 'xl', model: '20GAT9901' },
+  { type: 3, name: 'mobile', model: 'VSD/WiFi' },
   { type: 7, name: 'plus', model: '20GBD9901', encoders: true },
   { type: 9, name: 'neo', model: '20GBJ9901' },
-  { type: 11, name: 'virtual', model: 'UI Stream Deck' }
+  { type: 10, name: 'studio', model: '20GBO9901', encoders: true },
+  { type: 11, name: 'virtual', model: 'UI Stream Deck' },
+  { type: 13, name: 'plus-xl', model: '20GBX9901', encoders: true }
 ];
 
 /** Each page's keys by column and row, all within the top left three columns and two rows. */
