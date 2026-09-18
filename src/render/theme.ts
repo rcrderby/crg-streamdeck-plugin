@@ -112,21 +112,6 @@ export const READABLE_RATIO = 4.5;
 const FADE_STEPS = 12;
 
 /**
- * Picks the readable foreground for a background.
- *
- * A league chooses its own operator colors, so the pair CRG supplies
- * can be unreadable on a key. The requested color is kept when it
- * clears the ratio, and black or white replaces it when it does not.
- */
-export function readableForeground(background: string, requested: string, minimumRatio = READABLE_RATIO): string {
-  if (contrastRatio(background, requested) >= minimumRatio) {
-    return requested;
-  }
-
-  return contrastRatio(background, '#ffffff') >= contrastRatio(background, '#000000') ? '#ffffff' : '#000000';
-}
-
-/**
  * The opacity to draw faded text at, raised until the text stays readable.
  *
  * A foreground is chosen against the key at full strength, but a caption
@@ -254,14 +239,13 @@ function colorSlot(state: StateStore, number: TeamNumber, slot: ColorSlot): stri
  * Reads a team's colors and display name.
  *
  * The operator set comes first, then the preset set. A game holding
- * neither falls to the team defaults, which are opposites rather than
- * a color nobody picked.
+ * neither falls to the team defaults, which are opposites (black vs. white).
  */
 export function teamTheme(state: StateStore, number: TeamNumber): TeamTheme {
   const defaults = TEAM_DEFAULTS[number];
 
   const background = safeColor(colorSlot(state, number, 'bg'), defaults.background);
-  const requested = safeColor(colorSlot(state, number, 'fg'), defaults.foreground);
+  const foreground = safeColor(colorSlot(state, number, 'fg'), defaults.foreground);
   const glow = colorSlot(state, number, 'glow');
 
   const name =
@@ -272,7 +256,7 @@ export function teamTheme(state: StateStore, number: TeamNumber): TeamTheme {
 
   return {
     background,
-    foreground: readableForeground(background, requested),
+    foreground,
     glow: glow === '' ? undefined : sixDigits(glow),
     name
   };

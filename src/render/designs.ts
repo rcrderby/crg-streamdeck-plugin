@@ -20,6 +20,7 @@ import {
   noPivotIcon,
   plate,
   resourceDots,
+  shadowed,
   starPassIcon,
   triangle,
   tripSign,
@@ -55,10 +56,13 @@ const SPENT_RATIO = 3;
 
 export type JammerKind = 'lead' | 'starPass' | 'noPivot';
 
-const JAMMER: Readonly<Record<JammerKind, { caption: string; icon: (theme: TeamTheme) => string }>> = {
+/** A jammer key's icon and caption. A solid shadow gives a stripe drawn faded on purpose a clear edge. */
+type JammerDesign = { caption: string; icon: (theme: TeamTheme) => string; solidShadow?: boolean };
+
+const JAMMER: Readonly<Record<JammerKind, JammerDesign>> = {
   lead: { caption: 'Lead', icon: (theme) => leadIcon(theme.foreground) },
   starPass: { caption: 'Star Pass', icon: (theme) => starPassIcon(theme.foreground) },
-  noPivot: { caption: 'No Pivot', icon: (theme) => noPivotIcon(theme.foreground, theme.background) }
+  noPivot: { caption: 'No Pivot', icon: (theme) => noPivotIcon(theme.foreground, theme.background), solidShadow: true }
 };
 
 /**
@@ -90,6 +94,11 @@ function teamName(theme: TeamTheme, y = 22): KeyText {
   return teamText(theme, theme.name, y, 11, { opacity: 0.8 });
 }
 
+/** A drawing in a team's colors, shadowed in its glow color as its text is. */
+function teamShape(theme: TeamTheme, markup: string, solid = false): string {
+  return shadowed(markup, theme.glow, solid);
+}
+
 function teamKey(theme: TeamTheme, spec: KeySpec): KeySpec {
   return { background: theme.background, foreground: theme.foreground, ...spec };
 }
@@ -104,7 +113,7 @@ export function jammerKey(theme: TeamTheme, kind: JammerKind, active: boolean, d
 
   if (disabledReason === undefined) {
     return teamKey(theme, {
-      shapes: [design.icon(theme)],
+      shapes: [teamShape(theme, design.icon(theme), design.solidShadow)],
       texts: [teamText(theme, design.caption, 82, 17)],
       bar: { active }
     });
@@ -113,7 +122,7 @@ export function jammerKey(theme: TeamTheme, kind: JammerKind, active: boolean, d
   const faded: TeamTheme = { ...theme, foreground: blend(theme.foreground, theme.background, SPENT_OPACITY) };
 
   return teamKey(theme, {
-    shapes: [design.icon(faded), plate(12, 29, 76, 20, theme.background)],
+    shapes: [design.icon(faded), teamShape(theme, plate(12, 29, 76, 20, theme.background))],
     texts: [
       teamText(theme, design.caption, 82, 17, { opacity: SPENT_OPACITY }, SPENT_RATIO),
       teamText(theme, disabledReason, 44, 13)
@@ -131,7 +140,7 @@ export function jammerKey(theme: TeamTheme, kind: JammerKind, active: boolean, d
  */
 export function lostLeadKey(theme: TeamTheme, active: boolean, level = 0): KeySpec {
   return teamKey(theme, {
-    shapes: [lostLeadIcon(theme.foreground, theme.background)],
+    shapes: [teamShape(theme, lostLeadIcon(theme.foreground, theme.background))],
     texts: [teamText(theme, 'Lost Lead', 68, 15), teamText(theme, 'HOLD', 84, 10, { opacity: 0.8 })],
     bar: { active, progress: level }
   });
@@ -157,7 +166,7 @@ export function teamTimeoutKey(
   pulse?: number
 ): KeySpec {
   return teamKey(theme, {
-    shapes: [resourceDots(total, left, theme.foreground, 80, undefined, pulse)],
+    shapes: [teamShape(theme, resourceDots(total, left, theme.foreground, 80, undefined, pulse))],
     texts: resourceTitle(theme, ['Team', 'Timeout'], left === 0),
     bar: { active }
   });
@@ -173,7 +182,7 @@ export function officialReviewKey(
   pulse?: number
 ): KeySpec {
   return teamKey(theme, {
-    shapes: [resourceDots(Math.max(1, total), left, theme.foreground, 80, mark, pulse)],
+    shapes: [teamShape(theme, resourceDots(Math.max(1, total), left, theme.foreground, 80, mark, pulse))],
     texts: resourceTitle(theme, ['Official', 'Review'], left === 0),
     bar: { active }
   });
@@ -198,7 +207,7 @@ export function tripPointsKey(theme: TeamTheme, points: number): KeySpec {
 /** Up 1 or Down 1: the arrow sits left of the 1, both centered on one line. */
 export function tripAdjustKey(theme: TeamTheme, up: boolean): KeySpec {
   return teamKey(theme, {
-    shapes: [triangle(up, 37, 60, 22, theme.foreground)],
+    shapes: [teamShape(theme, triangle(up, 37, 60, 22, theme.foreground))],
     texts: [teamName(theme), teamText(theme, '1', 71, 30, { x: 66 })]
   });
 }
@@ -206,7 +215,7 @@ export function tripAdjustKey(theme: TeamTheme, up: boolean): KeySpec {
 /** Add Trip or Remove Trip: a filled disc with the sign cut out of it. */
 export function tripChangeKey(theme: TeamTheme, add: boolean): KeySpec {
   return teamKey(theme, {
-    shapes: [tripSign(add, theme.foreground, theme.background)],
+    shapes: [teamShape(theme, tripSign(add, theme.foreground, theme.background))],
     texts: [teamName(theme), teamText(theme, add ? 'Add Trip' : 'Remove Trip', 89, 12)]
   });
 }
@@ -257,20 +266,18 @@ export function scoreKey(theme: TeamTheme, total: number, jam: number, trip: num
 
   return teamKey(theme, {
     shapes: [
-      plate(totalLeft, SCORE_BASELINE - totalHeight, totalPanel, totalHeight, panel, totalPad * 0.6),
-      plate(jamLeft, SCORE_BASELINE - jamHeight, jamPanel, jamHeight, panel, pad * 0.7)
+      teamShape(theme, plate(totalLeft, SCORE_BASELINE - totalHeight, totalPanel, totalHeight, panel, totalPad * 0.6)),
+      teamShape(theme, plate(jamLeft, SCORE_BASELINE - jamHeight, jamPanel, jamHeight, panel, pad * 0.7))
     ],
     texts: [
       teamName(theme, 20),
       teamText(theme, String(total), SCORE_BASELINE - totalPad, SCORE_TOTAL_SIZE, {
         x: totalLeft + totalPanel / 2,
-        width: totalPanel - totalPad * 2,
-        shadow: undefined
+        width: totalPanel - totalPad * 2
       }),
       teamText(theme, String(jam), SCORE_BASELINE - pad, SCORE_JAM_SIZE, {
         x: jamLeft + jamPanel / 2,
-        width: room,
-        shadow: undefined
+        width: room
       }),
       teamText(theme, `TRIP ${trip}`, 93, 11, { opacity: 0.7 })
     ],

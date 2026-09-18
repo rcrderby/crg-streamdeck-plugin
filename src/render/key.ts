@@ -95,9 +95,9 @@ const BAR_RULE_COLOR = '#0b0b0f';
 const BAR_SHIFT = 3;
 
 /** A text shadow's offset, as a share of the font size. */
-const SHADOW_OFFSET = 0.06;
+const SHADOW_OFFSET = 0.02;
 
-const SHADOW_MIN_OFFSET = 0.9;
+const SHADOW_MIN_OFFSET = 0.4;
 
 const MARK_FILL = '#3d5a8a';
 
