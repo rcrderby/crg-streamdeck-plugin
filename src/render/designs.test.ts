@@ -24,6 +24,11 @@ import { type TeamTheme, panelColor } from './theme.ts';
 
 const WHEELS: TeamTheme = { background: '#38205b', foreground: '#ffffff', glow: '#000000', name: 'Wheels' };
 
+/** A key's drawing without the shadow copies behind its shapes, so each shape is counted once. */
+function unshadowed(svg: string): string {
+  return svg.replace(/<g transform="translate\(0\.6 0\.6\)">.*?<\/g>/g, '');
+}
+
 describe('jammer status keys', () => {
   it('put every caption on one line at one size', () => {
     for (const kind of ['lead', 'starPass', 'noPivot'] as const) {
@@ -95,9 +100,54 @@ describe('team resource keys', () => {
   });
 
   it('mark a review won', () => {
-    const svg = renderKeySvg(officialReviewKey(WHEELS, 1, 1, 'retained', false));
+    const svg = unshadowed(renderKeySvg(officialReviewKey(WHEELS, 1, 1, 'retained', false)));
 
     assert.equal((svg.match(/<line/g) ?? []).length, 2);
+  });
+});
+
+describe('shape shadows', () => {
+  it('draws a team shape twice, the copy behind it in the glow color', () => {
+    const svg = renderKeySvg(tripAdjustKey(WHEELS, true));
+
+    assert.match(svg, /<g transform="translate\(0\.6 0\.6\)"><polygon[^>]*fill="#000000"/);
+    assert.equal((svg.match(/<polygon/g) ?? []).length, 2);
+  });
+
+  it('draws a team shape once when the team has no glow', () => {
+    const svg = renderKeySvg(tripAdjustKey({ ...WHEELS, glow: undefined }, true));
+
+    assert.doesNotMatch(svg, /translate\(0\.6 0\.6\)/);
+  });
+
+  it('shadows the reason box on a key CRG will not act on, and leaves its faded icon flat', () => {
+    const svg = renderKeySvg(jammerKey(WHEELS, 'starPass', false, 'NO PIVOT'));
+    const copies = svg.match(/<g transform="translate\(0\.6 0\.6\)">(.*?)<\/g>/g) ?? [];
+
+    assert.equal(copies.length, 1);
+    assert.match(copies[0] ?? '', /^<g[^>]*><rect/);
+  });
+
+  it('gives the No Pivot stripe a shadow at full strength, though the stripe is faded', () => {
+    const svg = renderKeySvg(jammerKey(WHEELS, 'noPivot', false));
+    const [copy] = svg.match(/<g transform="translate\(0\.6 0\.6\)">.*?<\/g>/) ?? [];
+
+    assert.ok(copy !== undefined);
+    assert.doesNotMatch(copy, /opacity=/);
+    assert.match(svg, /opacity="0\.45"/);
+  });
+
+  it('keeps a spent dot’s shadow as faded as the dot', () => {
+    const svg = renderKeySvg(teamTimeoutKey(WHEELS, 3, 1, false));
+    const [copy] = svg.match(/<g transform="translate\(0\.6 0\.6\)">.*?<\/g>/) ?? [];
+
+    assert.match(copy ?? '', /opacity=/);
+  });
+
+  it('shadows the score numbers, as every other line of team text', () => {
+    const texts = scoreKey(WHEELS, 128, 12, 4).texts ?? [];
+
+    assert.ok(texts.every((line) => line.shadow === WHEELS.glow));
   });
 });
 
@@ -143,7 +193,7 @@ describe('scoreKey', () => {
     jam: number,
     mirrored = false
   ): { x: number; y: number; width: number; height: number }[] {
-    const svg = renderKeySvg(scoreKey(WHEELS, total, jam, 2, mirrored));
+    const svg = unshadowed(renderKeySvg(scoreKey(WHEELS, total, jam, 2, mirrored)));
 
     return [...svg.matchAll(/<rect x="([\d.]+)" y="([\d.]+)" width="([\d.]+)" height="([\d.]+)" rx=/g)].map(
       (found) => ({

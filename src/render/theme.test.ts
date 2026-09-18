@@ -10,11 +10,14 @@ import {
   escapeXml,
   luminance,
   panelColor,
-  readableForeground,
   readableOpacity,
   safeColor,
   teamTheme
 } from './theme.ts';
+
+/** Black or white, whichever reads better on a background, for picking test colors. */
+const legible = (background: string): string =>
+  contrastRatio(background, '#ffffff') >= contrastRatio(background, '#000000') ? '#ffffff' : '#000000';
 
 describe('escapeXml', () => {
   it('escapes every character that can change markup', () => {
@@ -83,17 +86,6 @@ describe('luminance and contrastRatio', () => {
   });
 });
 
-describe('readableForeground', () => {
-  it('keeps a foreground that already reads', () => {
-    assert.equal(readableForeground('#000000', '#ffffff'), '#ffffff');
-  });
-
-  it('replaces a foreground that does not read', () => {
-    assert.equal(readableForeground('#ffffff', '#fefefe'), '#000000');
-    assert.equal(readableForeground('#000000', '#010101'), '#ffffff');
-  });
-});
-
 describe('readableOpacity', () => {
   const held = (background: string, foreground: string, wanted: number, ratio = READABLE_RATIO): number =>
     contrastRatio(blend(foreground, background, readableOpacity(background, foreground, wanted, ratio)), background);
@@ -104,7 +96,7 @@ describe('readableOpacity', () => {
 
   it('gives back only as much of the fade as the ratio needs', () => {
     // A pair that only just clears the ratio at full strength.
-    const marginal = readableForeground('#ffffff', '#767676');
+    const marginal = '#767676';
     const opacity = readableOpacity('#ffffff', marginal, 0.7);
 
     assert.ok(opacity > 0.7, 'a marginal pair should be faded less');
@@ -114,7 +106,7 @@ describe('readableOpacity', () => {
 
   it('holds the ratio at every fade the designs ask for, on backgrounds a league might pick', () => {
     for (const background of ['#000000', '#ffffff', '#6b7280', '#38205b', '#eab308', '#7dd3fc']) {
-      const foreground = readableForeground(background, '#ffffff');
+      const foreground = legible(background);
 
       for (const wanted of [0.7, 0.75, 0.8, 0.85]) {
         assert.ok(
@@ -226,15 +218,26 @@ describe('teamTheme', () => {
     assert.equal(teamTheme(new StateStore(), 2).name, 'Team 2');
   });
 
-  it('replaces a foreground the operator chose that cannot be read', () => {
+  it('keeps the text color the operator chose, however it reads', () => {
     const state = new StateStore();
 
     state.apply({
-      [path(1, 'Color(operator.bg)')]: '#000000',
-      [path(1, 'Color(operator.fg)')]: '#0a0a0a'
+      [path(1, 'Color(operator.bg)')]: '#b11e37',
+      [path(1, 'Color(operator.fg)')]: '#000000'
     });
 
-    assert.equal(teamTheme(state, 1).foreground, '#ffffff');
+    assert.equal(teamTheme(state, 1).foreground, '#000000');
+  });
+
+  it('keeps a preset text color that reads poorly, too', () => {
+    const state = new StateStore();
+
+    state.apply({
+      [path(2, 'Color(preset.bg)')]: '#12b5d1',
+      [path(2, 'Color(preset.fg)')]: '#ffffff'
+    });
+
+    assert.equal(teamTheme(state, 2).foreground, '#ffffff');
   });
 
   it('drops a glow color that is not a hex color', () => {
@@ -251,7 +254,7 @@ describe('panelColor', () => {
     const keys = ['#000000', '#ffffff', '#6b7280', '#38205b', '#eab308', '#84cc16', '#7dd3fc', '#78350f'];
 
     for (const background of keys) {
-      const foreground = readableForeground(background, '#ffffff');
+      const foreground = legible(background);
       const panel = panelColor(background, foreground);
 
       assert.ok(

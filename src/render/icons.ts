@@ -31,6 +31,9 @@ const MAX_DOTS = 12;
 /** A resource mark's opacity once the key has nothing left. */
 const SPENT_OPACITY = 0.38;
 
+/** How far a drawing's shadow sits down and to the right of it. */
+const SHADOW_OFFSET = 0.6;
+
 /** The mark on an Official Review key that a team won: a plus once, a line twice. */
 export type ReviewMark = 'retained' | 'twice';
 
@@ -40,6 +43,27 @@ function n(value: number): string {
 
 function hex(color: string): string {
   return safeColor(color, '#ffffff');
+}
+
+/**
+ * A drawing with a shadow in a glow color, as a text shadow is drawn.
+ *
+ * The copy behind it takes the glow for every color it holds, so a
+ * drawing with a cut out part casts one solid shadow. A solid shadow
+ * also drops the drawing's opacity, so a part drawn faded on purpose
+ * still gets a clear edge. With no glow, the drawing comes back as it was.
+ */
+export function shadowed(markup: string, glow: string | undefined, solid = false): string {
+  const color = safeColor(glow, '');
+
+  if (color === '') {
+    return markup;
+  }
+
+  const recolored = markup.replace(/(fill|stroke)="#[0-9a-f]{6}"/gi, `$1="${color}"`);
+  const copy = solid ? recolored.replace(/ opacity="[\d.]+"/g, '') : recolored;
+
+  return `<g transform="translate(${SHADOW_OFFSET} ${SHADOW_OFFSET})">${copy}</g>${markup}`;
 }
 
 function opacityAttribute(opacity: number): string {
