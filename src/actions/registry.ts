@@ -18,6 +18,7 @@ import { Clock } from './clock.ts';
 import { Connection } from './connection.ts';
 import { Injury, Lead, LostLead, NoInitial, NoPivot, StarPass } from './team-flags.ts';
 import { JamControl } from './jam-control.ts';
+import { JrdaOptions } from './jrda-options.ts';
 import { OfficialReview, TeamTimeout } from './team-resources.ts';
 import { ReviewOptions } from './review-options.ts';
 import { OfficialTimeout, Timeout, Undo } from './game-controls.ts';
@@ -34,6 +35,7 @@ export function keyActions(context: PluginContext): SingletonAction<never>[] {
   return [
     named(`${UUID}.connection`, new Connection(context)),
     named(`${UUID}.automation`, new Automation(context)),
+    named(`${UUID}.jrda-options`, new JrdaOptions(context)),
     named(`${UUID}.jam-control`, new JamControl(context)),
     named(`${UUID}.timeout`, new Timeout(context)),
     named(`${UUID}.official-timeout`, new OfficialTimeout(context)),

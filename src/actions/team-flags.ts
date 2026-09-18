@@ -19,9 +19,6 @@ import { TeamKeyAction, type TeamSettings, teamOf, teamPaths, themeOf } from './
 /** The CRG field the Lost Lead key reads and flips. */
 const LOST = 'Lost';
 
-/** How long a finished hold's value is shown before the key goes back to what CRG holds, if CRG has not answered. */
-const AWAIT_MS = 2000;
-
 abstract class TeamFlagAction extends TeamKeyAction {
   /** The CRG field this key reads and flips. */
   protected abstract get field(): string;
@@ -63,9 +60,6 @@ export class Lead extends TeamFlagAction {
  * the team brings.
  */
 export class LostLead extends HoldKeyAction<TeamSettings> {
-  /** The value a finished hold set, per key, shown until CRG reports it back. */
-  readonly #awaiting = new Map<string, { value: boolean; timer: NodeJS.Timeout }>();
-
   protected override watchedPaths(): readonly string[] {
     return teamPaths(LOST);
   }
@@ -73,44 +67,19 @@ export class LostLead extends HoldKeyAction<TeamSettings> {
   protected override describe(settings: TeamSettings, actionId: string): KeySpec {
     const level = this.holdDone(actionId) ? 0 : this.holdLevel(actionId);
 
-    return lostLeadKey(themeOf(this.context.client.state, settings), this.#shown(settings, actionId), level);
+    return lostLeadKey(
+      themeOf(this.context.client.state, settings),
+      this.shownValue(actionId, this.#lost(settings)),
+      level
+    );
   }
 
-  /**
-   * Sets the flag, and shows the value set until CRG sends it back.
-   *
-   * Between the write and CRG's answer the key would otherwise draw the
-   * old value for a moment, a flash of the color the hold just left.
-   */
+  /** Sets the flag, and shows the value set until CRG sends it back. */
   protected override completeHold(action: KeyAction<TeamSettings>, settings: TeamSettings): void {
     const value = !this.#lost(settings);
 
-    clearTimeout(this.#awaiting.get(action.id)?.timer);
-    this.#awaiting.set(action.id, {
-      value,
-      timer: setTimeout(() => {
-        this.#awaiting.delete(action.id);
-        this.redraw(action);
-      }, AWAIT_MS)
-    });
+    this.awaitValue(action, value);
     this.context.client.set(team(teamOf(settings), LOST), value);
-  }
-
-  /** What the key shows: the value a finished hold set until CRG agrees, then CRG's own. */
-  #shown(settings: TeamSettings, actionId: string): boolean {
-    const lost = this.#lost(settings);
-    const awaiting = this.#awaiting.get(actionId);
-
-    if (awaiting === undefined) {
-      return lost;
-    }
-
-    if (awaiting.value === lost) {
-      clearTimeout(awaiting.timer);
-      this.#awaiting.delete(actionId);
-    }
-
-    return awaiting.value;
   }
 
   #lost(settings: TeamSettings): boolean {

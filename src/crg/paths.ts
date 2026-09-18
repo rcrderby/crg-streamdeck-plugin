@@ -115,6 +115,9 @@ export const TIMEOUTS = {
   retained: `${CURRENT_GAME}.Period(*).Timeout(*).RetainedReview`
 } as const;
 
+/** How long each jam ran, under its period and number; CRG writes it when the jam stops. */
+export const JAM_DURATIONS = `${CURRENT_GAME}.Period(*).Jam(*).Duration`;
+
 /** The id of every scoring trip; the trip's number is the key it sits under. */
 export const SCORING_TRIP_IDS = `${CURRENT_GAME}.Period(*).Jam(*).TeamJam(*).ScoringTrip(*).Id`;
 
@@ -160,6 +163,7 @@ export const REGISTERED_PATHS: readonly string[] = [
   game('NoMoreJam'),
   game('FiveSeconds'),
   game('InSuddenScoring'),
+  game('InjuryContinuationUpcoming'),
   game('TimeoutOwner'),
   game('OfficialReview'),
   game('ReviewIsTo'),
@@ -172,12 +176,16 @@ export const REGISTERED_PATHS: readonly string[] = [
   rule('Team.Timeouts'),
   rule('Team.OfficialReviews'),
   rule('Team.MaxRetains'),
+  rule('Jam.SuddenScoring'),
+  rule('Jam.InjuryContinuation'),
   `${CURRENT_GAME}.Clock(*).Name`,
   `${CURRENT_GAME}.Clock(*).Time`,
   `${CURRENT_GAME}.Clock(*).Number`,
   `${CURRENT_GAME}.Clock(*).Running`,
   `${CURRENT_GAME}.Clock(*).Direction`,
   `${CURRENT_GAME}.Clock(*).InvertedTime`,
+  `${CURRENT_GAME}.Clock(*).MaximumTime`,
+  JAM_DURATIONS,
   `${CURRENT_GAME}.Team(*).Id`,
   `${CURRENT_GAME}.Team(*).Score`,
   `${CURRENT_GAME}.Team(*).JamScore`,

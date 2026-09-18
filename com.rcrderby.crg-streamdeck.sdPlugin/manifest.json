@@ -321,6 +321,17 @@
       "UserTitleEnabled": false
     },
     {
+      "Name": "JRDA Options",
+      "UUID": "com.rcrderby.crg-streamdeck.jrda-options",
+      "Icon": "imgs/actions/jrda-options/icon",
+      "PropertyInspectorPath": "ui/jrda-options.html",
+      "Tooltip": "Shows or sets the JRDA-specific settings. Choose 'Continuation Upcoming' or 'Sudden Scoring' in the button's settings. 'Continuation Upcoming' shows the time a continued jam would run. Requires a 1-second hold to enable. 'Sudden Scoring' is activated automatically by the ruleset, so this button is informational only.",
+      "Controllers": ["Keypad"],
+      "States": [{ "Image": "imgs/actions/jrda-options/key", "TitleAlignment": "middle" }],
+      "SupportedInMultiActions": false,
+      "UserTitleEnabled": false
+    },
+    {
       "Name": "Clocks",
       "UUID": "com.rcrderby.crg-streamdeck.clock",
       "Icon": "imgs/actions/clock/icon",

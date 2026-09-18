@@ -13,6 +13,9 @@ import type { JsonObject } from '@elgato/utils';
 import { HOLD_MS, holdProgress } from '../render/hold.ts';
 import { CrgKeyAction } from './key-action.ts';
 
+/** How long a finished hold's value is shown before the key goes back to what CRG holds, if CRG has not answered. */
+const AWAIT_MS = 2000;
+
 type Hold = {
   readonly startedAt: number;
   readonly timer: NodeJS.Timeout;
@@ -21,6 +24,9 @@ type Hold = {
 
 export abstract class HoldKeyAction<T extends JsonObject = JsonObject> extends CrgKeyAction<T> {
   readonly #holds = new Map<string, Hold>();
+
+  /** The value a finished hold set, per key, shown until CRG reports it back. */
+  readonly #awaiting = new Map<string, { value: boolean; timer: NodeJS.Timeout }>();
 
   /**
    * Whether the key can act now.
@@ -55,6 +61,40 @@ export abstract class HoldKeyAction<T extends JsonObject = JsonObject> extends C
     }
 
     return hold.done ? 1 : holdProgress(hold.startedAt, Date.now());
+  }
+
+  /**
+   * Remembers the value a finished hold set, so the key can show it until CRG sends it back.
+   *
+   * Between the write and CRG's answer the key would otherwise draw the
+   * old value for a moment, a flash of the color the hold just left. If
+   * CRG never takes the change, the key goes back to CRG's value.
+   */
+  protected awaitValue(action: { id: string }, value: boolean): void {
+    clearTimeout(this.#awaiting.get(action.id)?.timer);
+    this.#awaiting.set(action.id, {
+      value,
+      timer: setTimeout(() => {
+        this.#awaiting.delete(action.id);
+        this.redraw(action);
+      }, AWAIT_MS)
+    });
+  }
+
+  /** What a key shows: the value a finished hold set until CRG agrees, then CRG's own. */
+  protected shownValue(actionId: string, current: boolean): boolean {
+    const awaiting = this.#awaiting.get(actionId);
+
+    if (awaiting === undefined) {
+      return current;
+    }
+
+    if (awaiting.value === current) {
+      clearTimeout(awaiting.timer);
+      this.#awaiting.delete(actionId);
+    }
+
+    return awaiting.value;
   }
 
   protected override animates(actionId: string, settings: T): boolean {
