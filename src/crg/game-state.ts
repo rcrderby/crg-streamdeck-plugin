@@ -281,3 +281,42 @@ export function activeClock(state: StateStore): ActiveClock {
     ? label(INTERMISSION_LABELS.unofficial, 'Unofficial Score', false)
     : label(INTERMISSION_LABELS.intermission, 'Intermission', true);
 }
+
+/** Where JRDA sudden scoring stands: not in the ruleset, allowed but not reached, or active this period. */
+export function suddenScoring(state: StateStore): 'off' | 'allowed' | 'active' {
+  if (state.getBoolean(game('InSuddenScoring'))) {
+    return 'active';
+  }
+
+  return state.getBoolean(rule('Jam.SuddenScoring')) ? 'allowed' : 'off';
+}
+
+/**
+ * Whether or not an injury continuation is available.
+ *
+ * This is CRG's own test for showing its Continuation Upcoming button:
+ * the rule is on and INJ is set. INJ is set for both teams at once, so
+ * CRG checks only Team 1.
+ */
+export function continuationAvailable(state: StateStore): boolean {
+  return state.getBoolean(rule('Jam.InjuryContinuation')) && state.getBoolean(team(1, 'Injury'));
+}
+
+/**
+ * How long a continued jam would run, or undefined before a jam has stopped.
+ *
+ * CRG starts a continuation at the jam clock's maximum less the duration
+ * of the jam that stopped. The maximum is used rather than the rule..
+ */
+export function continuationTime(state: StateStore): number | undefined {
+  const period = state.getNumber(game('CurrentPeriodNumber'), 0);
+  const jam = state.getNumber(clock('Jam', 'Number'), 0);
+  const maximum = state.get(clock('Jam', 'MaximumTime'));
+  const duration = state.get(`${CURRENT_GAME}.Period(${period}).Jam(${jam}).Duration`);
+
+  if (period === 0 || jam === 0 || typeof maximum !== 'number' || typeof duration !== 'number') {
+    return undefined;
+  }
+
+  return Math.max(0, maximum - duration);
+}

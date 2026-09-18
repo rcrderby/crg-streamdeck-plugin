@@ -711,6 +711,59 @@ export function automationKey(): KeySpec {
   };
 }
 
+/** The dark neutral the JRDA keys stand on, since they speak for the game rather than a team. */
+const JRDA_BACKGROUND = '#26262b';
+
+/** Where sudden scoring stands: not in the ruleset, allowed but not reached, or under way this period. */
+export type SuddenScoring = 'off' | 'allowed' | 'active';
+
+/**
+ * Sudden Scoring: whether CRG has the period in JRDA sudden scoring.
+ *
+ * It only shows whether or not CRG enabled sudden scoring, and uses the informational tab.
+ * It reads ENABLED with the top bar green while the period is in sudden scoring, and
+ * DISABLED while the ruleset allows it but the the conditions are not met.
+ * Without sudden scoring enabled in the ruleset it is darkened.
+ */
+export function suddenScoringKey(state: SuddenScoring): KeySpec {
+  const active = state === 'active';
+
+  return {
+    background: JRDA_BACKGROUND,
+    foreground: '#ffffff',
+    texts: [
+      { text: 'Sudden', y: 40, size: 15, weight: 'bold' },
+      { text: 'Scoring', y: 57, size: 15, weight: 'bold' },
+      { text: active ? 'ENABLED' : 'DISABLED', y: 80, size: 11, weight: 'bold', ...(active ? {} : { opacity: 0.75 }) }
+    ],
+    bar: { active },
+    informational: true,
+    subdued: state === 'off'
+  };
+}
+
+/**
+ * Continuation Upcoming: the time a continued jam would run, set with a hold.
+ *
+ * The time sits under a small CONTINUATION title, with JAM TIME REMAINING
+ * beneath it and HOLD in the top bar. The key is darkened when conditions
+ * for a continuation are not met.  Displays a dash when there is no time to show.
+ */
+export function continuationKey(time: string | undefined, on: boolean, available: boolean, level = 0): KeySpec {
+  return {
+    background: JRDA_BACKGROUND,
+    foreground: '#ffffff',
+    texts: [
+      { text: 'CONTINUATION', y: 26, size: 11, weight: 'bold', opacity: 0.75 },
+      { text: time ?? '—', y: 60, size: 30 },
+      { text: 'JAM TIME', y: 76, size: 9, weight: 'bold', opacity: 0.8 },
+      { text: 'REMAINING', y: 86, size: 9, weight: 'bold', opacity: 0.8 }
+    ],
+    bar: { active: on, progress: level, label: 'HOLD' },
+    subdued: !available
+  };
+}
+
 /** The automation settings the Automation page can switch. */
 export type AutomationSetting = 'endJams' | 'endTeamTimeouts';
 

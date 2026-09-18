@@ -156,6 +156,19 @@ const SHEET = [
         keys: [['Opens a page', d.automationKey()]]
       },
       {
+        name: 'JRDA Options',
+        slugs: ['jrda-options'],
+        keys: [
+          ['Continuation not available', d.continuationKey(undefined, false, false)],
+          ['Continuation available', d.continuationKey('1:50', false, true)],
+          ['Pressed', d.continuationKey('1:50', false, true, 0.6)],
+          ['Continuation upcoming', d.continuationKey('1:50', true, true)],
+          ['Sudden scoring, not in ruleset', d.suddenScoringKey('off')],
+          ['Sudden scoring, not active', d.suddenScoringKey('allowed')],
+          ['Sudden scoring, active', d.suddenScoringKey('active')]
+        ]
+      },
+      {
         name: 'Jam Control',
         slugs: ['jam-control'],
         keys: [
