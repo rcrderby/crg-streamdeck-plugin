@@ -103,6 +103,36 @@ describe('top bar', () => {
   });
 });
 
+describe('page mark', () => {
+  it('draws the page tab only when asked', () => {
+    assert.doesNotMatch(renderKeySvg({}), /scale\(-1 1\)/);
+    assert.match(renderKeySvg({ opensPage: true }), /<g transform="translate\(100 0\) scale\(-1 1\)">/);
+  });
+
+  it('mirrors the informational tab into the lower right, in the same blue', () => {
+    const svg = renderKeySvg({ opensPage: true });
+
+    assert.match(
+      svg,
+      /scale\(-1 1\)"><path d="M 0 78\.8 [^"]*" fill="#0b0b0f"\/><path d="M 0 80\.8 [^"]*" fill="#3d5a8a"\/>/
+    );
+  });
+
+  it('draws a white chevron pointing right inside the tab', () => {
+    const svg = renderKeySvg({ opensPage: true });
+    const found =
+      /<path d="M ([\d.]+) ([\d.]+) L ([\d.]+) ([\d.]+) L ([\d.]+) ([\d.]+)" fill="none" stroke="#ffffff"/.exec(svg);
+
+    assert.ok(found !== null);
+
+    const [backX, topY, tipX, tipY, , bottomY] = found.slice(1).map(Number) as number[];
+
+    assert.ok((tipX ?? 0) > (backX ?? 0), 'the tip should be to the right');
+    assert.ok((backX ?? 0) > 100 - 19.2, 'the chevron should sit inside the tab');
+    assert.ok((topY ?? 0) < (tipY ?? 0) && (tipY ?? 0) < (bottomY ?? 0));
+  });
+});
+
 describe('informational mark', () => {
   it('draws the informational tab only when asked', () => {
     assert.ok(!renderKeySvg({}).includes('#3d5a8a'));

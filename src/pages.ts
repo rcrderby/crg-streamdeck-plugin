@@ -6,9 +6,9 @@
  * scripts/build-profiles.mjs writes the files for the same models.
  */
 
-export type Page = 'connection' | 'undo';
+export type Page = 'connection' | 'undo' | 'automation';
 
-export const PAGES: readonly Page[] = ['connection', 'undo'];
+export const PAGES: readonly Page[] = ['connection', 'undo', 'automation'];
 
 /** The device types a page ships for, and the name each file goes by. */
 export const PAGE_DEVICES: Readonly<Record<number, string>> = {

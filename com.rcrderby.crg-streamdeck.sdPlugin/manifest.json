@@ -243,7 +243,7 @@
       "UUID": "com.rcrderby.crg-streamdeck.back",
       "Icon": "imgs/actions/back/icon",
       "PropertyInspectorPath": "ui/description.html",
-      "Tooltip": "Returns to your layout. Part of the connection page that the CRG Connection button opens.",
+      "Tooltip": "Returns to your layout. Part of each page of buttons that the plugin opens.",
       "Controllers": ["Keypad"],
       "States": [{ "Image": "imgs/actions/back/key", "TitleAlignment": "middle" }],
       "SupportedInMultiActions": false,
@@ -299,6 +299,17 @@
       "VisibleInActionsList": false
     },
     {
+      "Name": "Automation",
+      "UUID": "com.rcrderby.crg-streamdeck.automation",
+      "Icon": "imgs/actions/automation/icon",
+      "PropertyInspectorPath": "ui/description.html",
+      "Tooltip": "Opens a page of CRG automation settings.",
+      "Controllers": ["Keypad"],
+      "States": [{ "Image": "imgs/actions/automation/key", "TitleAlignment": "middle" }],
+      "SupportedInMultiActions": false,
+      "UserTitleEnabled": false
+    },
+    {
       "Name": "Clocks",
       "UUID": "com.rcrderby.crg-streamdeck.clock",
       "Icon": "imgs/actions/clock/icon",
@@ -308,6 +319,30 @@
       "States": [{ "Image": "imgs/actions/clock/key", "TitleAlignment": "middle" }],
       "SupportedInMultiActions": false,
       "UserTitleEnabled": false
+    },
+    {
+      "Name": "Auto End Jams",
+      "UUID": "com.rcrderby.crg-streamdeck.auto-end-jams",
+      "Icon": "imgs/actions/auto-end-jams/icon",
+      "PropertyInspectorPath": "ui/description.html",
+      "Tooltip": "Turns CRG's 'Auto End Jams' setting on or off. Part of the page that the Automation button opens. Changes the setting for every device connected to CRG.",
+      "Controllers": ["Keypad"],
+      "States": [{ "Image": "imgs/actions/auto-end-jams/key", "TitleAlignment": "middle" }],
+      "SupportedInMultiActions": false,
+      "UserTitleEnabled": false,
+      "VisibleInActionsList": false
+    },
+    {
+      "Name": "Auto End Team Timeouts",
+      "UUID": "com.rcrderby.crg-streamdeck.auto-end-team-timeouts",
+      "Icon": "imgs/actions/auto-end-team-timeouts/icon",
+      "PropertyInspectorPath": "ui/description.html",
+      "Tooltip": "Turns CRG's 'Auto End Team Timeouts' setting on or off. Part of the page that the Automation button opens. Changes the setting for every device connected to CRG.",
+      "Controllers": ["Keypad"],
+      "States": [{ "Image": "imgs/actions/auto-end-team-timeouts/key", "TitleAlignment": "middle" }],
+      "SupportedInMultiActions": false,
+      "UserTitleEnabled": false,
+      "VisibleInActionsList": false
     }
   ],
   "Profiles": [
@@ -432,6 +467,69 @@
     },
     {
       "Name": "profiles/undo-plus-xl",
+      "DeviceType": 13,
+      "Readonly": true,
+      "DontAutoSwitchWhenInstalled": true,
+      "AutoInstall": false
+    },
+    {
+      "Name": "profiles/automation-stream-deck",
+      "DeviceType": 0,
+      "Readonly": true,
+      "DontAutoSwitchWhenInstalled": true,
+      "AutoInstall": false
+    },
+    {
+      "Name": "profiles/automation-mini",
+      "DeviceType": 1,
+      "Readonly": true,
+      "DontAutoSwitchWhenInstalled": true,
+      "AutoInstall": false
+    },
+    {
+      "Name": "profiles/automation-xl",
+      "DeviceType": 2,
+      "Readonly": true,
+      "DontAutoSwitchWhenInstalled": true,
+      "AutoInstall": false
+    },
+    {
+      "Name": "profiles/automation-mobile",
+      "DeviceType": 3,
+      "Readonly": true,
+      "DontAutoSwitchWhenInstalled": true,
+      "AutoInstall": false
+    },
+    {
+      "Name": "profiles/automation-plus",
+      "DeviceType": 7,
+      "Readonly": true,
+      "DontAutoSwitchWhenInstalled": true,
+      "AutoInstall": false
+    },
+    {
+      "Name": "profiles/automation-neo",
+      "DeviceType": 9,
+      "Readonly": true,
+      "DontAutoSwitchWhenInstalled": true,
+      "AutoInstall": false
+    },
+    {
+      "Name": "profiles/automation-studio",
+      "DeviceType": 10,
+      "Readonly": true,
+      "DontAutoSwitchWhenInstalled": true,
+      "AutoInstall": false
+    },
+    {
+      "Name": "profiles/automation-virtual",
+      "DeviceType": 11,
+      "Readonly": true,
+      "DontAutoSwitchWhenInstalled": true,
+      "AutoInstall": false
+    },
+    {
+      "Name": "profiles/automation-plus-xl",
       "DeviceType": 13,
       "Readonly": true,
       "DontAutoSwitchWhenInstalled": true,

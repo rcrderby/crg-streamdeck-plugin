@@ -11,6 +11,7 @@
 import { type SingletonAction } from '@elgato/streamdeck';
 
 import { ActiveClock } from './active-clock.ts';
+import { AutoEndJams, AutoEndTeamTimeouts, Automation } from './automation.ts';
 import { AddTrip, RemoveTrip, Score, TripPointsDown, TripPointsUp } from './scoring.ts';
 import { Back, ConnectionToggle } from './connection-page.ts';
 import { Clock } from './clock.ts';
@@ -31,6 +32,7 @@ const UUID = 'com.rcrderby.crg-streamdeck';
 export function keyActions(context: PluginContext): SingletonAction<never>[] {
   return [
     named(`${UUID}.connection`, new Connection(context)),
+    named(`${UUID}.automation`, new Automation(context)),
     named(`${UUID}.jam-control`, new JamControl(context)),
     named(`${UUID}.timeout`, new Timeout(context)),
     named(`${UUID}.official-timeout`, new OfficialTimeout(context)),
@@ -55,6 +57,8 @@ export function keyActions(context: PluginContext): SingletonAction<never>[] {
     named(`${UUID}.connection-toggle`, new ConnectionToggle(context)),
     named(`${UUID}.replace-info`, new ReplaceInfo(context)),
     named(`${UUID}.replace-confirm`, new ReplaceConfirm(context)),
-    named(`${UUID}.replace-choice`, new ReplaceChoice(context))
+    named(`${UUID}.replace-choice`, new ReplaceChoice(context)),
+    named(`${UUID}.auto-end-jams`, new AutoEndJams(context)),
+    named(`${UUID}.auto-end-team-timeouts`, new AutoEndTeamTimeouts(context))
   ];
 }

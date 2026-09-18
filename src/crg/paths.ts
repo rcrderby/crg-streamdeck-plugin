@@ -127,6 +127,17 @@ export const INTERMISSION_LABELS = {
   officialWithClock: setting('ScoreBoard.Intermission.OfficialWithClock')
 } as const;
 
+/**
+ * The automation settings the Automation page switches.
+ *
+ * Both are global, shared by every device, and CRG keeps each as the
+ * text 'true' or 'false'.
+ */
+export const AUTOMATION_SETTINGS = {
+  endJams: setting('ScoreBoard.AutoEndJam'),
+  endTeamTimeouts: setting('ScoreBoard.AutoEndTTO')
+} as const;
+
 /** What a key in a team's colors draws from, for either team. */
 export const TEAM_THEME_PATHS: readonly string[] = [
   `${CURRENT_GAME}.Team(*).Name`,

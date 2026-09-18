@@ -70,6 +70,8 @@ export type KeySpec = {
   readonly bar?: KeyBar | undefined;
   /** The corner tab with an "i", on a key that does nothing when pressed. */
   readonly informational?: boolean | undefined;
+  /** The same tab in the lower right corner with a chevron, on a key that opens a page of more keys. */
+  readonly opensPage?: boolean | undefined;
   /** A dark veil over the whole key, while CRG is disconnected or the key has nothing to act on. */
   readonly subdued?: boolean | undefined;
 };
@@ -129,6 +131,13 @@ const MARK_GLYPH_DOT = '<circle cx="28.5" cy="11" r="10.8"/>';
 const MARK_GLYPH_STEM =
   'M 0.5 45 L 0 40.5 C 11 37.5 21 34 31 31 L 33 32 L 23.5 77 C 22.8 81 24.3 82.5 27 80.5 L 37.5 74.5 L 38.5 78.5 ' +
   'C 30 87 22 94.5 13.5 96 C 7.5 97 5 93 6 88 L 14.5 51 C 15.2 47 13 45.5 10 46 Z';
+
+/** The page mark's chevron: how far its arms reach from its tip, across and up or down, and its stroke. */
+const CHEVRON_REACH_X = 4;
+
+const CHEVRON_REACH_Y = 4.25;
+
+const CHEVRON_STROKE = 2.3;
 
 const VEIL_OPACITY = 0.62;
 
@@ -257,6 +266,26 @@ function informationalMark(): string {
   );
 }
 
+/**
+ * The page tab: the informational tab mirrored into the lower right corner, with a white chevron.
+ *
+ * The chevron is the common mark for a control that opens another screen.
+ */
+function pageMark(): string {
+  const tip = round(VIEWBOX - MARK_GLYPH_X + CHEVRON_REACH_X / 2);
+  const back = round(tip - CHEVRON_REACH_X);
+
+  return (
+    `<g transform="translate(${VIEWBOX} 0) scale(-1 1)">` +
+    cornerTab(round(MARK_SIZE + MARK_RULE), round(MARK_CORNER + MARK_RULE), MARK_RULE_COLOR) +
+    cornerTab(MARK_SIZE, MARK_CORNER, MARK_FILL) +
+    '</g>' +
+    `<path d="M ${back} ${round(MARK_GLYPH_Y - CHEVRON_REACH_Y)} L ${tip} ${MARK_GLYPH_Y} ` +
+    `L ${back} ${round(MARK_GLYPH_Y + CHEVRON_REACH_Y)}" fill="none" stroke="#ffffff" ` +
+    `stroke-width="${CHEVRON_STROKE}" stroke-linecap="round" stroke-linejoin="round"/>`
+  );
+}
+
 function bar(spec: KeyBar): string {
   const color = spec.active ? BAR_ACTIVE : BAR_INACTIVE;
   const fill = spec.fill ?? 'next';
@@ -299,6 +328,10 @@ export function renderKeySvg(spec: KeySpec): string {
 
   if (spec.informational === true) {
     parts.push(informationalMark());
+  }
+
+  if (spec.opensPage === true) {
+    parts.push(pageMark());
   }
 
   if (spec.subdued === true) {

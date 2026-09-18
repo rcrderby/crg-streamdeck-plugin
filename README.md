@@ -34,7 +34,7 @@ Each button holds its own action, and you can customize a button layout that mee
 - **Buttons use CRG labels:**  Stream deck buttons use the same labels that CRG displays in the operator panel and on the scoreboard itself.
 - **Active and inactive indicators:**  Buttons that change game status elements, like `NI` and `Star Pass`, have an indicator bar that is green when a button is active, and gray when a button is inactive.
 - **Hold functions for sensitive actions:**  Some CRG buttons have more consequences than others.  For example, pressing `Undo` by mistake can change the state of a game in a way that isn't recoverable. On the Stream Deck, these buttons require a one-second hold to take action, and they display an indicator so it's clear that a timed hold is in progress.  Releasing these buttons early takes no action, so an accidental press doesn't disrupt a game.
-- **Menus for button action options:**  Some buttons open a separate page of buttons that allow you to choose from several available actions.  For example, with `Enable Replace on Undo` enabled in CRG, a held press of the `Undo` button presents a menu of options for you to choose from.
+- **Menus for button action options:**  Some buttons open a separate page of buttons that allow you to choose from several available actions.  For example, with `Enable Replace on Undo` enabled in CRG, a held press of the `Undo` button presents a menu of options for you to choose from.  Buttons that always open a page, such as `CRG Connection` and `Automation`, carry a blue tab with a chevron in the lower right corner.
 - **CRG operator profile integration:**  The plugin creates and uses an operator profile named `StreamDeck` by default, and you can create new or select existing operator profiles to store or inherit operator settings.
 - **Connect locally or over a network:**  The plugin tries to connect to a local instance of CRG (`http://localhost:8000`) by default, and you can change the URL to connect to a remote CRG instance (`http://192.168.0.67:8000`).  The plugin stores the URL so you don't have to re-enter the URL each time you use your Stream Deck.
 - **Computer sleep prevention:**  Using a Stream Deck to control CRG may mean that you don't touch the keyboard or mouse for an extended period.  While connected to CRG, the plugin keeps the computer and its display awake.
@@ -173,6 +173,7 @@ Buttons that control one team take a `Team` setting.  The [Button Image Referenc
 | Action | Description |
 | ------ | ----------- |
 | `CRG Connection` | Shows whether the plugin is connected to CRG: connected, connecting, offline, not allowed to write, or disconnected on purpose.  Pressing it opens the connection page.  This button holds the `CRG URL` and `CRG Operator` settings for every CRG button. |
+| `Automation` | Opens the `Automation` page, where `Auto End Jams` and `Auto End Team Timeouts` enable or disable those CRG settings. |
 | `Jam Control` | Starts a jam, stops a jam, or ends a timeout, and shows the relevant clock and jam data.  It turns orange five seconds before a jam should start, and pulses if the lineup clock goes past the prescribed time in the active CRG ruleset.  It shows a faded `Start Jam` and takes no action while CRG will not start or stop a jam, such as after the official score is set. |
 | `Timeout` | Starts an untyped timeout.  Its activity indicator turns green while a timeout runs without an assigned type. |
 | `Official Timeout` | Starts an official timeout.  Its activity indicator is green while an official timeout is running. |
@@ -241,12 +242,13 @@ Buttons that control one team take a `Team` setting.  The [Button Image Referenc
     <strong>Menu Button Pages</strong>
   </summary>
 
-The plugin includes two small pages of buttons and switches your Stream Deck to these menus as needed.  The first time a menu page opens on a Stream Deck, the Stream Deck software prompts the user to allow the page.
+The plugin includes three small pages of buttons and switches your Stream Deck to these menus as needed.  The first time a menu page opens on a Stream Deck, the Stream Deck software prompts the user to allow the page.
 
 | Page | Opens | Buttons |
 | ---- | ----- | ---- |
 | `Connection` | Pressing `CRG Connection` | Displays `Back`, and a button that shows the connection's state and allows manual connect and disconnect operations.  A Stream Deck that is manually disconnected remains in that state until it is connected again. |
 | `Undo` | Holding `Undo` with `Enable Replace on Undo` on | Displays buttons indicating the available CRG replace options and CRG's `No Action` button, which confirms the undo action.  Displays `Back`, which leaves the menu without answering CRG. |
+| `Automation` | Pressing `Automation` | Displays `Back`, `Auto End Jams`, and `Auto End Team Timeouts`.  Each button turns its CRG setting on or off with a press, and its activity indicator is green when the setting is on.  These are global CRG settings, so a change applies to every device connected to CRG. |
 
 </details>
 
