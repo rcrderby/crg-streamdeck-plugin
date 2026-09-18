@@ -9,8 +9,12 @@
 
 import type { ConnectionStatus } from '../crg/client.ts';
 import type { LineupWarning, ReplaceChoiceKind } from '../crg/game-state.ts';
-import { type KeySpec, type KeyText, estimateTextWidth } from './key.ts';
+import { BAR_SHIFT, type KeySpec, type KeyText, VIEWBOX, estimateTextWidth } from './key.ts';
 import {
+  ICON_CENTER_Y,
+  ICON_RADIUS,
+  ICON_REACH,
+  TRIP_SIGN_RADIUS,
   backArrow,
   hazardStripes,
   holdDial,
@@ -89,9 +93,94 @@ function teamText(
   return { ...line, opacity: readableOpacity(theme.background, theme.foreground, line.opacity, minimumRatio) };
 }
 
-/** The team name every scoring key carries at the top. */
-function teamName(theme: TeamTheme, y = 22): KeyText {
-  return teamText(theme, theme.name, y, 11, { opacity: 0.8 });
+/**
+ * Where every team key's name sits, as drawn: one line across the deck,
+ * below the top bar on the keys that have one.
+ */
+const NAME_LINE = 30;
+
+/**
+ * The team name every team key carries at the top, in the team's text color and glow.
+ *
+ * A key with a top bar draws its content lower by the bar's shift, so
+ * its name is set higher by the same amount and lands on the same line.
+ */
+function teamName(theme: TeamTheme, onBar: boolean): KeyText {
+  return teamText(theme, theme.name, onBar ? NAME_LINE - BAR_SHIFT : NAME_LINE, 11);
+}
+
+/** How much of its size a line of capitals stands, from its baseline to the top of its letters. */
+const CAP_HEIGHT = 0.72;
+
+/** A position to the hundredth, the precision a key's markup is written in. */
+function hundredths(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+function capHeight(size: number): number {
+  return CAP_HEIGHT * size;
+}
+
+/** How far letters such as j, p, and y reach below the line, as a share of the size. */
+const DESCENDER = 0.21;
+
+/** The height a line of text stands, counting the letters that hang below its baseline when it has them. */
+function lineHeight(text: string, size: number): number {
+  return capHeight(size) + (/[gjpqy]/.test(text) ? DESCENDER * size : 0);
+}
+
+/**
+ * Where each of a key's blocks starts, spaced so every gap is the same:
+ * above the first, between each pair, and below the last.
+ *
+ * A key's content is spread over the room below its team name, or below
+ * its top bar, down to the key's bottom edge.
+ */
+export function evenly(top: number, bottom: number, heights: readonly number[]): number[] {
+  const gap = (bottom - top - heights.reduce((total, height) => total + height, 0)) / (heights.length + 1);
+  let next = top + gap;
+
+  return heights.map((height) => {
+    const start = next;
+
+    next += height + gap;
+
+    return start;
+  });
+}
+
+/** A position as drawn, in the key's own terms: a key with a top bar draws its content lower by the bar's shift. */
+function onKey(drawn: number, onBar: boolean): number {
+  return onBar ? drawn - BAR_SHIFT : drawn;
+}
+
+/** How large a jammer icon is drawn, so the team name has room above it. */
+const ICON_SCALE = 0.8;
+
+const JAMMER_CAPTION_SIZE = 17;
+
+/**
+ * The icon line and caption line Lead, Lost Lead, Star Pass, and No Pivot share.
+ *
+ * They are spaced evenly for the tallest icon, so a row of the four lines
+ * up, and a shorter icon sits centered on the same line. Lost Lead's
+ * HOLD sits in its top bar, so it needs no line of its own.
+ */
+function jammerLines(): { icon: number; caption: number } {
+  const reach = ICON_REACH * ICON_SCALE;
+  const [iconTop = 0, captionTop = 0] = evenly(NAME_LINE, VIEWBOX, [reach * 2, capHeight(JAMMER_CAPTION_SIZE)]);
+
+  return { icon: onKey(iconTop + reach, true), caption: onKey(captionTop + capHeight(JAMMER_CAPTION_SIZE), true) };
+}
+
+/** Where the reason box and its word sit, from the center of the icon they lie across. */
+const REASON_BOX_OFFSET = -9;
+
+const REASON_TEXT_OFFSET = 6;
+
+/** An icon scaled about its own center and set down at another height, keeping its shape. */
+function placed(markup: string, fromY: number, toY: number): string {
+  return `<g transform="translate(50 ${Math.round(toY * 100) / 100}) scale(${ICON_SCALE}) translate(-50 ${-fromY})">${markup}</g>`;
 }
 
 /** A drawing in a team's colors, shadowed in its glow color as its text is. */
@@ -110,11 +199,12 @@ function teamKey(theme: TeamTheme, spec: KeySpec): KeySpec {
  */
 export function jammerKey(theme: TeamTheme, kind: JammerKind, active: boolean, disabledReason?: string): KeySpec {
   const design = JAMMER[kind];
+  const lines = jammerLines();
 
   if (disabledReason === undefined) {
     return teamKey(theme, {
-      shapes: [teamShape(theme, design.icon(theme), design.solidShadow)],
-      texts: [teamText(theme, design.caption, 82, 17)],
+      shapes: [teamShape(theme, placed(design.icon(theme), ICON_CENTER_Y, lines.icon), design.solidShadow)],
+      texts: [teamName(theme, true), teamText(theme, design.caption, lines.caption, JAMMER_CAPTION_SIZE)],
       bar: { active }
     });
   }
@@ -122,38 +212,50 @@ export function jammerKey(theme: TeamTheme, kind: JammerKind, active: boolean, d
   const faded: TeamTheme = { ...theme, foreground: blend(theme.foreground, theme.background, SPENT_OPACITY) };
 
   return teamKey(theme, {
-    shapes: [design.icon(faded), teamShape(theme, plate(12, 29, 76, 20, theme.background))],
+    shapes: [
+      placed(design.icon(faded), ICON_CENTER_Y, lines.icon),
+      teamShape(theme, plate(12, lines.icon + REASON_BOX_OFFSET, 76, 20, theme.background))
+    ],
     texts: [
-      teamText(theme, design.caption, 82, 17, { opacity: SPENT_OPACITY }, SPENT_RATIO),
-      teamText(theme, disabledReason, 44, 13)
+      teamName(theme, true),
+      teamText(theme, design.caption, lines.caption, JAMMER_CAPTION_SIZE, { opacity: SPENT_OPACITY }, SPENT_RATIO),
+      teamText(theme, disabledReason, lines.icon + REASON_TEXT_OFFSET, 13)
     ],
     bar: { active }
   });
 }
 
 /**
- * Lost Lead: the struck star drawn small, with HOLD beneath it.
+ * Lost Lead: the struck star, with HOLD in its top bar.
  *
- * It sits beside Lead and undoes it, so it needs a deliberate hold. The
- * top bar carries the hold rather than a dial, which would compete with
- * whatever color the team brings.
+ * It sits beside Lead and undoes it, so it needs a deliberate hold. Its
+ * circle, caption, and lines match Lead's, so the two line up. The top
+ * bar carries the hold rather than a dial, which would compete with
+ * whatever color the team brings, and HOLD rides in the bar with it.
  */
 export function lostLeadKey(theme: TeamTheme, active: boolean, level = 0): KeySpec {
+  const lines = jammerLines();
+
   return teamKey(theme, {
-    shapes: [teamShape(theme, lostLeadIcon(theme.foreground, theme.background))],
-    texts: [teamText(theme, 'Lost Lead', 68, 15), teamText(theme, 'HOLD', 84, 10, { opacity: 0.8 })],
-    bar: { active, progress: level }
+    shapes: [
+      teamShape(
+        theme,
+        placed(lostLeadIcon(theme.foreground, theme.background, ICON_CENTER_Y, ICON_RADIUS), ICON_CENTER_Y, lines.icon)
+      )
+    ],
+    texts: [teamName(theme, true), teamText(theme, 'Lost Lead', lines.caption, JAMMER_CAPTION_SIZE)],
+    bar: { active, progress: level, label: 'HOLD' }
   });
 }
 
 /** NI: large letters, active while the jammer is on their initial trip. */
 export function noInitialKey(theme: TeamTheme, active: boolean): KeySpec {
-  return teamKey(theme, { texts: [teamText(theme, 'NI', 64, 42)], bar: { active } });
+  return teamKey(theme, { texts: [teamName(theme, true), teamText(theme, 'NI', 70, 42)], bar: { active } });
 }
 
 function resourceTitle(theme: TeamTheme, lines: readonly string[], spent: boolean): KeyText[] {
   return lines.map((line, index) =>
-    teamText(theme, line, 40 + index * 17, 14, spent ? { opacity: SPENT_OPACITY } : {}, SPENT_RATIO)
+    teamText(theme, line, 46 + index * 17, 14, spent ? { opacity: SPENT_OPACITY } : {}, SPENT_RATIO)
   );
 }
 
@@ -166,8 +268,8 @@ export function teamTimeoutKey(
   pulse?: number
 ): KeySpec {
   return teamKey(theme, {
-    shapes: [teamShape(theme, resourceDots(total, left, theme.foreground, 80, undefined, pulse))],
-    texts: resourceTitle(theme, ['Team', 'Timeout'], left === 0),
+    shapes: [teamShape(theme, resourceDots(total, left, theme.foreground, 83, undefined, pulse))],
+    texts: [teamName(theme, true), ...resourceTitle(theme, ['Team', 'Timeout'], left === 0)],
     bar: { active }
   });
 }
@@ -182,9 +284,36 @@ export function officialReviewKey(
   pulse?: number
 ): KeySpec {
   return teamKey(theme, {
-    shapes: [teamShape(theme, resourceDots(Math.max(1, total), left, theme.foreground, 80, mark, pulse))],
-    texts: resourceTitle(theme, ['Official', 'Review'], left === 0),
+    shapes: [teamShape(theme, resourceDots(Math.max(1, total), left, theme.foreground, 83, mark, pulse))],
+    texts: [teamName(theme, true), ...resourceTitle(theme, ['Official', 'Review'], left === 0)],
     bar: { active }
+  });
+}
+
+/** What an Official Review Options key does: marks the team's review retained, or taken as a team timeout. */
+export type ReviewOption = 'retained' | 'timeout';
+
+/**
+ * Review Retained or As a Team Timeout, under the team's name, with the top bar active while it is set.
+ *
+ * Review Retained reads Review Won once the team has no retains left
+ * this period, since winning the review then keeps nothing. The key is
+ * darkened while the team has no review running, as it has nothing to
+ * act on.
+ */
+export function reviewOptionKey(
+  theme: TeamTheme,
+  option: ReviewOption,
+  on: boolean,
+  available: boolean,
+  won = false
+): KeySpec {
+  const lines = option === 'timeout' ? ['As a Team', 'Timeout'] : ['Review', won ? 'Won' : 'Retained'];
+
+  return teamKey(theme, {
+    texts: [teamName(theme, true), ...lines.map((line, index) => teamText(theme, line, 50 + index * 18, 15))],
+    bar: { active: on },
+    subdued: !available
   });
 }
 
@@ -201,22 +330,47 @@ export function injuryKey(active: boolean): KeySpec {
 
 /** Trip Points: puts a fixed number of points on the trip, with no border and no dimming. */
 export function tripPointsKey(theme: TeamTheme, points: number): KeySpec {
-  return teamKey(theme, { texts: [teamName(theme), teamText(theme, `+${points}`, 74, 40)] });
-}
-
-/** Up 1 or Down 1: the arrow sits left of the 1, both centered on one line. */
-export function tripAdjustKey(theme: TeamTheme, up: boolean): KeySpec {
   return teamKey(theme, {
-    shapes: [teamShape(theme, triangle(up, 37, 60, 22, theme.foreground))],
-    texts: [teamName(theme), teamText(theme, '1', 71, 30, { x: 66 })]
+    texts: [teamName(theme, false), teamText(theme, `+${points}`, TRIP_NUMBER_LINE, TRIP_NUMBER_SIZE)]
   });
 }
 
+/** The size of the number on Trip Points, Up 1, and Down 1, which share one line. */
+const TRIP_NUMBER_SIZE = 40;
+
+/** The line the trip numbers stand on. */
+const TRIP_NUMBER_LINE = 74;
+
+/** The Up 1 and Down 1 arrow: its width, and where it and the 1 are centered across the key. */
+const TRIP_ARROW_WIDTH = 32;
+
+const TRIP_ARROW_X = 35;
+
+const TRIP_ONE_X = 69;
+
+/** Up 1 or Down 1: the arrow sits left of the 1, both centered on the line the trip numbers share. */
+export function tripAdjustKey(theme: TeamTheme, up: boolean): KeySpec {
+  const middle = TRIP_NUMBER_LINE - capHeight(TRIP_NUMBER_SIZE) / 2;
+
+  return teamKey(theme, {
+    shapes: [teamShape(theme, triangle(up, TRIP_ARROW_X, middle, TRIP_ARROW_WIDTH, theme.foreground))],
+    texts: [teamName(theme, false), teamText(theme, '1', TRIP_NUMBER_LINE, TRIP_NUMBER_SIZE, { x: TRIP_ONE_X })]
+  });
+}
+
+const TRIP_CHANGE_SIZE = 12;
+
 /** Add Trip or Remove Trip: a filled disc with the sign cut out of it. */
 export function tripChangeKey(theme: TeamTheme, add: boolean): KeySpec {
+  const label = add ? 'Add Trip' : 'Remove Trip';
+  const [signTop = 0, labelTop = 0] = evenly(NAME_LINE, VIEWBOX, [
+    TRIP_SIGN_RADIUS * 2,
+    lineHeight(label, TRIP_CHANGE_SIZE)
+  ]);
+
   return teamKey(theme, {
-    shapes: [teamShape(theme, tripSign(add, theme.foreground, theme.background))],
-    texts: [teamName(theme), teamText(theme, add ? 'Add Trip' : 'Remove Trip', 89, 12)]
+    shapes: [teamShape(theme, tripSign(add, theme.foreground, theme.background, signTop + TRIP_SIGN_RADIUS))],
+    texts: [teamName(theme, false), teamText(theme, label, labelTop + capHeight(TRIP_CHANGE_SIZE), TRIP_CHANGE_SIZE)]
   });
 }
 
@@ -230,13 +384,10 @@ const SCORE_PAD = 0.3;
 
 const SCORE_GAP = 0.16;
 
-/** How much of a size a digit stands, which is what sets a panel's height. */
-const CAP_HEIGHT = 0.72;
-
-/** The line both numbers sit on, and the room the two panels share. */
-const SCORE_BASELINE = 63;
-
+/** The room the two panels share. */
 const SCORE_ROOM = 92;
+
+const SCORE_TRIP_SIZE = 11;
 
 /**
  * Score: the total beside this jam's points, each on a panel of its own.
@@ -256,8 +407,13 @@ export function scoreKey(theme: TeamTheme, total: number, jam: number, trip: num
   const gap = SCORE_JAM_SIZE * SCORE_GAP;
   const totalPanel = SCORE_ROOM - gap - jamPanel;
 
-  const totalHeight = CAP_HEIGHT * SCORE_TOTAL_SIZE + totalPad * 2;
-  const jamHeight = CAP_HEIGHT * SCORE_JAM_SIZE + pad * 2;
+  // Rounded once here, so both panels' feet land on exactly the same line once drawn.
+  const totalHeight = hundredths(CAP_HEIGHT * SCORE_TOTAL_SIZE + totalPad * 2);
+  const jamHeight = hundredths(CAP_HEIGHT * SCORE_JAM_SIZE + pad * 2);
+
+  // The panels and the trip count are spaced evenly below the name; both numbers stand on the panels' foot.
+  const [panelsTop = 0, tripTop = 0] = evenly(NAME_LINE, VIEWBOX, [totalHeight, capHeight(SCORE_TRIP_SIZE)]);
+  const baseline = hundredths(panelsTop + totalHeight);
 
   const left = 50 - (totalPanel + gap + jamPanel) / 2;
   const totalLeft = mirrored ? left + jamPanel + gap : left;
@@ -266,20 +422,20 @@ export function scoreKey(theme: TeamTheme, total: number, jam: number, trip: num
 
   return teamKey(theme, {
     shapes: [
-      teamShape(theme, plate(totalLeft, SCORE_BASELINE - totalHeight, totalPanel, totalHeight, panel, totalPad * 0.6)),
-      teamShape(theme, plate(jamLeft, SCORE_BASELINE - jamHeight, jamPanel, jamHeight, panel, pad * 0.7))
+      teamShape(theme, plate(totalLeft, baseline - totalHeight, totalPanel, totalHeight, panel, totalPad * 0.6)),
+      teamShape(theme, plate(jamLeft, baseline - jamHeight, jamPanel, jamHeight, panel, pad * 0.7))
     ],
     texts: [
-      teamName(theme, 20),
-      teamText(theme, String(total), SCORE_BASELINE - totalPad, SCORE_TOTAL_SIZE, {
+      teamName(theme, false),
+      teamText(theme, String(total), baseline - totalPad, SCORE_TOTAL_SIZE, {
         x: totalLeft + totalPanel / 2,
         width: totalPanel - totalPad * 2
       }),
-      teamText(theme, String(jam), SCORE_BASELINE - pad, SCORE_JAM_SIZE, {
+      teamText(theme, String(jam), baseline - pad, SCORE_JAM_SIZE, {
         x: jamLeft + jamPanel / 2,
         width: room
       }),
-      teamText(theme, `TRIP ${trip}`, 93, 11, { opacity: 0.7 })
+      teamText(theme, `TRIP ${trip}`, tripTop + capHeight(SCORE_TRIP_SIZE), SCORE_TRIP_SIZE, { opacity: 0.7 })
     ],
     informational: true
   });

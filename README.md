@@ -163,7 +163,7 @@ These steps will help you set up the plugin to control CRG from a Stream Deck.  
 
 ## Button Action Reference
 
-Buttons that control one team take a `Team` setting.  The [Button Image Reference](/docs/button-image-reference.md "Button Image Reference Page") page shows every button, and every state that each displays.
+Buttons that control one team take a `Team` setting, and display that team's name at the top in its CRG colors.  The [Button Image Reference](/docs/button-image-reference.md "Button Image Reference Page") page shows every button, and every state that each displays.
 
 <details>
   <summary>
@@ -206,6 +206,7 @@ Buttons that control one team take a `Team` setting.  The [Button Image Referenc
 | ------ | ----------- |
 | `Team Timeout` | Starts a team timeout or assigns an untyped timeout.  Displays a dot for each timeout and its status. |
 | `Official Review` | Starts an official review or assigns an untyped timeout.  Displays a dot for a team that has its official review available.  Displays a plus sign if a team wins their first official review of a period, and a vertical line if a team wins a second official review within the same period. |
+| `Official Review Options` | Marks a team's running official review as retained, or as taken as a team timeout, depending on its `Function` setting.  Its activity indicator is green while the option is set.  It is darkened, and takes no action, unless the team's official review is running.  `Review Retained` reads `Review Won` when the team has no retains left in the period. |
 
 </details>
 

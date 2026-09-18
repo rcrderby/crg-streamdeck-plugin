@@ -33,7 +33,7 @@ describe('renderKeySvg', () => {
 
   it('draws an accent only when asked', () => {
     assert.equal((renderKeySvg({}).match(/<rect/g) ?? []).length, 1);
-    assert.equal((renderKeySvg({ accent: '#ff0000' }).match(/<rect/g) ?? []).length, 2);
+    assert.equal((renderKeySvg({ accent: '#ff0000' }).match(/<rect/g) ?? []).length, 3, 'the strip and its rule');
   });
 
   it('holds opacity inside its range', () => {
@@ -85,7 +85,7 @@ describe('top bar', () => {
   it('draws a green bar over a dark rule when active', () => {
     const svg = renderKeySvg({ bar: { active: true } });
 
-    assert.match(svg, new RegExp(`<rect width="100" height="10" fill="${BAR_ACTIVE}"/><rect y="10"`));
+    assert.match(svg, new RegExp(`<rect width="100" height="12" fill="${BAR_ACTIVE}"/><rect y="12"`));
   });
 
   it('draws a gray bar when inactive', () => {
@@ -95,11 +95,59 @@ describe('top bar', () => {
   it('moves the key’s content down to sit below the bar', () => {
     const svg = renderKeySvg({ bar: { active: true }, texts: [{ text: 'Lead', y: 82, size: 17 }] });
 
-    assert.match(svg, /<g transform="translate\(0 3\)"><text/);
+    assert.match(svg, /<g transform="translate\(0 4\)"><text/);
   });
 
   it('leaves content where it is on a key without a bar', () => {
     assert.ok(!renderKeySvg({ texts: [{ text: 'x', y: 50, size: 10 }] }).includes('<g'));
+  });
+});
+
+describe('accent strip', () => {
+  it('stands as tall as the top bar, so every key’s top edge matches', () => {
+    const accent = /<rect width="100" height="([\d.]+)" fill="#22c55e"\/>/.exec(
+      renderKeySvg({ accent: '#22c55e' })
+    )?.[1];
+    const bar = /<rect width="100" height="([\d.]+)" fill="#22c55e"\/>/.exec(
+      renderKeySvg({ bar: { active: true } })
+    )?.[1];
+
+    assert.ok(accent !== undefined);
+    assert.equal(accent, bar);
+  });
+
+  it('sits over the same dark rule as the top bar', () => {
+    assert.match(renderKeySvg({ accent: '#22c55e' }), /<rect y="12" width="100" height="4" fill="#0b0b0f"\/>/);
+  });
+});
+
+describe('bar label', () => {
+  const label = (svg: string): RegExpExecArray | null =>
+    /<text x="50" y="[\d.]+" fill="([^"]+)"[^>]*>HOLD<\/text>/.exec(svg);
+
+  it('sets the word white on the gray bar and dark on the green one', () => {
+    assert.equal(label(renderKeySvg({ bar: { active: false, label: 'HOLD' } }))?.[1], '#ffffff');
+    assert.equal(label(renderKeySvg({ bar: { active: true, label: 'HOLD' } }))?.[1], '#0b0b0f');
+  });
+
+  it('splits the word’s color exactly at the edge of a fill running in from the left', () => {
+    const svg = renderKeySvg({ bar: { active: false, progress: 0.45, label: 'HOLD' } });
+
+    assert.equal(label(svg)?.[1], 'url(#bar-label)');
+    assert.match(svg, /<stop offset="45%" stop-color="#0b0b0f"\/><stop offset="45%" stop-color="#ffffff"\/>/);
+  });
+
+  it('splits it where the gray starts, while a bar empties from the right', () => {
+    const svg = renderKeySvg({ bar: { active: true, progress: 0.3, label: 'HOLD' } });
+
+    assert.match(svg, /<stop offset="70%" stop-color="#0b0b0f"\/><stop offset="70%" stop-color="#ffffff"\/>/);
+  });
+
+  it('draws the word over the bar, and nothing without a label', () => {
+    const svg = renderKeySvg({ bar: { active: false, label: 'HOLD' } });
+
+    assert.ok(svg.indexOf('>HOLD<') > svg.indexOf('height="12"'));
+    assert.doesNotMatch(renderKeySvg({ bar: { active: false } }), /HOLD|linearGradient/);
   });
 });
 

@@ -14,7 +14,7 @@ function picture(key: FakeKey<TeamSettings>): string {
 
 /** The color of a key's top bar. */
 function barColor(key: FakeKey<TeamSettings>): string | undefined {
-  return /<rect width="100" height="10" fill="(#[0-9a-f]{6})"\/>/.exec(picture(key))?.[1];
+  return /<rect width="100" height="12" fill="(#[0-9a-f]{6})"\/>/.exec(picture(key))?.[1];
 }
 
 describe('the Team Timeout key', () => {

@@ -3,10 +3,18 @@ import { afterEach, beforeEach, describe, it, mock } from 'node:test';
 import { setImmediate } from 'node:timers/promises';
 
 import { FakeDeck, type FakeKey } from '../test-support/fake-deck.ts';
+import { BAR_ACTIVE, BAR_INACTIVE } from '../render/key.ts';
 import { HOLD_MS } from '../render/hold.ts';
 import { Lead, LostLead, NoPivot, StarPass } from './team-flags.ts';
 import { type TeamSettings } from './team-key-action.ts';
 import { team } from '../crg/paths.ts';
+
+/** The color a key's top bar was last drawn in, before any hold fill over it. */
+function barColor(key: FakeKey<TeamSettings>): string | undefined {
+  const svg = Buffer.from((key.image ?? '').split(',')[1] ?? '', 'base64').toString('utf8');
+
+  return /<rect width="100" height="12" fill="(#[0-9a-f]{6})"\/>/.exec(svg)?.[1];
+}
 
 describe('the jam flag keys', () => {
   let deck: FakeDeck;
@@ -99,7 +107,7 @@ describe('the Lost Lead key', () => {
     assert.deepEqual(deck.written, [{ key: team(1, 'Lost'), value: false, flag: '' }]);
   });
 
-  it('fills its top bar as the hold runs, and drops it the moment the hold acts', async () => {
+  it('fills its top bar as the hold runs, and drops the fill the moment the hold acts', async () => {
     const atRest = key.image;
 
     await deck.holdDown(keyAction, key);
@@ -112,6 +120,39 @@ describe('the Lost Lead key', () => {
     await setImmediate();
     deck.draw();
 
-    assert.equal(key.image, atRest, 'a hold that has acted should show nothing of itself');
+    assert.equal(barColor(key), BAR_ACTIVE, 'a hold that has acted should show the state it set, filled');
+  });
+
+  it('shows the state it set while CRG answers, rather than flashing the one it left', async () => {
+    deck.hold({ [team(1, 'Lost')]: true });
+    deck.draw();
+
+    await deck.holdDown(keyAction, key);
+    mock.timers.tick(HOLD_MS);
+    await setImmediate();
+    deck.draw();
+
+    assert.equal(barColor(key), BAR_INACTIVE, 'before CRG answers');
+
+    await deck.letGo(keyAction, key);
+    assert.equal(barColor(key), BAR_INACTIVE, 'after letting go, before CRG answers');
+
+    deck.hold({ [team(1, 'Lost')]: false });
+    deck.draw();
+    assert.equal(barColor(key), BAR_INACTIVE, 'once CRG answers');
+  });
+
+  it('goes back to what CRG holds if CRG never takes the change', async () => {
+    await deck.holdDown(keyAction, key);
+    mock.timers.tick(HOLD_MS);
+    await setImmediate();
+    await deck.letGo(keyAction, key);
+
+    assert.equal(barColor(key), BAR_ACTIVE, 'while it waits');
+
+    mock.timers.tick(2000);
+    deck.draw();
+
+    assert.equal(barColor(key), BAR_INACTIVE, 'after waiting');
   });
 });

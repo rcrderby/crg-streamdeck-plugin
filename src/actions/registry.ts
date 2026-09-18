@@ -19,6 +19,7 @@ import { Connection } from './connection.ts';
 import { Injury, Lead, LostLead, NoInitial, NoPivot, StarPass } from './team-flags.ts';
 import { JamControl } from './jam-control.ts';
 import { OfficialReview, TeamTimeout } from './team-resources.ts';
+import { ReviewOptions } from './review-options.ts';
 import { OfficialTimeout, Timeout, Undo } from './game-controls.ts';
 import { ReplaceChoice, ReplaceConfirm, ReplaceInfo } from './replace-page.ts';
 import { TripPoints } from './trip-points.ts';
@@ -47,6 +48,7 @@ export function keyActions(context: PluginContext): SingletonAction<never>[] {
     named(`${UUID}.injury`, new Injury(context)),
     named(`${UUID}.team-timeout`, new TeamTimeout(context)),
     named(`${UUID}.official-review`, new OfficialReview(context)),
+    named(`${UUID}.official-review-options`, new ReviewOptions(context)),
     named(`${UUID}.trip-score`, new TripPoints(context)),
     named(`${UUID}.trip-points-up`, new TripPointsUp(context)),
     named(`${UUID}.trip-points-down`, new TripPointsDown(context)),

@@ -62,6 +62,14 @@
     'com.rcrderby.crg-streamdeck.no-initial': {
       summary: "Assigns or removes 'No Initial' (trip) status for a jammer."
     },
+    'com.rcrderby.crg-streamdeck.official-review-options': {
+      summary: "Marks a team's official review as retained, or as taken as a team timeout.",
+      details: [
+        "Choose 'Review Retained' or 'As a Team Timeout' in the button's settings.",
+        "Available only while the team's official review is running.",
+        "'Review Retained' reads 'Review Won' when the team has no retains left in the period."
+      ]
+    },
     'com.rcrderby.crg-streamdeck.injury': {
       summary: "Assigns or removes 'Injury' status for both teams in a jam."
     },
