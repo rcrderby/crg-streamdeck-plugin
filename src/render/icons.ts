@@ -13,9 +13,9 @@
 import { safeColor } from './theme.ts';
 
 /** Jammer icons share one circle, center, and stroke, so they read as a family. */
-const ICON_CENTER_Y = 38;
+export const ICON_CENTER_Y = 38;
 
-const ICON_RADIUS = 21;
+export const ICON_RADIUS = 21;
 
 const STROKE = 3;
 
@@ -145,6 +145,12 @@ export function leadIcon(color: string, cx = 50, cy = ICON_CENTER_Y, radius = IC
 export const LOST_LEAD_RADIUS = 16;
 
 export const LOST_LEAD_CENTER_Y = 34;
+
+/** How far the Lead drawing reaches above and below its center, stroke included, at full size. */
+export const ICON_REACH = ICON_RADIUS + STROKE / 2;
+
+/** The radius of the disc on Add Trip and Remove Trip. */
+export const TRIP_SIGN_RADIUS = 17;
 
 /** Lost Lead: the lead icon struck through, its star large enough to read in two halves. */
 export function lostLeadIcon(
@@ -380,17 +386,16 @@ export function triangle(up: boolean, cx: number, cy: number, width: number, col
 }
 
 /** Add Trip or Remove Trip: a filled disc with a plus or a minus cut out of it. */
-export function tripSign(add: boolean, foreground: string, background: string): string {
+export function tripSign(add: boolean, foreground: string, background: string, cy = 53): string {
   const cx = 50;
-  const cy = 53;
-  const radius = 17;
+  const radius = TRIP_SIGN_RADIUS;
   const arm = radius * 0.5;
   const cap = `stroke="${hex(background)}" stroke-width="3.6" stroke-linecap="butt"`;
   const vertical = add ? `<line x1="${cx}" y1="${n(cy - arm)}" x2="${cx}" y2="${n(cy + arm)}" ${cap}/>` : '';
 
   return (
-    `<circle cx="${cx}" cy="${cy}" r="${radius}" fill="${hex(foreground)}"/>` +
-    `<line x1="${n(cx - arm)}" y1="${cy}" x2="${n(cx + arm)}" y2="${cy}" ${cap}/>` +
+    `<circle cx="${cx}" cy="${n(cy)}" r="${radius}" fill="${hex(foreground)}"/>` +
+    `<line x1="${n(cx - arm)}" y1="${n(cy)}" x2="${n(cx + arm)}" y2="${n(cy)}" ${cap}/>` +
     vertical
   );
 }
@@ -399,13 +404,13 @@ export function tripSign(add: boolean, foreground: string, background: string): 
 function reviewMark(mark: ReviewMark, cx: number, cy: number, color: string, opacity: number): string {
   const half = 5;
   const cap = `stroke="${hex(color)}" stroke-width="2.8" stroke-linecap="round"${opacityAttribute(opacity)}`;
-  const vertical = `<line x1="${n(cx)}" y1="${cy - half}" x2="${n(cx)}" y2="${cy + half}" ${cap}/>`;
+  const vertical = `<line x1="${n(cx)}" y1="${n(cy - half)}" x2="${n(cx)}" y2="${n(cy + half)}" ${cap}/>`;
 
   if (mark === 'twice') {
     return vertical;
   }
 
-  return vertical + `<line x1="${n(cx - half)}" y1="${cy}" x2="${n(cx + half)}" y2="${cy}" ${cap}/>`;
+  return vertical + `<line x1="${n(cx - half)}" y1="${n(cy)}" x2="${n(cx + half)}" y2="${n(cy)}" ${cap}/>`;
 }
 
 /**
@@ -440,10 +445,12 @@ export function resourceDots(
     if (mark !== undefined && index === count - 1) {
       dots.push(reviewMark(mark, cx, y, color, pulsing ?? (left === 0 ? SPENT_OPACITY : 1)));
     } else if (index < left || pulsing !== undefined) {
-      dots.push(`<circle cx="${n(cx)}" cy="${y}" r="${DOT_RADIUS}" fill="${fill}"${opacityAttribute(pulsing ?? 1)}/>`);
+      dots.push(
+        `<circle cx="${n(cx)}" cy="${n(y)}" r="${DOT_RADIUS}" fill="${fill}"${opacityAttribute(pulsing ?? 1)}/>`
+      );
     } else {
       dots.push(
-        `<circle cx="${n(cx)}" cy="${y}" r="${DOT_RADIUS}" fill="none" stroke="${fill}" stroke-width="1.3" opacity="0.35"/>`
+        `<circle cx="${n(cx)}" cy="${n(y)}" r="${DOT_RADIUS}" fill="none" stroke="${fill}" stroke-width="1.3" opacity="0.35"/>`
       );
     }
   }

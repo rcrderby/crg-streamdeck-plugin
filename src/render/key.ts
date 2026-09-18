@@ -11,7 +11,7 @@
  * every other effect is plain shapes and opacity.
  */
 
-import { DEFAULT_BACKGROUND, DEFAULT_FOREGROUND, escapeXml, safeColor } from './theme.ts';
+import { DEFAULT_BACKGROUND, DEFAULT_FOREGROUND, contrastRatio, escapeXml, safeColor } from './theme.ts';
 
 /** The side of the square everything is positioned within. */
 export const VIEWBOX = 100;
@@ -55,6 +55,14 @@ export type KeyBar = {
    * or cannot be taken back.
    */
   readonly fill?: 'next' | 'active' | 'danger' | undefined;
+  /**
+   * A word set in the middle of the bar, such as HOLD.
+   *
+   * Each part of it is drawn dark or white against the color behind that
+   * part, so as a hold fills the bar the word changes color right at the
+   * fill's edge, even partway through a letter.
+   */
+  readonly label?: string | undefined;
 };
 
 /** Everything drawn on one key. */
@@ -78,23 +86,31 @@ export type KeySpec = {
 
 const FONT_STACK = "'Helvetica Neue', Helvetica, Arial, sans-serif";
 
-const ACCENT_HEIGHT = 8;
-
 export const BAR_ACTIVE = '#22c55e';
 
 export const BAR_INACTIVE = '#52525b';
 
 export const BAR_DANGER = '#ef4444';
 
-const BAR_HEIGHT = 10;
+const BAR_HEIGHT = 12;
+
+/** The clock and connection keys' colored strip, as tall as the top bar and over the same dark rule, so every key's top edge matches. */
+const ACCENT_HEIGHT = BAR_HEIGHT;
 
 /** The dark rule under the bar, which keeps it apart from a team color close to its own. */
 const BAR_RULE_HEIGHT = 4;
 
+/** A word set in the bar: its size, the room between its letters, and the dark it takes over a light bar. */
+const BAR_LABEL_SIZE = 9;
+
+const BAR_LABEL_SPACING = 0.6;
+
+const BAR_LABEL_DARK = '#0b0b0f';
+
 const BAR_RULE_COLOR = '#0b0b0f';
 
 /** How far a key's content moves down to center on the area below the bar. */
-const BAR_SHIFT = 3;
+export const BAR_SHIFT = 4;
 
 /** A text shadow's offset, as a share of the font size. */
 const SHADOW_OFFSET = 0.02;
@@ -239,7 +255,7 @@ function text(line: KeyText, foreground: string): string {
           return `<text x="${round(x + offset)}" y="${round(line.y + offset)}" fill="${shadowColor}" ${common}>${content}</text>`;
         })();
 
-  return `${shadow}<text x="${x}" y="${line.y}" fill="${fill}" ${common}>${content}</text>`;
+  return `${shadow}<text x="${round(x)}" y="${round(line.y)}" fill="${fill}" ${common}>${content}</text>`;
 }
 
 /** A tab filling the lower left corner up to a size, its inner corner rounded. */
@@ -298,10 +314,49 @@ function bar(spec: KeyBar): string {
 
   const filling = progress > 0 ? `<rect${from} width="${width}" height="${BAR_HEIGHT}" fill="${becoming}"/>` : '';
 
+  // The bar's colors either side of the fill's edge: the fill runs in from the left, or from the right while emptying.
+  const edge = emptying ? round(VIEWBOX - width) : width;
+  const left = progress > 0 && !emptying ? becoming : color;
+  const right = emptying && progress > 0 ? becoming : color;
+
   return (
     `<rect width="${VIEWBOX}" height="${BAR_HEIGHT}" fill="${color}"/>` +
     filling +
-    `<rect y="${BAR_HEIGHT}" width="${VIEWBOX}" height="${BAR_RULE_HEIGHT}" fill="${BAR_RULE_COLOR}"/>`
+    `<rect y="${BAR_HEIGHT}" width="${VIEWBOX}" height="${BAR_RULE_HEIGHT}" fill="${BAR_RULE_COLOR}"/>` +
+    (spec.label === undefined ? '' : barLabel(spec.label, left, right, edge))
+  );
+}
+
+/** The dark or the white that reads better on a bar color. */
+function labelColor(behind: string): string {
+  return contrastRatio(behind, BAR_LABEL_DARK) >= contrastRatio(behind, '#ffffff') ? BAR_LABEL_DARK : '#ffffff';
+}
+
+/**
+ * A word in the middle of the bar, colored for what lies behind each part of it.
+ *
+ * Stream Deck applies no clip paths or masks, but it does draw gradients,
+ * so the word is filled with one whose two colors meet in a hard step at
+ * the fill's edge rather than blending.
+ */
+function barLabel(label: string, left: string, right: string, edge: number): string {
+  const text =
+    `font-family="${FONT_STACK}" font-size="${BAR_LABEL_SIZE}" font-weight="700" ` +
+    `letter-spacing="${BAR_LABEL_SPACING}" text-anchor="middle"`;
+  const y = round(BAR_HEIGHT / 2 + (BAR_LABEL_SIZE * 0.72) / 2);
+  const content = escapeXml(label);
+  const leftColor = labelColor(left);
+  const rightColor = labelColor(right);
+
+  if (leftColor === rightColor) {
+    return `<text x="${VIEWBOX / 2}" y="${y}" fill="${leftColor}" ${text}>${content}</text>`;
+  }
+
+  return (
+    `<defs><linearGradient id="bar-label" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="${VIEWBOX}" y2="0">` +
+    `<stop offset="${edge}%" stop-color="${leftColor}"/><stop offset="${edge}%" stop-color="${rightColor}"/>` +
+    `</linearGradient></defs>` +
+    `<text x="${VIEWBOX / 2}" y="${y}" fill="url(#bar-label)" ${text}>${content}</text>`
   );
 }
 
@@ -313,7 +368,10 @@ export function renderKeySvg(spec: KeySpec): string {
   const parts = [`<rect width="${VIEWBOX}" height="${VIEWBOX}" fill="${background}"/>`];
 
   if (spec.accent !== undefined) {
-    parts.push(`<rect width="${VIEWBOX}" height="${ACCENT_HEIGHT}" fill="${safeColor(spec.accent, foreground)}"/>`);
+    parts.push(
+      `<rect width="${VIEWBOX}" height="${ACCENT_HEIGHT}" fill="${safeColor(spec.accent, foreground)}"/>` +
+        `<rect y="${ACCENT_HEIGHT}" width="${VIEWBOX}" height="${BAR_RULE_HEIGHT}" fill="${BAR_RULE_COLOR}"/>`
+    );
   }
 
   const content = [...(spec.shapes ?? []), ...(spec.texts ?? []).map((line) => text(line, foreground))].join('');

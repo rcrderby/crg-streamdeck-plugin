@@ -39,7 +39,7 @@ describe('undoKey', () => {
     const svg = renderKeySvg(undoKey(0, false));
 
     assert.ok(
-      svg.indexOf('height="10"') > svg.lastIndexOf('rotate(30 50 50)'),
+      svg.indexOf('height="12"') > svg.lastIndexOf('rotate(30 50 50)'),
       'the bar should be drawn after the striping, so the stripes cannot show through'
     );
   });
@@ -54,11 +54,11 @@ describe('undoKey', () => {
     const held = renderKeySvg(undoKey(0.4, false));
 
     assert.doesNotMatch(held, /stroke-width="2"/);
-    assert.match(held, /<rect width="40" height="10" fill="#22c55e"\/>/);
+    assert.match(held, /<rect width="40" height="12" fill="#22c55e"\/>/);
   });
 
   it('fills green from the left whether or not CRG is already waiting', () => {
-    assert.match(renderKeySvg(undoKey(0.4, true)), /<rect width="40" height="10" fill="#22c55e"\/>/);
+    assert.match(renderKeySvg(undoKey(0.4, true)), /<rect width="40" height="12" fill="#22c55e"\/>/);
   });
 });
 
@@ -89,7 +89,7 @@ describe('Undo page keys', () => {
 
       assert.deepEqual(spec.bar, { active: false, progress: 0.4, fill: 'danger' }, kind);
       assert.doesNotMatch(renderKeySvg(spec), /stroke-width="2"/, kind);
-      assert.match(renderKeySvg(spec), /<rect width="40" height="10" fill="#ef4444"\/>/, kind);
+      assert.match(renderKeySvg(spec), /<rect width="40" height="12" fill="#ef4444"\/>/, kind);
     }
   });
 
@@ -116,8 +116,8 @@ describe('connection page keys', () => {
     }
 
     assert.deepEqual(connectionToggleKey('stopped', 0.5).bar, { active: false, progress: 0.5, fill: 'next' });
-    assert.match(renderKeySvg(connectionToggleKey('connected', 0.5)), /<rect width="50" height="10" fill="#ef4444"\/>/);
-    assert.match(renderKeySvg(connectionToggleKey('stopped', 0.5)), /<rect width="50" height="10" fill="#22c55e"\/>/);
+    assert.match(renderKeySvg(connectionToggleKey('connected', 0.5)), /<rect width="50" height="12" fill="#ef4444"\/>/);
+    assert.match(renderKeySvg(connectionToggleKey('stopped', 0.5)), /<rect width="50" height="12" fill="#22c55e"\/>/);
   });
 
   it('draw no dial, since the bar carries the hold', () => {
@@ -155,8 +155,8 @@ describe('Star Pass while No Pivot is on', () => {
   it('is subdued, with the reason across its icon, and the bar kept', () => {
     const spec = jammerKey(WHEELS, 'starPass', false, 'NO PIVOT');
 
-    assert.equal(spec.texts?.[0]?.opacity, 0.38);
-    assert.equal(spec.texts?.[1]?.text, 'NO PIVOT');
+    assert.equal(spec.texts?.[1]?.opacity, 0.38);
+    assert.equal(spec.texts?.[2]?.text, 'NO PIVOT');
     assert.deepEqual(spec.bar, { active: false });
     assert.doesNotMatch(renderKeySvg(spec), /stroke="#ffffff"/);
   });

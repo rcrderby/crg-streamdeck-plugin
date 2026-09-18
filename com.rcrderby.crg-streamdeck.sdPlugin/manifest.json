@@ -184,6 +184,17 @@
       "UserTitleEnabled": false
     },
     {
+      "Name": "Official Review Options",
+      "UUID": "com.rcrderby.crg-streamdeck.official-review-options",
+      "Icon": "imgs/actions/official-review-options/icon",
+      "PropertyInspectorPath": "ui/review-options.html",
+      "Tooltip": "Marks a team's official review as retained, or as taken as a team timeout. Choose 'Review Retained' or 'As a Team Timeout' in the button's settings. Available only while the team's official review is running. 'Review Retained' reads 'Review Won' when the team has no retains left in the period.",
+      "Controllers": ["Keypad"],
+      "States": [{ "Image": "imgs/actions/official-review-options/key", "TitleAlignment": "middle" }],
+      "SupportedInMultiActions": false,
+      "UserTitleEnabled": false
+    },
+    {
       "Name": "Injury",
       "UUID": "com.rcrderby.crg-streamdeck.injury",
       "Icon": "imgs/actions/injury/icon",

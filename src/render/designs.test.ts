@@ -6,6 +6,7 @@ import {
   TIMEOUT_RED,
   automationKey,
   automationToggleKey,
+  evenly,
   clockKey,
   connectionKey,
   injuryKey,
@@ -15,6 +16,7 @@ import {
   lostLeadKey,
   noInitialKey,
   officialReviewKey,
+  reviewOptionKey,
   scoreKey,
   teamTimeoutKey,
   timeoutKey,
@@ -35,10 +37,11 @@ function unshadowed(svg: string): string {
 describe('jammer status keys', () => {
   it('put every caption on one line at one size', () => {
     for (const kind of ['lead', 'starPass', 'noPivot'] as const) {
-      const texts = jammerKey(WHEELS, kind, false).texts ?? [];
+      const [name, caption, ...rest] = jammerKey(WHEELS, kind, false).texts ?? [];
 
-      assert.equal(texts.length, 1, kind);
-      assert.equal(texts[0]?.size, 17, kind);
+      assert.equal(name?.text, 'Wheels', kind);
+      assert.equal(rest.length, 0, kind);
+      assert.equal(caption?.size, 17, kind);
     }
   });
 
@@ -61,40 +64,41 @@ describe('jammer status keys', () => {
 });
 
 describe('the Lost Lead key', () => {
-  it('asks for a hold, under a caption of its own', () => {
+  it('asks for a hold in its top bar, leaving its caption alone', () => {
     assert.deepEqual(
       (lostLeadKey(WHEELS, false).texts ?? []).map((line) => line.text),
-      ['Lost Lead', 'HOLD']
+      ['Wheels', 'Lost Lead']
     );
+    assert.equal(lostLeadKey(WHEELS, false).bar?.label, 'HOLD');
   });
 
   it('carries the hold along its top bar rather than a dial', () => {
-    assert.deepEqual(lostLeadKey(WHEELS, false, 0.4).bar, { active: false, progress: 0.4 });
+    assert.deepEqual(lostLeadKey(WHEELS, false, 0.4).bar, { active: false, progress: 0.4, label: 'HOLD' });
     assert.doesNotMatch(renderKeySvg(lostLeadKey(WHEELS, false, 0.4)), /stroke-width="2"/);
   });
 
   it('fills toward the state the hold will leave it in', () => {
-    assert.match(renderKeySvg(lostLeadKey(WHEELS, false, 0.5)), /width="50" height="10" fill="#22c55e"/);
-    assert.match(renderKeySvg(lostLeadKey(WHEELS, true, 0.5)), /width="50" height="10" fill="#52525b"/);
+    assert.match(renderKeySvg(lostLeadKey(WHEELS, false, 0.5)), /width="50" height="12" fill="#22c55e"/);
+    assert.match(renderKeySvg(lostLeadKey(WHEELS, true, 0.5)), /width="50" height="12" fill="#52525b"/);
   });
 
   it('fills from the left turning on, and empties from the right turning off', () => {
-    assert.match(renderKeySvg(lostLeadKey(WHEELS, false, 0.25)), /<rect width="25" height="10" fill="#22c55e"\/>/);
+    assert.match(renderKeySvg(lostLeadKey(WHEELS, false, 0.25)), /<rect width="25" height="12" fill="#22c55e"\/>/);
     assert.match(
       renderKeySvg(lostLeadKey(WHEELS, true, 0.25)),
-      /<rect x="75" width="25" height="10" fill="#52525b"\/>/
+      /<rect x="75" width="25" height="12" fill="#52525b"\/>/
     );
   });
 
   it('draws nothing along the bar before the key is held', () => {
-    assert.equal((renderKeySvg(lostLeadKey(WHEELS, false)).match(/height="10"/g) ?? []).length, 1);
+    assert.equal((renderKeySvg(lostLeadKey(WHEELS, false)).match(/height="12"/g) ?? []).length, 1);
   });
 });
 
 describe('team resource keys', () => {
   it('subdue the title once a team has none left', () => {
-    assert.equal(teamTimeoutKey(WHEELS, 3, 0, false).texts?.[0]?.opacity, 0.38);
-    assert.equal(teamTimeoutKey(WHEELS, 3, 1, false).texts?.[0]?.opacity, undefined);
+    assert.equal(teamTimeoutKey(WHEELS, 3, 0, false).texts?.[1]?.opacity, 0.38);
+    assert.equal(teamTimeoutKey(WHEELS, 3, 1, false).texts?.[1]?.opacity, undefined);
   });
 
   it('show the top bar while their timeout or review runs', () => {
@@ -106,6 +110,115 @@ describe('team resource keys', () => {
     const svg = unshadowed(renderKeySvg(officialReviewKey(WHEELS, 1, 1, 'retained', false)));
 
     assert.equal((svg.match(/<line/g) ?? []).length, 2);
+  });
+});
+
+describe('the team name', () => {
+  /** Every team key, with or without a top bar. */
+  const TEAM_KEYS = {
+    lead: jammerKey(WHEELS, 'lead', true),
+    starPassUnavailable: jammerKey(WHEELS, 'starPass', false, 'NO PIVOT'),
+    lostLead: lostLeadKey(WHEELS, false),
+    noInitial: noInitialKey(WHEELS, false),
+    teamTimeout: teamTimeoutKey(WHEELS, 3, 2, false),
+    officialReview: officialReviewKey(WHEELS, 1, 1, undefined, false),
+    reviewRetained: reviewOptionKey(WHEELS, 'retained', false, true),
+    reviewAsTimeout: reviewOptionKey(WHEELS, 'timeout', false, true),
+    tripPoints: tripPointsKey(WHEELS, 4),
+    upOne: tripAdjustKey(WHEELS, true),
+    addTrip: tripChangeKey(WHEELS, true),
+    score: scoreKey(WHEELS, 128, 12, 4)
+  };
+
+  it('sits on one line across every team key, below the top bar where there is one', () => {
+    for (const [kind, spec] of Object.entries(TEAM_KEYS)) {
+      const name = (spec.texts ?? []).find((line) => line.text === 'Wheels');
+      const drawnAt = (name?.y ?? 0) + (spec.bar === undefined ? 0 : 4);
+
+      assert.equal(drawnAt, 30, kind);
+      assert.equal(name?.size, 11, kind);
+    }
+  });
+
+  it('is drawn at full strength, in the team’s text color and glow', () => {
+    for (const [kind, spec] of Object.entries(TEAM_KEYS)) {
+      const name = (spec.texts ?? []).find((line) => line.text === 'Wheels');
+
+      assert.equal(name?.opacity, undefined, kind);
+      assert.equal(name?.color, WHEELS.foreground, kind);
+      assert.equal(name?.shadow, WHEELS.glow, kind);
+    }
+  });
+
+  it('spaces the score panels and the trip count evenly below the name', () => {
+    const svg = unshadowed(renderKeySvg(scoreKey(WHEELS, 128, 12, 4)));
+    const panels = [...svg.matchAll(/<rect x="[\d.]+" y="([\d.]+)" width="[\d.]+" height="([\d.]+)" rx=/g)];
+    const top = Math.min(...panels.map((found) => Number(found[1])));
+    const bottom = Math.max(...panels.map((found) => Number(found[1]) + Number(found[2])));
+    const trip = scoreKey(WHEELS, 128, 12, 4).texts?.find((line) => line.text.startsWith('TRIP'));
+    const tripTop = (trip?.y ?? 0) - 11 * 0.72;
+    const gaps = [top - 30, tripTop - bottom, 100 - (trip?.y ?? 0)];
+
+    assert.ok(Math.max(...gaps) - Math.min(...gaps) < 0.5, `gaps ${gaps.join(', ')}`);
+  });
+});
+
+describe('evenly', () => {
+  it('leaves the same gap above, between, and below the blocks', () => {
+    const [first = 0, second = 0] = evenly(28, 100, [30, 12]);
+
+    assert.equal(first - 28, 10);
+    assert.equal(second - (first + 30), 10);
+    assert.equal(100 - (second + 12), 10);
+  });
+});
+
+describe('jammer key layout', () => {
+  it('puts every caption on one line, so a row of them lines up', () => {
+    const captions = (['lead', 'starPass', 'noPivot'] as const).map(
+      (kind) => jammerKey(WHEELS, kind, false).texts?.[1]?.y
+    );
+
+    assert.equal(new Set(captions).size, 1);
+  });
+
+  it('sets Lost Lead on Lead’s lines, with its circle at Lead’s size', () => {
+    const lead = renderKeySvg(jammerKey(WHEELS, 'lead', false));
+    const lost = renderKeySvg(lostLeadKey(WHEELS, false));
+    const center = (svg: string): string | undefined => /translate\(50 ([\d.]+)\) scale/.exec(svg)?.[1];
+    const radius = (svg: string): string | undefined =>
+      /<circle cx="50" cy="38" r="([\d.]+)" fill="none"/.exec(svg)?.[1];
+    const [, leadCaption] = jammerKey(WHEELS, 'lead', false).texts ?? [];
+    const [, lostCaption] = lostLeadKey(WHEELS, false).texts ?? [];
+
+    assert.ok(center(lead) !== undefined && radius(lead) !== undefined, 'the patterns should find the icon');
+    assert.equal(center(lost), center(lead));
+    assert.equal(radius(lost), radius(lead));
+    assert.equal(lostCaption?.y, leadCaption?.y);
+    assert.equal(lostCaption?.size, leadCaption?.size);
+  });
+});
+
+describe('reviewOptionKey', () => {
+  it('names its option under the team name', () => {
+    assert.deepEqual(
+      (reviewOptionKey(WHEELS, 'retained', false, true).texts ?? []).map((line) => line.text),
+      ['Wheels', 'Review', 'Retained']
+    );
+    assert.deepEqual(
+      (reviewOptionKey(WHEELS, 'timeout', false, true).texts ?? []).map((line) => line.text),
+      ['Wheels', 'As a Team', 'Timeout']
+    );
+  });
+
+  it('reads Review Won once the team has no retains left', () => {
+    assert.equal(reviewOptionKey(WHEELS, 'retained', false, true, true).texts?.[2]?.text, 'Won');
+  });
+
+  it('shows the top bar while its option is set, and is darkened with no review running', () => {
+    assert.deepEqual(reviewOptionKey(WHEELS, 'timeout', true, true).bar, { active: true });
+    assert.equal(reviewOptionKey(WHEELS, 'timeout', false, false).subdued, true);
+    assert.equal(reviewOptionKey(WHEELS, 'timeout', false, true).subdued, false);
   });
 });
 
@@ -231,8 +344,20 @@ describe('scoring keys', () => {
     }
   });
 
-  it('put the arrow left of the 1', () => {
-    assert.equal(tripAdjustKey(WHEELS, false).texts?.[1]?.x, 66);
+  it('put the arrow left of the 1, the pair centered across the key', () => {
+    const one = tripAdjustKey(WHEELS, false).texts?.[1];
+    const arrow = /points="([\d.]+),/.exec(renderKeySvg(tripAdjustKey(WHEELS, false)));
+
+    assert.ok((one?.x ?? 0) > 50);
+    assert.ok(Number(arrow?.[1]) < 50);
+  });
+
+  it('set Up 1 and Down 1 on the same line and size as Trip Points', () => {
+    const points = tripPointsKey(WHEELS, 4).texts?.[1];
+    const one = tripAdjustKey(WHEELS, true).texts?.[1];
+
+    assert.equal(one?.y, points?.y);
+    assert.equal(one?.size, points?.size);
   });
 
   it('label the trip keys', () => {

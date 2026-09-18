@@ -47,7 +47,7 @@ This section describes the symbols, colors, and terms that appear on the plugin 
 
   ![Hold Dial](./images/button-reference/legend/hold-dial.svg "Hold Dial")
 
-- **`HOLD`, `HOLD TO`.**  Press and hold the button for one second to commit the action.  A quick press takes no action.
+- **`HOLD`, `HOLD TO`.**  Press and hold the button for one second to commit the action.  A quick press takes no action.  On `Lost Lead`, `HOLD` sits in the top bar, and changes color as the bar fills behind it.
 
   ![Hold Captions](./images/button-reference/legend/hold-caption.svg "Hold Captions")
 

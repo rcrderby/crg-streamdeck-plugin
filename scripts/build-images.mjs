@@ -285,6 +285,18 @@ const SHEET = [
           ['None remaining', d.officialReviewKey(WHEELS, 1, 0, undefined, false)],
           ['In progress', d.officialReviewKey(WHEELS, 1, 1, undefined, true, 0.5)]
         ]
+      },
+      {
+        name: 'Official Review Options',
+        slugs: ['official-review-options'],
+        keys: [
+          ['No review running', d.reviewOptionKey(WHEELS, 'retained', false, false)],
+          ['Review running', d.reviewOptionKey(WHEELS, 'retained', false, true)],
+          ['Retained', d.reviewOptionKey(WHEELS, 'retained', true, true)],
+          ['No retains left', d.reviewOptionKey(WHEELS, 'retained', false, true, true)],
+          ['As a team timeout', d.reviewOptionKey(JUSTICE, 'timeout', false, true)],
+          ['Taken as a timeout', d.reviewOptionKey(JUSTICE, 'timeout', true, true)]
+        ]
       }
     ]
   },

@@ -171,6 +171,7 @@ export const REGISTERED_PATHS: readonly string[] = [
   rule('Lineup.Duration'),
   rule('Team.Timeouts'),
   rule('Team.OfficialReviews'),
+  rule('Team.MaxRetains'),
   `${CURRENT_GAME}.Clock(*).Name`,
   `${CURRENT_GAME}.Clock(*).Time`,
   `${CURRENT_GAME}.Clock(*).Number`,
