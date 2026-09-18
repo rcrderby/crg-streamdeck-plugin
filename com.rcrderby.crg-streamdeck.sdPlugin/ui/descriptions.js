@@ -15,6 +15,9 @@
       summary: 'CRG connection status.',
       details: ['Press for options.']
     },
+    'com.rcrderby.crg-streamdeck.automation': {
+      summary: 'Opens a page of CRG automation settings.'
+    },
     'com.rcrderby.crg-streamdeck.jam-control': {
       summary: "Changes between 'Start Jam', 'Stop Jam', and 'End Timeout', based on the game state."
     },
@@ -91,7 +94,7 @@
     },
     'com.rcrderby.crg-streamdeck.back': {
       summary: 'Returns to your layout.',
-      details: ['Part of the connection page that the CRG Connection button opens.']
+      details: ['Part of each page of buttons that the plugin opens.']
     },
     'com.rcrderby.crg-streamdeck.connection-toggle': {
       summary: 'Connects to or disconnects from CRG.',
@@ -108,6 +111,20 @@
     'com.rcrderby.crg-streamdeck.replace-choice': {
       summary: 'Replaces the undone action with one of the choices CRG allows.',
       details: ['Requires a 1-second hold.']
+    },
+    'com.rcrderby.crg-streamdeck.auto-end-jams': {
+      summary: "Turns CRG's 'Auto End Jams' setting on or off.",
+      details: [
+        'Part of the page that the Automation button opens.',
+        'Changes the setting for every device connected to CRG.'
+      ]
+    },
+    'com.rcrderby.crg-streamdeck.auto-end-team-timeouts': {
+      summary: "Turns CRG's 'Auto End Team Timeouts' setting on or off.",
+      details: [
+        'Part of the page that the Automation button opens.',
+        'Changes the setting for every device connected to CRG.'
+      ]
     }
   };
 

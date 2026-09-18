@@ -487,10 +487,13 @@ export function blankKey(): KeySpec {
   return { background: '#000000' };
 }
 
-/** Back, on the connection page. */
+/** The dark gray of the keys that move between pages or change a setting, rather than act on the game. */
+const SETTINGS_BACKGROUND = '#27272a';
+
+/** Back, on every page the plugin opens. */
 export function backKey(): KeySpec {
   return {
-    background: '#27272a',
+    background: SETTINGS_BACKGROUND,
     foreground: '#ffffff',
     shapes: [backArrow(50, 40, 18, '#ffffff')],
     texts: [{ text: 'Back', y: 80, size: 15, weight: 'bold' }]
@@ -523,22 +526,64 @@ const CONNECTION_LOOKS: Readonly<Record<ConnectionStatus, ConnectionLook>> = {
 /**
  * CRG Connection: whether the plugin is connected, apart from a deck disconnected on purpose.
  *
- * The operator profile the deck keeps its settings under sits at the
- * foot of the key, in italics, so it reads as a name rather than a state.
+ * The operator profile the deck keeps its settings under sits below the
+ * state, in italics, so it reads as a name rather than a state.
  */
 export function connectionKey(status: ConnectionStatus, operator = ''): KeySpec {
   const look = CONNECTION_LOOKS[status];
+  const named = operator !== '';
 
   const texts: KeyText[] = [
-    { text: look.headline, y: 42, size: 19, weight: 'bold' },
-    { text: look.detail, y: 66, size: 13, opacity: 0.85 }
+    { text: look.headline, y: named ? 34 : 42, size: 19, weight: 'bold' },
+    { text: look.detail, y: named ? 55 : 66, size: 13, opacity: 0.85 }
   ];
 
-  if (operator !== '') {
-    texts.push({ text: operator, y: 90, size: 11, italic: true, opacity: 0.7 });
+  if (named) {
+    texts.push({ text: operator, y: 75, size: 11, italic: true, opacity: 0.7 });
   }
 
-  return { background: look.background, foreground: '#ffffff', accent: look.accent, texts };
+  return { background: look.background, foreground: '#ffffff', accent: look.accent, texts, opensPage: true };
+}
+
+/** Automation: opens the page of CRG's automation settings. */
+export function automationKey(): KeySpec {
+  return {
+    background: SETTINGS_BACKGROUND,
+    foreground: '#ffffff',
+    texts: [{ text: 'Automation', y: 56, size: 15, weight: 'bold' }],
+    opensPage: true
+  };
+}
+
+/** The automation settings the Automation page can switch. */
+export type AutomationSetting = 'endJams' | 'endTeamTimeouts';
+
+const AUTOMATION_LABELS: Readonly<Record<AutomationSetting, readonly string[]>> = {
+  endJams: ['Auto End', 'Jams'],
+  endTeamTimeouts: ['Auto End', 'Team', 'Timeouts']
+};
+
+/**
+ * Auto End Jams or Auto End Team Timeouts: the setting's name, with the top bar active while it is on.
+ *
+ * A three line name is set smaller and closer, so it stays clear of the bar.
+ */
+export function automationToggleKey(setting: AutomationSetting, on: boolean): KeySpec {
+  const lines = AUTOMATION_LABELS[setting];
+  const three = lines.length > 2;
+  const gap = three ? 15 : 17;
+
+  return {
+    background: SETTINGS_BACKGROUND,
+    foreground: '#ffffff',
+    texts: lines.map((text, index) => ({
+      text,
+      y: 56 + (index - (lines.length - 1) / 2) * gap,
+      size: three ? 13.5 : 15,
+      weight: 'bold' as const
+    })),
+    bar: { active: on }
+  };
 }
 
 /**

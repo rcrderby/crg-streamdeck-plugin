@@ -151,6 +151,11 @@ const SHEET = [
         ]
       },
       {
+        name: 'Automation',
+        slugs: ['automation'],
+        keys: [['Opens a page', d.automationKey()]]
+      },
+      {
         name: 'Jam Control',
         slugs: ['jam-control'],
         keys: [
@@ -380,6 +385,16 @@ const SHEET = [
           ['Timeout', d.replaceChoiceKey('Timeout', 'timeout')],
           ['No choice for this key', d.blankKey()]
         ]
+      },
+      {
+        name: 'Automation page',
+        slugs: ['auto-end-jams', 'auto-end-team-timeouts'],
+        keys: [
+          ['Off', d.automationToggleKey('endJams', false)],
+          ['On', d.automationToggleKey('endJams', true)],
+          ['Off', d.automationToggleKey('endTeamTimeouts', false)],
+          ['On', d.automationToggleKey('endTeamTimeouts', true)]
+        ]
       }
     ]
   }
@@ -408,6 +423,10 @@ const PAGES = [
       [d.replaceInfoKey('Stop Jam'), d.replaceConfirmKey('No Action'), d.backKey()],
       [d.replaceChoiceKey('Start Jam', 'start'), d.replaceChoiceKey('Timeout', 'timeout'), d.blankKey()]
     ]
+  },
+  {
+    name: 'The Automation page',
+    rows: [[d.backKey(), d.automationToggleKey('endJams', false), d.automationToggleKey('endTeamTimeouts', true)]]
   }
 ];
 
@@ -514,6 +533,7 @@ function generic({ hold = [], ...extra } = {}) {
 const LEGEND = [
   // Symbols any button can carry.
   ['informational', [['', generic({ informational: true })]]],
+  ['opens-page', [['', generic({ opensPage: true })]]],
   [
     'top-bar',
     [

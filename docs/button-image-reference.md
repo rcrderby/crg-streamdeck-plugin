@@ -27,6 +27,10 @@ This section describes the symbols, colors, and terms that appear on the plugin 
 
   ![Informational Tab](./images/button-reference/legend/informational.svg "Informational Tab")
 
+- **Blue corner tab with a chevron.**  Pressing the button opens a page of more buttons.  `Back`, in the top left corner of each page, returns to your layout.
+
+  ![Page Tab](./images/button-reference/legend/opens-page.svg "Page Tab")
+
 - **Top bar.**  Gray when the state a button controls is off.  Green when the state is on, or its timeout is running.
 
   ![Top Bar](./images/button-reference/legend/top-bar.svg "Top Bar")

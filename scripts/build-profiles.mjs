@@ -57,6 +57,14 @@ const PAGES = {
       '1,1': { slug: 'replace-choice', name: 'Replace Choice', settings: { slot: 1 } },
       '2,1': { slug: 'replace-choice', name: 'Replace Choice', settings: { slot: 2 } }
     }
+  },
+  automation: {
+    title: 'CRG Automation',
+    keys: {
+      '0,0': { slug: 'back', name: 'Back' },
+      '1,0': { slug: 'auto-end-jams', name: 'Auto End Jams' },
+      '2,0': { slug: 'auto-end-team-timeouts', name: 'Auto End Team Timeouts' }
+    }
   }
 };
 

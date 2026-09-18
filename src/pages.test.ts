@@ -15,7 +15,8 @@ const manifest = JSON.parse(readFileSync(new URL('manifest.json', PLUGIN), 'utf8
 
 const PAGE_KEYS: Readonly<Record<string, readonly string[]>> = {
   connection: ['back', 'connection-toggle'],
-  undo: ['replace-info', 'replace-confirm', 'replace-choice', 'back']
+  undo: ['replace-info', 'replace-confirm', 'replace-choice', 'back'],
+  automation: ['back', 'auto-end-jams', 'auto-end-team-timeouts']
 };
 
 type Named = { Name?: string | undefined };

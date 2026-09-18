@@ -4,7 +4,10 @@ import { describe, it } from 'node:test';
 import { renderKeySvg } from './key.ts';
 import {
   TIMEOUT_RED,
+  automationKey,
+  automationToggleKey,
   clockKey,
+  connectionKey,
   injuryKey,
   jamControlKey,
   jammerKey,
@@ -148,6 +151,58 @@ describe('shape shadows', () => {
     const texts = scoreKey(WHEELS, 128, 12, 4).texts ?? [];
 
     assert.ok(texts.every((line) => line.shadow === WHEELS.glow));
+  });
+});
+
+describe('automation keys', () => {
+  it('mark the Automation key as opening a page, with no bar and no “i”', () => {
+    const spec = automationKey();
+
+    assert.equal(spec.opensPage, true);
+    assert.equal(spec.bar, undefined);
+    assert.notEqual(spec.informational, true);
+  });
+
+  it('light the toggle’s top bar only while its setting is on', () => {
+    assert.deepEqual(automationToggleKey('endJams', true).bar, { active: true });
+    assert.deepEqual(automationToggleKey('endJams', false).bar, { active: false });
+  });
+
+  it('set a three line name smaller, and keep every line clear of the bar', () => {
+    const two = automationToggleKey('endJams', false).texts ?? [];
+    const three = automationToggleKey('endTeamTimeouts', false).texts ?? [];
+
+    assert.deepEqual(
+      three.map((line) => line.text),
+      ['Auto End', 'Team', 'Timeouts']
+    );
+    assert.ok((three[0]?.size ?? 0) < (two[0]?.size ?? 0));
+    assert.ok(
+      three.every((line) => line.y - line.size > 16),
+      'the first line should sit below the bar'
+    );
+  });
+});
+
+describe('connectionKey', () => {
+  it('marks the key as opening a page', () => {
+    assert.equal(connectionKey('connected').opensPage, true);
+  });
+
+  it('raises every line when it names an operator, so the name clears the page tab', () => {
+    const texts = connectionKey('connected', 'Rose_City_Rollers').texts ?? [];
+
+    assert.deepEqual(
+      texts.map((line) => line.y),
+      [34, 55, 75]
+    );
+  });
+
+  it('keeps its two lines where they were with no operator named', () => {
+    assert.deepEqual(
+      (connectionKey('stopped').texts ?? []).map((line) => line.y),
+      [42, 66]
+    );
   });
 });
 
