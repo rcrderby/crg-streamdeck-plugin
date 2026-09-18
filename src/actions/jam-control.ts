@@ -43,7 +43,9 @@ export class JamControl extends CrgKeyAction {
       STOP,
       OFFICIAL_SCORE,
       TIMEOUTS.running,
+      game('InOvertime'),
       rule('Lineup.Duration'),
+      rule('Lineup.OvertimeDuration'),
       ...CLOCK_NAMES.flatMap((name) => [
         clock(name, 'Time'),
         clock(name, 'Running'),

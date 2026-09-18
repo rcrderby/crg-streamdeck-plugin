@@ -100,6 +100,11 @@ const LINEUP_DUE_MS = 5_000;
 /** How long past due that the key starts pulsing. */
 const LINEUP_OVER_MS = 1_000;
 
+/** The rule that sets the lineup's length, which is its own rule in overtime. */
+function lineupRule(state: StateStore): 'Lineup.Duration' | 'Lineup.OvertimeDuration' {
+  return state.getBoolean(game('InOvertime')) ? 'Lineup.OvertimeDuration' : 'Lineup.Duration';
+}
+
 /** How long a clock has run, whichever way CRG counts it. */
 function elapsedOn(state: StateStore, name: ClockName): number {
   return state.getBoolean(clock(name, 'Direction'))
@@ -110,16 +115,17 @@ function elapsedOn(state: StateStore, name: ClockName): number {
 /**
  * Whether the lineup is nearly up, or already over.
  *
- * The rules give the lineup its length, so a league running something
- * other than thirty seconds gets its warning in the right place. With no
- * rule held, or no lineup running, there is nothing to warn about.
+ * The rules give the lineup its length, and a longer one before an
+ * overtime jam, so a league running something other than thirty seconds
+ * gets its warning in the right place. With no rule held, or no lineup
+ * running, there is nothing to warn about.
  */
 export function lineupWarning(state: StateStore): LineupWarning {
   if (!state.getBoolean(clock('Lineup', 'Running'))) {
     return 'none';
   }
 
-  const duration = parseClock(state.getString(rule('Lineup.Duration')));
+  const duration = parseClock(state.getString(rule(lineupRule(state))));
 
   if (duration <= 0) {
     return 'none';
