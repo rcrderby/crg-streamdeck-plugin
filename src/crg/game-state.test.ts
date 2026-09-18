@@ -263,6 +263,19 @@ describe('lineupWarning', () => {
     assert.equal(lineupWarning(longer), 'none');
   });
 
+  it('takes an overtime lineup’s length from its own rule', () => {
+    const overtime = (time: number): StateStore =>
+      lineup({
+        [`${G}.InOvertime`]: true,
+        [`${G}.Rule(Lineup.OvertimeDuration)`]: '1:00',
+        [`${G}.Clock(Lineup).Time`]: time
+      });
+
+    assert.equal(lineupWarning(overtime(31_000)), 'none');
+    assert.equal(lineupWarning(overtime(55_000)), 'due');
+    assert.equal(lineupWarning(overtime(61_000)), 'over');
+  });
+
   it('counts a lineup CRG runs backwards by the time it has run', () => {
     const counting = lineup({
       [`${G}.Clock(Lineup).Direction`]: true,

@@ -173,6 +173,7 @@ export const REGISTERED_PATHS: readonly string[] = [
   game('Label(*)'),
   rule('Period.Number'),
   rule('Lineup.Duration'),
+  rule('Lineup.OvertimeDuration'),
   rule('Team.Timeouts'),
   rule('Team.OfficialReviews'),
   rule('Team.MaxRetains'),
