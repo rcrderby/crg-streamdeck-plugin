@@ -19,10 +19,10 @@
       summary: 'Opens a page of CRG automation settings.'
     },
     'com.rcrderby.crg-streamdeck.jrda-options': {
-      summary: "Shows or sets the JRDA-specific settings.",
+      summary: 'Shows or sets the JRDA-specific settings.',
       details: [
         "Choose 'Continuation Upcoming' or 'Sudden Scoring' in the button's settings.",
-        "'Continuation Upcoming' shows the time a continued jam would run, and requires a 1-second hold to enable.",
+        "'Continuation Upcoming' shows the time a continued jam would run. Requires a 1-second hold to enable.",
         "'Sudden Scoring' is activated automatically by the ruleset, so this button is informational only."
       ]
     },
