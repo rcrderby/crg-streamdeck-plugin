@@ -565,6 +565,8 @@ export function timeoutKey(lines: readonly string[], active: boolean): KeySpec {
 }
 
 /**
+ * Undo: an amber U turn arrow on hazard striping, so has a unique look.
+ *
  * It reads HOLD. With Replace on Undo in use it carries the top bar,
  * green while CRG holds its replace menu open, and the bar shows the hold.
  * While CRG waits, a press reopens the menu, so the key drops HOLD.
