@@ -565,12 +565,13 @@ export function timeoutKey(lines: readonly string[], active: boolean): KeySpec {
 }
 
 /**
- * Undo: an amber U turn on hazard striping, so it stands apart from every other key.
+ * Undo: an amber U turn arrow on hazard striping, so has a unique look.
  *
  * It reads HOLD. With Replace on Undo in use it carries the top bar,
- * green while CRG holds its replace menu open, and the bar carries the
- * hold rather than a dial. Without it the key has no bar, since it never
- * opens that menu, and the dial shows the hold instead.
+ * green while CRG holds its replace menu open, and the bar shows the hold.
+ * While CRG waits, a press reopens the menu, so the key drops HOLD.
+ * Without Replace on Undo the key has no bar, since it never opens that menu,
+ * and the dial shows the hold instead.
  */
 export function undoKey(level = 0, waiting?: boolean): KeySpec {
   const carries = waiting !== undefined;
@@ -585,9 +586,10 @@ export function undoKey(level = 0, waiting?: boolean): KeySpec {
     ],
     texts: [
       { text: 'Undo', y: 72, size: 14, weight: 'bold' },
-      { text: 'HOLD', y: 86, size: 10, weight: 'bold', opacity: 0.8 }
+      ...(waiting === true ? [] : [{ text: 'HOLD', y: 86, size: 10, weight: 'bold' as const, opacity: 0.8 }])
     ],
-    ...(carries ? { bar: { active: waiting, progress: level, fill: 'active' as const } } : {})
+    ...(carries ? { bar: { active: waiting, progress: level, fill: 'active' as const } } : {}),
+    ...(carries ? { opensPage: true } : {})
   };
 }
 

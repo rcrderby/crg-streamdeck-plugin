@@ -248,7 +248,8 @@ const SHEET = [
           ['Pressed', d.undoKey(0.6)],
           ['Nothing to undo', { ...d.undoKey(), subdued: true }],
           ['Replace enabled', d.undoKey(0, false)],
-          ['Pressed', d.undoKey(0.6, false)]
+          ['Pressed', d.undoKey(0.6, false)],
+          ['Replace waiting, press to reopen', d.undoKey(0, true)]
         ]
       }
     ]
