@@ -800,9 +800,9 @@ function pageOpenerKey(lines: readonly string[]): KeySpec {
   return { background: SETTINGS_BACKGROUND, foreground: '#ffffff', texts: settingsName(lines), opensPage: true };
 }
 
-/** End of Period: opens the page of end of period controls. */
+/** End of Period Controls: opens the page of end of period controls. */
 export function endOfPeriodKey(): KeySpec {
-  return pageOpenerKey(['End of', 'Period']);
+  return pageOpenerKey(['End of', 'Period', 'Controls']);
 }
 
 /** Timeout Before Period End: opens the page that starts a timeout with seconds left on the period clock. */
