@@ -1,5 +1,5 @@
 /**
- * The End of Period key, and the page of end of period controls it opens.
+ * The End of Period Controls key, and the page of controls it opens.
  *
  * The page holds CRG's own four, in CRG's order: Official Score, Timeout
  * Before Period End, Start Overtime Lineup, and Show Clock During Final

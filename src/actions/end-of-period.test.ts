@@ -22,7 +22,7 @@ function darkened(key: FakeKey): boolean {
   return drawn(key).includes('opacity="0.62"');
 }
 
-describe('the End of Period key', () => {
+describe('the End of Period Controls key', () => {
   let deck: FakeDeck;
 
   beforeEach(() => {
@@ -31,7 +31,7 @@ describe('the End of Period key', () => {
 
   afterEach(() => deck.stop());
 
-  it('opens the End of Period page', async () => {
+  it('opens the End of Period Controls page', async () => {
     const keyAction = new EndOfPeriod(deck.context);
 
     await deck.press(keyAction, deck.place(keyAction));

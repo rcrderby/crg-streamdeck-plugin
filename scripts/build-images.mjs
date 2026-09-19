@@ -169,7 +169,7 @@ const SHEET = [
         ]
       },
       {
-        name: 'End of Period',
+        name: 'End of Period Controls',
         slugs: ['end-of-period'],
         keys: [['Opens a page', d.endOfPeriodKey()]]
       },
@@ -427,7 +427,7 @@ const SHEET = [
         ]
       },
       {
-        name: 'End of Period page',
+        name: 'End of Period Controls page',
         slugs: ['official-score', 'period-end-timeout', 'overtime-lineup', 'clock-during-final-score'],
         keys: [
           ['Held back, with the wait', d.officialScoreKey('waiting', '0:18')],
@@ -487,7 +487,7 @@ const PAGES = [
     rows: [[d.backKey(), d.automationToggleKey('endJams', false), d.automationToggleKey('endTeamTimeouts', true)]]
   },
   {
-    name: 'The End of Period page',
+    name: 'The End of Period Controls page',
     rows: [
       [d.backKey(), d.officialScoreKey('ready'), d.periodEndTimeoutKey()],
       [d.overtimeLineupKey('ready'), d.clockDuringFinalScoreKey(false), d.blankKey()]

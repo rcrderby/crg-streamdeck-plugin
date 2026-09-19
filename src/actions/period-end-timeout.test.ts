@@ -79,7 +79,7 @@ describe('the Timeout Before Period End page', () => {
     assert.deepEqual(deck.switched, []);
   });
 
-  it('goes Back to the End of Period page by way of the layout', async () => {
+  it('goes Back to the End of Period Controls page by way of the layout', async () => {
     const back = new Back(deck.context);
     const settings = { page: 'end-of-period' };
 

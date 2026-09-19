@@ -67,7 +67,7 @@ const PAGES = {
     }
   },
   'end-of-period': {
-    title: 'CRG End of Period',
+    title: 'CRG End of Period Controls',
     keys: {
       '0,0': { slug: 'back', name: 'Back' },
       '1,0': { slug: 'official-score', name: 'Official Score' },
