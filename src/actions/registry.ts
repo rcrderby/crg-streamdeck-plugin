@@ -1,6 +1,11 @@
 /**
  * Every action the plugin registers, under the identifier its manifest entry carries.
  *
+ * They are listed in the order the manifest lists them, which is the
+ * order Stream Deck shows in its actions list: the game, then a jammer's
+ * status, a team's timeouts and reviews, scoring, the displays, and the
+ * keys that open a page. The keys within those pages follow.
+ *
  * The identifiers sit together here rather than beside each class, so the
  * set the plugin registers can be read at a glance and checked against
  * the manifest. Stream Deck stores an identifier against every key a
@@ -42,15 +47,10 @@ const UUID = 'com.rcrderby.crg-streamdeck';
 export function keyActions(context: PluginContext): SingletonAction<never>[] {
   return [
     named(`${UUID}.connection`, new Connection(context)),
-    named(`${UUID}.automation`, new Automation(context)),
-    named(`${UUID}.jrda-options`, new JrdaOptions(context)),
-    named(`${UUID}.end-of-period`, new EndOfPeriod(context)),
     named(`${UUID}.jam-control`, new JamControl(context)),
     named(`${UUID}.timeout`, new Timeout(context)),
     named(`${UUID}.official-timeout`, new OfficialTimeout(context)),
     named(`${UUID}.undo`, new Undo(context)),
-    named(`${UUID}.clock`, new Clock(context)),
-    named(`${UUID}.active-clock`, new ActiveClock(context)),
     named(`${UUID}.lead`, new Lead(context)),
     named(`${UUID}.lost-lead`, new LostLead(context)),
     named(`${UUID}.star-pass`, new StarPass(context)),
@@ -66,6 +66,11 @@ export function keyActions(context: PluginContext): SingletonAction<never>[] {
     named(`${UUID}.add-trip`, new AddTrip(context)),
     named(`${UUID}.remove-trip`, new RemoveTrip(context)),
     named(`${UUID}.score`, new Score(context)),
+    named(`${UUID}.clock`, new Clock(context)),
+    named(`${UUID}.active-clock`, new ActiveClock(context)),
+    named(`${UUID}.automation`, new Automation(context)),
+    named(`${UUID}.jrda-options`, new JrdaOptions(context)),
+    named(`${UUID}.end-of-period`, new EndOfPeriod(context)),
     named(`${UUID}.back`, new Back(context)),
     named(`${UUID}.connection-toggle`, new ConnectionToggle(context)),
     named(`${UUID}.replace-info`, new ReplaceInfo(context)),
