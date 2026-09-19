@@ -118,6 +118,15 @@ export const TIMEOUTS = {
 /** How long each jam ran, under its period and number; CRG writes it when the jam stops. */
 export const JAM_DURATIONS = `${CURRENT_GAME}.Period(*).Jam(*).Duration`;
 
+/** Each jam's id and whether it is an overtime jam, under its period and number. */
+export const JAMS = {
+  id: `${CURRENT_GAME}.Period(*).Jam(*).Id`,
+  overtime: `${CURRENT_GAME}.Period(*).Jam(*).Overtime`
+} as const;
+
+/** Whether each period went to JRDA sudden scoring. */
+export const PERIOD_SUDDEN_SCORING = `${CURRENT_GAME}.Period(*).SuddenScoring`;
+
 /** The id of every scoring trip; the trip's number is the key it sits under. */
 export const SCORING_TRIP_IDS = `${CURRENT_GAME}.Period(*).Jam(*).TeamJam(*).ScoringTrip(*).Id`;
 
@@ -187,11 +196,14 @@ export const REGISTERED_PATHS: readonly string[] = [
   `${CURRENT_GAME}.Clock(*).InvertedTime`,
   `${CURRENT_GAME}.Clock(*).MaximumTime`,
   JAM_DURATIONS,
+  ...Object.values(JAMS),
+  PERIOD_SUDDEN_SCORING,
   `${CURRENT_GAME}.Team(*).Id`,
   `${CURRENT_GAME}.Team(*).Score`,
   `${CURRENT_GAME}.Team(*).JamScore`,
   `${CURRENT_GAME}.Team(*).TripScore`,
   `${CURRENT_GAME}.Team(*).CurrentTrip`,
+  `${CURRENT_GAME}.Team(*).RunningOrEndedTeamJam`,
   `${CURRENT_GAME}.Team(*).NoInitial`,
   `${CURRENT_GAME}.Team(*).Lead`,
   `${CURRENT_GAME}.Team(*).Lost`,

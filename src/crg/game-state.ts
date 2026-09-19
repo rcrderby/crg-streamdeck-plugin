@@ -10,6 +10,7 @@
 import {
   CURRENT_GAME,
   INTERMISSION_LABELS,
+  JAMS,
   OFFICIAL_OWNER,
   SCORING_TRIP_IDS,
   TIMEOUTS,
@@ -242,6 +243,35 @@ export function currentTripNumber(state: StateStore, number: TeamNumber): number
   const trip = /ScoringTrip\((\d+)\)\.Id$/.exec(match?.[0] ?? '');
 
   return trip === null ? 0 : Number(trip[1]);
+}
+
+/**
+ * Whether CRG refuses Lead and Lost Lead for the team right now.
+ *
+ * CRG keeps no lead in an overtime jam or in a period of JRDA sudden
+ * scoring, and decides it by the jam the team's flags belong to: the one
+ * running, or the last one between jams. An overtime lineup still edits
+ * the regular jam before it, so the flags work until the overtime jam
+ * starts.
+ */
+export function immediateScoring(state: StateStore, number: TeamNumber): boolean {
+  const teamJam = state.getString(team(number, 'RunningOrEndedTeamJam'));
+  const jamId = teamJam.replace(/_\d+$/, '');
+
+  if (jamId === '') {
+    return false;
+  }
+
+  const match = state.matching(JAMS.id).find(([, value]) => value === jamId);
+
+  if (match === undefined) {
+    return false;
+  }
+
+  const jam = match[0].replace(/\.Id$/, '');
+  const period = jam.replace(/\.Jam\(\d+\)$/, '');
+
+  return state.getBoolean(`${jam}.Overtime`) || state.getBoolean(`${period}.SuddenScoring`);
 }
 
 /**

@@ -53,11 +53,12 @@
       details: ['Informational only.']
     },
     'com.rcrderby.crg-streamdeck.lead': {
-      summary: 'Assigns or removes lead jammer status.'
+      summary: 'Assigns or removes lead jammer status.',
+      details: ['Disabled during overtime and sudden scoring jams.']
     },
     'com.rcrderby.crg-streamdeck.lost-lead': {
       summary: "Assigns or removes 'Lost Lead' status for a jammer.",
-      details: ['Requires a 1-second hold.']
+      details: ['Requires a 1-second hold.', 'Disabled during overtime and sudden scoring jams.']
     },
     'com.rcrderby.crg-streamdeck.star-pass': {
       summary: 'Assigns or removes a star pass for a team.',
