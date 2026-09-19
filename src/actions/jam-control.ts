@@ -9,7 +9,7 @@
  */
 
 import { CLOCK_NAMES, TIMEOUTS, type ClockName, clock, game, isUnavailable, label, rule } from '../crg/paths.ts';
-import { jamControlClock, lineupWarning, runningTimeout } from '../crg/game-state.ts';
+import { jamControlClock, lineupKind, lineupWarning, runningTimeout } from '../crg/game-state.ts';
 import { type KeySpec } from '../render/key.ts';
 import { JAM_IDLE, JAM_STOP, jamControlKey, lineupBackground } from '../render/designs.ts';
 import { clockTitle } from '../render/clock-title.ts';
@@ -44,6 +44,7 @@ export class JamControl extends CrgKeyAction {
       OFFICIAL_SCORE,
       TIMEOUTS.running,
       game('InOvertime'),
+      game('NoMoreJam'),
       rule('Lineup.Duration'),
       rule('Lineup.OvertimeDuration'),
       ...CLOCK_NAMES.flatMap((name) => [
@@ -68,7 +69,11 @@ export class JamControl extends CrgKeyAction {
       ? JAM_IDLE
       : choice.stopping
         ? JAM_STOP
-        : lineupBackground(lineupWarning(this.context.client.state), pulsePhase(Date.now(), SECOND_PULSE_MS));
+        : lineupBackground(
+            lineupWarning(this.context.client.state),
+            pulsePhase(Date.now(), SECOND_PULSE_MS),
+            lineupKind(this.context.client.state)
+          );
 
     const running = online ? jamControlClock(this.context.client.state, choice.stopping) : undefined;
 
@@ -106,9 +111,11 @@ export class JamControl extends CrgKeyAction {
     return jam === '' ? [] : [jam];
   }
 
-  /** Start Jam moves between green and orange once the lineup is over its time. */
+  /** Start Jam pulses once the lineup is over its time, except with no jam left in the period, when it stays red. */
   protected override animates(): boolean {
-    return lineupWarning(this.context.client.state) === 'over';
+    const state = this.context.client.state;
+
+    return lineupWarning(state) === 'over' && lineupKind(state) !== 'noMoreJams';
   }
 
   /** What CRG calls that clock, which reads Post Timeout after a timeout. */

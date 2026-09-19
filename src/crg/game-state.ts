@@ -141,6 +141,23 @@ export function lineupWarning(state: StateStore): LineupWarning {
   return elapsed >= duration - LINEUP_DUE_MS ? 'due' : 'none';
 }
 
+/**
+ * Which lineup is running, as CRG colors it.
+ *
+ * CRG turns a running lineup red while it publishes NoMoreJam: the period
+ * has too little time left for another jam, or the lineup is before an
+ * overtime jam, where the period clock has already run out.
+ */
+export type LineupKind = 'regular' | 'noMoreJams' | 'overtime';
+
+export function lineupKind(state: StateStore): LineupKind {
+  if (!state.getBoolean(clock('Lineup', 'Running')) || !state.getBoolean(game('NoMoreJam'))) {
+    return 'regular';
+  }
+
+  return state.getBoolean(game('InOvertime')) ? 'overtime' : 'noMoreJams';
+}
+
 /** A flag CRG may send as a boolean or as text. */
 function isTrue(value: unknown): boolean {
   return value === true || value === 'true';

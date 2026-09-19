@@ -8,7 +8,7 @@
  */
 
 import type { ConnectionStatus } from '../crg/client.ts';
-import type { LineupWarning, ReplaceChoiceKind } from '../crg/game-state.ts';
+import type { LineupKind, LineupWarning, ReplaceChoiceKind } from '../crg/game-state.ts';
 import { BAR_SHIFT, type KeySpec, type KeyText, VIEWBOX, estimateTextWidth } from './key.ts';
 import {
   ICON_CENTER_Y,
@@ -463,13 +463,31 @@ export const JAM_IDLE = '#26262b';
 /** What Start Jam turns once the lineup is nearly up. */
 export const JAM_LINEUP_DUE = '#9a3412';
 
-/** Start Jam as the lineup runs out: green, then orange, then moving between them. */
-export function lineupBackground(warning: LineupWarning, phase = 0): string {
-  if (warning === 'none') {
-    return JAM_START;
+/** Start Jam through a lineup CRG shows red: no jam left in the period, or an overtime lineup. CRG's own red, a touch darker for white text. */
+export const JAM_LINEUP_RED = '#dd3333';
+
+/** What Start Jam turns once an overtime lineup is nearly up. */
+export const JAM_OVERTIME_DUE = '#a16207';
+
+/**
+ * Start Jam as the lineup runs out.
+ *
+ * A regular lineup is green, then orange, then moves between them. With
+ * no jam left in the period the key stays red, since no jam is due. An
+ * overtime lineup is red, then gold, then moves between them.
+ */
+export function lineupBackground(warning: LineupWarning, phase = 0, kind: LineupKind = 'regular'): string {
+  if (kind === 'noMoreJams') {
+    return JAM_LINEUP_RED;
   }
 
-  return warning === 'due' ? JAM_LINEUP_DUE : blend(JAM_LINEUP_DUE, JAM_START, phase);
+  const [base, due] = kind === 'overtime' ? [JAM_LINEUP_RED, JAM_OVERTIME_DUE] : [JAM_START, JAM_LINEUP_DUE];
+
+  if (warning === 'none') {
+    return base;
+  }
+
+  return warning === 'due' ? due : blend(due, base, phase);
 }
 
 /**

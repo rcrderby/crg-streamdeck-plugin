@@ -6,6 +6,7 @@ import {
   currentTripNumber,
   immediateScoring,
   jamControlClock,
+  lineupKind,
   lineupWarning,
   replaceChoices,
   replacePending,
@@ -340,5 +341,19 @@ describe('immediateScoring', () => {
   it('reads false before CRG names the jam, or for a jam it has not sent', () => {
     assert.equal(immediateScoring(store(jams), 1), false);
     assert.equal(immediateScoring(store({ ...jams, [`${G}.Team(2).RunningOrEndedTeamJam`]: 'gone_2' }), 2), false);
+  });
+});
+
+describe('lineupKind', () => {
+  const running = { [`${G}.Clock(Lineup).Running`]: true };
+
+  it('reads a lineup CRG shows red as no more jams, or overtime', () => {
+    assert.equal(lineupKind(store({ ...running, [`${G}.NoMoreJam`]: true })), 'noMoreJams');
+    assert.equal(lineupKind(store({ ...running, [`${G}.NoMoreJam`]: true, [`${G}.InOvertime`]: true })), 'overtime');
+  });
+
+  it('reads a regular lineup otherwise, and when no lineup is running', () => {
+    assert.equal(lineupKind(store(running)), 'regular');
+    assert.equal(lineupKind(store({ [`${G}.NoMoreJam`]: true })), 'regular');
   });
 });

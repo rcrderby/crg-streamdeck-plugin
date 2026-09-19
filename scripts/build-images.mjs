@@ -191,6 +191,34 @@ const SHEET = [
             'Lineup expired',
             d.jamControlKey('Start Jam', '0:32', ['LINEUP', 'JAM 13'], d.lineupBackground('over', 0.5), false)
           ],
+          [
+            'No jam left in the period',
+            d.jamControlKey(
+              'Start Jam',
+              '0:21',
+              ['LINEUP', 'JAM 13'],
+              d.lineupBackground('none', 0, 'noMoreJams'),
+              false
+            )
+          ],
+          [
+            'Overtime lineup',
+            d.jamControlKey('Start Jam', '0:45', ['LINEUP', 'JAM 14'], d.lineupBackground('none', 0, 'overtime'), false)
+          ],
+          [
+            'Overtime lineup time short',
+            d.jamControlKey('Start Jam', '0:56', ['LINEUP', 'JAM 14'], d.lineupBackground('due', 0, 'overtime'), false)
+          ],
+          [
+            'Overtime lineup expired',
+            d.jamControlKey(
+              'Start Jam',
+              '1:02',
+              ['LINEUP', 'JAM 14'],
+              d.lineupBackground('over', 0.5, 'overtime'),
+              false
+            )
+          ],
           ['Jam active', d.jamControlKey('Stop Jam', '1:04', ['JAM 13'], d.JAM_STOP, false)],
           ['Timeout active', d.jamControlKey('End Timeout', '0:43', ['JAM 13'], d.TIMEOUT_RED, false)],
           ['Unavailable', d.jamControlKey('Start Jam', undefined, ['JAM 13'], d.JAM_IDLE, true)]
@@ -678,6 +706,14 @@ const LEGEND = [
     [
       ['Start', d.jamControlKey('Start Jam', '0:21', ['LINEUP', 'JAM 13'], d.lineupBackground('none'), false)],
       ['Start soon', d.jamControlKey('Start Jam', '0:27', ['LINEUP', 'JAM 13'], d.lineupBackground('due'), false)],
+      [
+        'No jam left',
+        d.jamControlKey('Start Jam', '0:21', ['LINEUP', 'JAM 13'], d.lineupBackground('none', 0, 'noMoreJams'), false)
+      ],
+      [
+        'Overtime, start soon',
+        d.jamControlKey('Start Jam', '0:56', ['LINEUP', 'JAM 14'], d.lineupBackground('due', 0, 'overtime'), false)
+      ],
       ['Stop', d.jamControlKey('Stop Jam', '1:04', ['JAM 13'], d.JAM_STOP, false)],
       ['End timeout', d.jamControlKey('End Timeout', '0:43', ['JAM 13'], d.TIMEOUT_RED, false)]
     ]

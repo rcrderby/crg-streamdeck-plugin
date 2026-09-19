@@ -82,7 +82,7 @@ This section describes the symbols, colors, and terms that appear on the plugin 
 
   ![Score Panels](./images/button-reference/legend/score-panels.svg "Score Panels")
 
-- **`Jam Control` colors.**  Green when a press starts a jam, orange from five seconds before a jam should start, dark red when a press stops a jam, and bright red when a press ends a timeout.  The button pulses between green and orange when the lineup runs past its time.  When there is no jam to start, such as after the score is final, the button shows a faded `Start Jam` and takes no action.
+- **`Jam Control` colors.**  Green when a press starts a jam, orange five seconds before a jam should start, dark red when a press stops a jam, and bright red when a press ends a timeout.  Pulses when the lineup runs past its time.  Red, without a pulse, when the period has no time for another jam.  Red during an overtime lineup, gold five seconds before the jam should start, then pulses.  Shows a faded `Start Jam` when there is no jam to start, and takes no action.
 
   ![Jam Control Colors](./images/button-reference/legend/jam-control-colors.svg "Jam Control Colors")
 

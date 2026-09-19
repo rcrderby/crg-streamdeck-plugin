@@ -547,4 +547,17 @@ describe('the Jam Control key', () => {
     assert.equal(lineupBackground('over', 1), '#9a3412');
     assert.notEqual(lineupBackground('over', 0.5), lineupBackground('over', 0));
   });
+
+  it('stays red through a lineup with no jam left in the period', () => {
+    for (const warning of ['none', 'due', 'over'] as const) {
+      assert.equal(lineupBackground(warning, 0.5, 'noMoreJams'), '#dd3333');
+    }
+  });
+
+  it('runs an overtime lineup from red to gold, and moves between the two once it is over', () => {
+    assert.equal(lineupBackground('none', 0, 'overtime'), '#dd3333');
+    assert.equal(lineupBackground('due', 0, 'overtime'), '#a16207');
+    assert.equal(lineupBackground('over', 0, 'overtime'), '#dd3333');
+    assert.equal(lineupBackground('over', 1, 'overtime'), '#a16207');
+  });
 });
