@@ -178,6 +178,7 @@ export const REGISTERED_PATHS: readonly string[] = [
   game('ReviewIsTo'),
   game('CurrentPeriodNumber'),
   game('OfficialScore'),
+  game('InhibitFinalScore'),
   game('ClockDuringFinalScore'),
   game('Label(*)'),
   rule('Period.Number'),

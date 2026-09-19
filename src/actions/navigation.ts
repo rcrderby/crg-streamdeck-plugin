@@ -28,3 +28,21 @@ export async function openPage(action: OnDevice, page: Page): Promise<boolean> {
 export function returnToLayout(action: OnDevice): Promise<void> {
   return streamDeck.profiles.switchToProfile(action.device.id);
 }
+
+/**
+ * Moves from one of the plugin's pages to another.
+ *
+ * Stream Deck returns a device to the profile it showed before the last
+ * switch, so going straight from page to page would make Back return to
+ * the page just left. Going by way of the layout keeps the layout as the
+ * profile every page returns to.
+ */
+export async function movePage(action: OnDevice, page: Page): Promise<boolean> {
+  if (pageProfile(page, action.device.type) === undefined) {
+    return false;
+  }
+
+  await returnToLayout(action);
+
+  return openPage(action, page);
+}

@@ -254,7 +254,7 @@
       "UUID": "com.rcrderby.crg-streamdeck.back",
       "Icon": "imgs/actions/back/icon",
       "PropertyInspectorPath": "ui/description.html",
-      "Tooltip": "Returns to your layout. Part of each page of buttons that the plugin opens.",
+      "Tooltip": "Returns to your layout. Part of each page of buttons that the plugin opens. On the Timeout Before Period End page, returns to the End of Period page.",
       "Controllers": ["Keypad"],
       "States": [{ "Image": "imgs/actions/back/key", "TitleAlignment": "middle" }],
       "SupportedInMultiActions": false,
@@ -332,6 +332,17 @@
       "UserTitleEnabled": false
     },
     {
+      "Name": "End of Period",
+      "UUID": "com.rcrderby.crg-streamdeck.end-of-period",
+      "Icon": "imgs/actions/end-of-period/icon",
+      "PropertyInspectorPath": "ui/description.html",
+      "Tooltip": "Opens a page of end of period controls.",
+      "Controllers": ["Keypad"],
+      "States": [{ "Image": "imgs/actions/end-of-period/key", "TitleAlignment": "middle" }],
+      "SupportedInMultiActions": false,
+      "UserTitleEnabled": false
+    },
+    {
       "Name": "Clocks",
       "UUID": "com.rcrderby.crg-streamdeck.clock",
       "Icon": "imgs/actions/clock/icon",
@@ -362,6 +373,102 @@
       "Tooltip": "Turns CRG's 'Auto End Team Timeouts' setting on or off. Part of the page that the Automation button opens. Changes the setting for every device connected to CRG.",
       "Controllers": ["Keypad"],
       "States": [{ "Image": "imgs/actions/auto-end-team-timeouts/key", "TitleAlignment": "middle" }],
+      "SupportedInMultiActions": false,
+      "UserTitleEnabled": false,
+      "VisibleInActionsList": false
+    },
+    {
+      "Name": "Official Score",
+      "UUID": "com.rcrderby.crg-streamdeck.official-score",
+      "Icon": "imgs/actions/official-score/icon",
+      "PropertyInspectorPath": "ui/description.html",
+      "Tooltip": "Makes the score official. Part of the page that the End of Period button opens. Requires a 1-second hold. Disabled if CRG delays the official score (EnforceTimeToOr). Displays an estimate of the remaining wait time.",
+      "Controllers": ["Keypad"],
+      "States": [{ "Image": "imgs/actions/official-score/key", "TitleAlignment": "middle" }],
+      "SupportedInMultiActions": false,
+      "UserTitleEnabled": false,
+      "VisibleInActionsList": false
+    },
+    {
+      "Name": "Timeout Before Period End",
+      "UUID": "com.rcrderby.crg-streamdeck.period-end-timeout",
+      "Icon": "imgs/actions/period-end-timeout/icon",
+      "PropertyInspectorPath": "ui/description.html",
+      "Tooltip": "Opens a page to insert a timeout before the end of a period. Part of the page that the End of Period button opens. Sets the seconds remaining on the period clock.",
+      "Controllers": ["Keypad"],
+      "States": [{ "Image": "imgs/actions/period-end-timeout/key", "TitleAlignment": "middle" }],
+      "SupportedInMultiActions": false,
+      "UserTitleEnabled": false,
+      "VisibleInActionsList": false
+    },
+    {
+      "Name": "Start Overtime Lineup",
+      "UUID": "com.rcrderby.crg-streamdeck.overtime-lineup",
+      "Icon": "imgs/actions/overtime-lineup/icon",
+      "PropertyInspectorPath": "ui/description.html",
+      "Tooltip": "Starts the overtime lineup clock. Part of the page that the End of Period button opens. Requires a 1-second hold. Disabled until CRG allows overtime.",
+      "Controllers": ["Keypad"],
+      "States": [{ "Image": "imgs/actions/overtime-lineup/key", "TitleAlignment": "middle" }],
+      "SupportedInMultiActions": false,
+      "UserTitleEnabled": false,
+      "VisibleInActionsList": false
+    },
+    {
+      "Name": "Show Clock During Final Score",
+      "UUID": "com.rcrderby.crg-streamdeck.clock-during-final-score",
+      "Icon": "imgs/actions/clock-during-final-score/icon",
+      "PropertyInspectorPath": "ui/description.html",
+      "Tooltip": "Turns CRG's 'Show Clock During Final Score' setting on or off. Part of the page that the End of Period button opens.",
+      "Controllers": ["Keypad"],
+      "States": [{ "Image": "imgs/actions/clock-during-final-score/key", "TitleAlignment": "middle" }],
+      "SupportedInMultiActions": false,
+      "UserTitleEnabled": false,
+      "VisibleInActionsList": false
+    },
+    {
+      "Name": "Seconds at Timeout",
+      "UUID": "com.rcrderby.crg-streamdeck.period-end-seconds",
+      "Icon": "imgs/actions/period-end-seconds/icon",
+      "PropertyInspectorPath": "ui/description.html",
+      "Tooltip": "Shows the time the period clock will be set to when the timeout starts. Part of the page that the Timeout Before Period End button opens. Informational only.",
+      "Controllers": ["Keypad"],
+      "States": [{ "Image": "imgs/actions/period-end-seconds/key", "TitleAlignment": "middle" }],
+      "SupportedInMultiActions": false,
+      "UserTitleEnabled": false,
+      "VisibleInActionsList": false
+    },
+    {
+      "Name": "Minus 1 Second",
+      "UUID": "com.rcrderby.crg-streamdeck.period-end-seconds-down",
+      "Icon": "imgs/actions/period-end-seconds-down/icon",
+      "PropertyInspectorPath": "ui/description.html",
+      "Tooltip": "Removes 1 second from the time the period clock will be set to. Part of the page that the Timeout Before Period End button opens.",
+      "Controllers": ["Keypad"],
+      "States": [{ "Image": "imgs/actions/period-end-seconds-down/key", "TitleAlignment": "middle" }],
+      "SupportedInMultiActions": false,
+      "UserTitleEnabled": false,
+      "VisibleInActionsList": false
+    },
+    {
+      "Name": "Plus 1 Second",
+      "UUID": "com.rcrderby.crg-streamdeck.period-end-seconds-up",
+      "Icon": "imgs/actions/period-end-seconds-up/icon",
+      "PropertyInspectorPath": "ui/description.html",
+      "Tooltip": "Adds 1 second to the time the period clock will be set to. Part of the page that the Timeout Before Period End button opens.",
+      "Controllers": ["Keypad"],
+      "States": [{ "Image": "imgs/actions/period-end-seconds-up/key", "TitleAlignment": "middle" }],
+      "SupportedInMultiActions": false,
+      "UserTitleEnabled": false,
+      "VisibleInActionsList": false
+    },
+    {
+      "Name": "Start Timeout",
+      "UUID": "com.rcrderby.crg-streamdeck.start-period-end-timeout",
+      "Icon": "imgs/actions/start-period-end-timeout/icon",
+      "PropertyInspectorPath": "ui/description.html",
+      "Tooltip": "Starts an untyped timeout and sets the period clock to the chosen time. Part of the page that the Timeout Before Period End button opens. Requires a 1-second hold. Returns to your layout afterward.",
+      "Controllers": ["Keypad"],
+      "States": [{ "Image": "imgs/actions/start-period-end-timeout/key", "TitleAlignment": "middle" }],
       "SupportedInMultiActions": false,
       "UserTitleEnabled": false,
       "VisibleInActionsList": false
@@ -552,6 +659,132 @@
     },
     {
       "Name": "profiles/automation-plus-xl",
+      "DeviceType": 13,
+      "Readonly": true,
+      "DontAutoSwitchWhenInstalled": true,
+      "AutoInstall": false
+    },
+    {
+      "Name": "profiles/end-of-period-stream-deck",
+      "DeviceType": 0,
+      "Readonly": true,
+      "DontAutoSwitchWhenInstalled": true,
+      "AutoInstall": false
+    },
+    {
+      "Name": "profiles/end-of-period-mini",
+      "DeviceType": 1,
+      "Readonly": true,
+      "DontAutoSwitchWhenInstalled": true,
+      "AutoInstall": false
+    },
+    {
+      "Name": "profiles/end-of-period-xl",
+      "DeviceType": 2,
+      "Readonly": true,
+      "DontAutoSwitchWhenInstalled": true,
+      "AutoInstall": false
+    },
+    {
+      "Name": "profiles/end-of-period-mobile",
+      "DeviceType": 3,
+      "Readonly": true,
+      "DontAutoSwitchWhenInstalled": true,
+      "AutoInstall": false
+    },
+    {
+      "Name": "profiles/end-of-period-plus",
+      "DeviceType": 7,
+      "Readonly": true,
+      "DontAutoSwitchWhenInstalled": true,
+      "AutoInstall": false
+    },
+    {
+      "Name": "profiles/end-of-period-neo",
+      "DeviceType": 9,
+      "Readonly": true,
+      "DontAutoSwitchWhenInstalled": true,
+      "AutoInstall": false
+    },
+    {
+      "Name": "profiles/end-of-period-studio",
+      "DeviceType": 10,
+      "Readonly": true,
+      "DontAutoSwitchWhenInstalled": true,
+      "AutoInstall": false
+    },
+    {
+      "Name": "profiles/end-of-period-virtual",
+      "DeviceType": 11,
+      "Readonly": true,
+      "DontAutoSwitchWhenInstalled": true,
+      "AutoInstall": false
+    },
+    {
+      "Name": "profiles/end-of-period-plus-xl",
+      "DeviceType": 13,
+      "Readonly": true,
+      "DontAutoSwitchWhenInstalled": true,
+      "AutoInstall": false
+    },
+    {
+      "Name": "profiles/period-end-timeout-stream-deck",
+      "DeviceType": 0,
+      "Readonly": true,
+      "DontAutoSwitchWhenInstalled": true,
+      "AutoInstall": false
+    },
+    {
+      "Name": "profiles/period-end-timeout-mini",
+      "DeviceType": 1,
+      "Readonly": true,
+      "DontAutoSwitchWhenInstalled": true,
+      "AutoInstall": false
+    },
+    {
+      "Name": "profiles/period-end-timeout-xl",
+      "DeviceType": 2,
+      "Readonly": true,
+      "DontAutoSwitchWhenInstalled": true,
+      "AutoInstall": false
+    },
+    {
+      "Name": "profiles/period-end-timeout-mobile",
+      "DeviceType": 3,
+      "Readonly": true,
+      "DontAutoSwitchWhenInstalled": true,
+      "AutoInstall": false
+    },
+    {
+      "Name": "profiles/period-end-timeout-plus",
+      "DeviceType": 7,
+      "Readonly": true,
+      "DontAutoSwitchWhenInstalled": true,
+      "AutoInstall": false
+    },
+    {
+      "Name": "profiles/period-end-timeout-neo",
+      "DeviceType": 9,
+      "Readonly": true,
+      "DontAutoSwitchWhenInstalled": true,
+      "AutoInstall": false
+    },
+    {
+      "Name": "profiles/period-end-timeout-studio",
+      "DeviceType": 10,
+      "Readonly": true,
+      "DontAutoSwitchWhenInstalled": true,
+      "AutoInstall": false
+    },
+    {
+      "Name": "profiles/period-end-timeout-virtual",
+      "DeviceType": 11,
+      "Readonly": true,
+      "DontAutoSwitchWhenInstalled": true,
+      "AutoInstall": false
+    },
+    {
+      "Name": "profiles/period-end-timeout-plus-xl",
       "DeviceType": 13,
       "Readonly": true,
       "DontAutoSwitchWhenInstalled": true,

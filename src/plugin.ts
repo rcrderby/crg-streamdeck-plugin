@@ -13,6 +13,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { CrgClient, describeError } from './crg/client.ts';
 import { OPERATOR_PREFIX, STREAM_DECK_OPERATOR, operatorNames, replaceOnUndo } from './crg/operators.ts';
 import { OperatorChoice } from './operator-choice.ts';
+import { PeriodEndSeconds } from './period-end-seconds.ts';
 import { KeepAwake } from './system/keep-awake.ts';
 import { keyActions } from './actions/registry.ts';
 import { RenderScheduler } from './render/scheduler.ts';
@@ -48,7 +49,8 @@ const context: PluginContext = {
     connect: () => settings.setStopped(false),
     disconnect: () => settings.setStopped(true)
   },
-  operator: new OperatorChoice()
+  operator: new OperatorChoice(),
+  periodEndSeconds: new PeriodEndSeconds()
 };
 
 const settings = new PluginSettings({

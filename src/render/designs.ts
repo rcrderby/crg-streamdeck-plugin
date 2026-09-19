@@ -772,26 +772,143 @@ const AUTOMATION_LABELS: Readonly<Record<AutomationSetting, readonly string[]>> 
   endTeamTimeouts: ['Auto End', 'Team', 'Timeouts']
 };
 
-/**
- * Auto End Jams or Auto End Team Timeouts: the setting's name, with the top bar active while it is on.
- *
- * A three line name is set smaller and closer, so it stays clear of the bar.
- */
-export function automationToggleKey(setting: AutomationSetting, on: boolean): KeySpec {
-  const lines = AUTOMATION_LABELS[setting];
+/** A gray key's name, centered on the key; a three line name is set smaller and closer, so it stays clear of the bar. */
+function settingsName(lines: readonly string[], middle = 56): KeyText[] {
   const three = lines.length > 2;
   const gap = three ? 15 : 17;
+
+  return lines.map((text, index) => ({
+    text,
+    y: middle + (index - (lines.length - 1) / 2) * gap,
+    size: three ? 13.5 : 15,
+    weight: 'bold' as const
+  }));
+}
+
+/** Auto End Jams or Auto End Team Timeouts: the setting's name, with the top bar active while it is on. */
+export function automationToggleKey(setting: AutomationSetting, on: boolean): KeySpec {
+  return {
+    background: SETTINGS_BACKGROUND,
+    foreground: '#ffffff',
+    texts: settingsName(AUTOMATION_LABELS[setting]),
+    bar: { active: on }
+  };
+}
+
+/** A gray key that opens one of the plugin's pages. */
+function pageOpenerKey(lines: readonly string[]): KeySpec {
+  return { background: SETTINGS_BACKGROUND, foreground: '#ffffff', texts: settingsName(lines), opensPage: true };
+}
+
+/** End of Period: opens the page of end of period controls. */
+export function endOfPeriodKey(): KeySpec {
+  return pageOpenerKey(['End of', 'Period']);
+}
+
+/** Timeout Before Period End: opens the page that starts a timeout with seconds left on the period clock. */
+export function periodEndTimeoutKey(): KeySpec {
+  return pageOpenerKey(['Timeout', 'Before', 'Period End']);
+}
+
+/** Where the official score stands: held back by CRG, ready to set, or set. */
+export type OfficialScoreState = 'waiting' | 'ready' | 'official';
+
+/**
+ * Official Score: set with a hold, and only one way.
+ *
+ * Its note reads UNOFFICIAL, or OFFICIAL with the top bar green once set,
+ * when a hold does nothing more. While CRG holds the score back the key
+ * is darkened and reads WAIT, with the time left when the plugin can
+ * tell it.
+ */
+export function officialScoreKey(state: OfficialScoreState, wait?: string, level = 0): KeySpec {
+  const official = state === 'official';
+  const note = official ? 'OFFICIAL' : state === 'ready' ? 'UNOFFICIAL' : wait === undefined ? 'WAIT' : `WAIT ${wait}`;
 
   return {
     background: SETTINGS_BACKGROUND,
     foreground: '#ffffff',
-    texts: lines.map((text, index) => ({
-      text,
-      y: 56 + (index - (lines.length - 1) / 2) * gap,
-      size: three ? 13.5 : 15,
-      weight: 'bold' as const
-    })),
+    texts: [
+      { text: 'Official', y: 42, size: 15, weight: 'bold' },
+      { text: 'Score', y: 59, size: 15, weight: 'bold' },
+      { text: note, y: 81, size: 11, weight: 'bold', ...(official ? {} : { opacity: 0.75 }) }
+    ],
+    bar: official ? { active: true } : { active: false, progress: level, label: 'HOLD' },
+    subdued: state === 'waiting'
+  };
+}
+
+/** Where overtime stands: not offered by CRG, offered, or under way. */
+export type OvertimeState = 'unavailable' | 'ready' | 'overtime';
+
+/**
+ * Start Overtime Lineup: started with a hold, and only one way.
+ *
+ * It is darkened until CRG offers an overtime lineup, and reads IN
+ * OVERTIME with the top bar green while the game is in overtime.
+ */
+export function overtimeLineupKey(state: OvertimeState, level = 0): KeySpec {
+  const overtime = state === 'overtime';
+
+  return {
+    background: SETTINGS_BACKGROUND,
+    foreground: '#ffffff',
+    texts: [
+      ...settingsName(['Start', 'Overtime', 'Lineup'], 51),
+      ...(overtime ? [{ text: 'IN OVERTIME', y: 85, size: 9, weight: 'bold' as const }] : [])
+    ],
+    bar: overtime ? { active: true } : { active: false, progress: level, label: 'HOLD' },
+    subdued: state === 'unavailable'
+  };
+}
+
+/** Show Clock During Final Score: a plain toggle, with the top bar active while it is on. */
+export function clockDuringFinalScoreKey(on: boolean): KeySpec {
+  return {
+    background: SETTINGS_BACKGROUND,
+    foreground: '#ffffff',
+    texts: settingsName(['Show Clock', 'During', 'Final Score']),
     bar: { active: on }
+  };
+}
+
+/** The seconds the Timeout Before Period End page will leave on the period clock. It only shows. */
+export function periodEndSecondsKey(time: string): KeySpec {
+  return {
+    background: SETTINGS_BACKGROUND,
+    foreground: '#ffffff',
+    texts: [
+      { text: 'PERIOD CLOCK', y: 28, size: 10, weight: 'bold', opacity: 0.75 },
+      { text: time, y: 64, size: 30 },
+      { text: 'AT TIMEOUT', y: 84, size: 9, weight: 'bold', opacity: 0.75 }
+    ],
+    informational: true
+  };
+}
+
+/** +1 or −1 on the Timeout Before Period End page, darkened when it cannot go lower. */
+export function secondsStepKey(up: boolean, available = true): KeySpec {
+  return {
+    background: SETTINGS_BACKGROUND,
+    foreground: '#ffffff',
+    texts: [
+      { text: up ? '+1' : '\u22121', y: 60, size: 34, weight: 'bold' },
+      { text: 'SECOND', y: 82, size: 10, weight: 'bold', opacity: 0.75 }
+    ],
+    subdued: !available
+  };
+}
+
+/** Start Timeout on the Timeout Before Period End page: timeout red, with HOLD in the top bar. */
+export function startPeriodEndTimeoutKey(level = 0): KeySpec {
+  return {
+    background: TIMEOUT_RED,
+    foreground: '#ffffff',
+    texts: [
+      { text: 'Start', y: 48, size: 17, weight: 'bold' },
+      { text: 'Timeout', y: 68, size: 17, weight: 'bold' }
+    ],
+    bar: { active: false, progress: level, label: 'HOLD' }
   };
 }
 

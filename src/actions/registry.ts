@@ -15,6 +15,14 @@ import { AutoEndJams, AutoEndTeamTimeouts, Automation } from './automation.ts';
 import { AddTrip, RemoveTrip, Score, TripPointsDown, TripPointsUp } from './scoring.ts';
 import { Back, ConnectionToggle } from './connection-page.ts';
 import { Clock } from './clock.ts';
+import {
+  ClockDuringFinalScore,
+  EndOfPeriod,
+  OfficialScore,
+  OvertimeLineup,
+  PeriodEndTimeout
+} from './end-of-period.ts';
+import { SecondsAtTimeout, SecondsDown, SecondsUp, StartPeriodEndTimeout } from './period-end-timeout.ts';
 import { Connection } from './connection.ts';
 import { Injury, Lead, LostLead, NoInitial, NoPivot, StarPass } from './team-flags.ts';
 import { JamControl } from './jam-control.ts';
@@ -36,6 +44,7 @@ export function keyActions(context: PluginContext): SingletonAction<never>[] {
     named(`${UUID}.connection`, new Connection(context)),
     named(`${UUID}.automation`, new Automation(context)),
     named(`${UUID}.jrda-options`, new JrdaOptions(context)),
+    named(`${UUID}.end-of-period`, new EndOfPeriod(context)),
     named(`${UUID}.jam-control`, new JamControl(context)),
     named(`${UUID}.timeout`, new Timeout(context)),
     named(`${UUID}.official-timeout`, new OfficialTimeout(context)),
@@ -63,6 +72,14 @@ export function keyActions(context: PluginContext): SingletonAction<never>[] {
     named(`${UUID}.replace-confirm`, new ReplaceConfirm(context)),
     named(`${UUID}.replace-choice`, new ReplaceChoice(context)),
     named(`${UUID}.auto-end-jams`, new AutoEndJams(context)),
-    named(`${UUID}.auto-end-team-timeouts`, new AutoEndTeamTimeouts(context))
+    named(`${UUID}.auto-end-team-timeouts`, new AutoEndTeamTimeouts(context)),
+    named(`${UUID}.official-score`, new OfficialScore(context)),
+    named(`${UUID}.period-end-timeout`, new PeriodEndTimeout(context)),
+    named(`${UUID}.overtime-lineup`, new OvertimeLineup(context)),
+    named(`${UUID}.clock-during-final-score`, new ClockDuringFinalScore(context)),
+    named(`${UUID}.period-end-seconds`, new SecondsAtTimeout(context)),
+    named(`${UUID}.period-end-seconds-down`, new SecondsDown(context)),
+    named(`${UUID}.period-end-seconds-up`, new SecondsUp(context)),
+    named(`${UUID}.start-period-end-timeout`, new StartPeriodEndTimeout(context))
   ];
 }

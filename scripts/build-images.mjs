@@ -169,6 +169,11 @@ const SHEET = [
         ]
       },
       {
+        name: 'End of Period',
+        slugs: ['end-of-period'],
+        keys: [['Opens a page', d.endOfPeriodKey()]]
+      },
+      {
         name: 'Jam Control',
         slugs: ['jam-control'],
         keys: [
@@ -420,6 +425,34 @@ const SHEET = [
           ['Off', d.automationToggleKey('endTeamTimeouts', false)],
           ['On', d.automationToggleKey('endTeamTimeouts', true)]
         ]
+      },
+      {
+        name: 'End of Period page',
+        slugs: ['official-score', 'period-end-timeout', 'overtime-lineup', 'clock-during-final-score'],
+        keys: [
+          ['Held back, with the wait', d.officialScoreKey('waiting', '0:18')],
+          ['Ready', d.officialScoreKey('ready')],
+          ['Pressed', d.officialScoreKey('ready', undefined, 0.6)],
+          ['Official', d.officialScoreKey('official')],
+          ['Opens a page', d.periodEndTimeoutKey()],
+          ['Overtime not allowed', d.overtimeLineupKey('unavailable')],
+          ['Overtime allowed', d.overtimeLineupKey('ready')],
+          ['In overtime', d.overtimeLineupKey('overtime')],
+          ['Off', d.clockDuringFinalScoreKey(false)],
+          ['On', d.clockDuringFinalScoreKey(true)]
+        ]
+      },
+      {
+        name: 'Timeout Before Period End page',
+        slugs: ['period-end-seconds', 'period-end-seconds-down', 'period-end-seconds-up', 'start-period-end-timeout'],
+        keys: [
+          ['Seconds at timeout', d.periodEndSecondsKey('0:01')],
+          ['At 0:00', d.secondsStepKey(false, false)],
+          ['Minus 1 second', d.secondsStepKey(false)],
+          ['Plus 1 second', d.secondsStepKey(true)],
+          ['Start Timeout', d.startPeriodEndTimeoutKey()],
+          ['Pressed', d.startPeriodEndTimeoutKey(0.6)]
+        ]
       }
     ]
   }
@@ -452,6 +485,20 @@ const PAGES = [
   {
     name: 'The Automation page',
     rows: [[d.backKey(), d.automationToggleKey('endJams', false), d.automationToggleKey('endTeamTimeouts', true)]]
+  },
+  {
+    name: 'The End of Period page',
+    rows: [
+      [d.backKey(), d.officialScoreKey('ready'), d.periodEndTimeoutKey()],
+      [d.overtimeLineupKey('ready'), d.clockDuringFinalScoreKey(false), d.blankKey()]
+    ]
+  },
+  {
+    name: 'The Timeout Before Period End page',
+    rows: [
+      [d.backKey(), d.periodEndSecondsKey('0:01'), d.startPeriodEndTimeoutKey()],
+      [d.blankKey(), d.secondsStepKey(false), d.secondsStepKey(true)]
+    ]
   }
 ];
 
