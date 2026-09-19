@@ -90,6 +90,36 @@ describe('the Undo key', () => {
     assert.deepEqual(deck.switched, [{ deviceId: 'device-1', profile: 'profiles/undo-xl' }]);
   });
 
+  it('reopens the page with a plain press when CRG is already waiting', async () => {
+    deck.hold({ [REPLACE_SETTING]: true, [label('Replaced')]: 'Start Jam', [label('Undo')]: 'No Action' });
+    deck.draw();
+
+    await deck.press(keyAction, key);
+
+    assert.deepEqual(deck.written, []);
+    assert.deepEqual(deck.switched, [{ deviceId: 'device-1', profile: 'profiles/undo-xl' }]);
+  });
+
+  it('drops HOLD and carries the page tab while CRG is waiting', () => {
+    deck.hold({ [REPLACE_SETTING]: true, [label('Replaced')]: 'Start Jam', [label('Undo')]: 'No Action' });
+    deck.draw();
+
+    const svg = Buffer.from((key.image ?? '').split(',')[1] ?? '', 'base64').toString('utf8');
+
+    assert.doesNotMatch(svg, />HOLD</);
+    assert.match(svg, /stroke-linecap="round" stroke-linejoin="round"/, 'the page tab’s chevron');
+  });
+
+  it('still needs a hold when CRG is not waiting', async () => {
+    deck.hold({ [REPLACE_SETTING]: true });
+    deck.draw();
+
+    await deck.press(keyAction, key);
+
+    assert.deepEqual(deck.written, []);
+    assert.deepEqual(deck.switched, []);
+  });
+
   it('only opens the page when CRG is already waiting, so the deck answers nothing by itself', async () => {
     deck.hold({ [REPLACE_SETTING]: true, [label('Replaced')]: 'Start Jam' });
     deck.draw();
