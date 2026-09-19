@@ -151,29 +151,6 @@ const SHEET = [
         ]
       },
       {
-        name: 'Automation',
-        slugs: ['automation'],
-        keys: [['Opens a page', d.automationKey()]]
-      },
-      {
-        name: 'JRDA Options',
-        slugs: ['jrda-options'],
-        keys: [
-          ['Continuation not available', d.continuationKey(undefined, false, false)],
-          ['Continuation available', d.continuationKey('1:50', false, true)],
-          ['Pressed', d.continuationKey('1:50', false, true, 0.6)],
-          ['Continuation upcoming', d.continuationKey('1:50', true, true)],
-          ['Sudden scoring, not in ruleset', d.suddenScoringKey('off')],
-          ['Sudden scoring, not active', d.suddenScoringKey('allowed')],
-          ['Sudden scoring, active', d.suddenScoringKey('active')]
-        ]
-      },
-      {
-        name: 'End of Period Controls',
-        slugs: ['end-of-period'],
-        keys: [['Opens a page', d.endOfPeriodKey()]]
-      },
-      {
         name: 'Jam Control',
         slugs: ['jam-control'],
         keys: [
@@ -251,6 +228,29 @@ const SHEET = [
           ['Pressed', d.undoKey(0.6, false)],
           ['Replace waiting, press to reopen', d.undoKey(0, true)]
         ]
+      },
+      {
+        name: 'Automation',
+        slugs: ['automation'],
+        keys: [['Opens a page', d.automationKey()]]
+      },
+      {
+        name: 'JRDA Options',
+        slugs: ['jrda-options'],
+        keys: [
+          ['Continuation not available', d.continuationKey(undefined, false, false)],
+          ['Continuation available', d.continuationKey('1:50', false, true)],
+          ['Pressed', d.continuationKey('1:50', false, true, 0.6)],
+          ['Continuation upcoming', d.continuationKey('1:50', true, true)],
+          ['Sudden scoring, not in ruleset', d.suddenScoringKey('off')],
+          ['Sudden scoring, not active', d.suddenScoringKey('allowed')],
+          ['Sudden scoring, active', d.suddenScoringKey('active')]
+        ]
+      },
+      {
+        name: 'End of Period Controls',
+        slugs: ['end-of-period'],
+        keys: [['Opens a page', d.endOfPeriodKey()]]
       }
     ]
   },
