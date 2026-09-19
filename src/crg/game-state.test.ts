@@ -4,6 +4,7 @@ import { describe, it } from 'node:test';
 import {
   activeClock,
   currentTripNumber,
+  immediateScoring,
   jamControlClock,
   lineupWarning,
   replaceChoices,
@@ -311,5 +312,33 @@ describe('jamControlClock', () => {
   it('shows no clock at all when the one it wants is stopped', () => {
     assert.equal(jamControlClock(store({}), false), undefined);
     assert.equal(jamControlClock(store({}), true), undefined);
+  });
+});
+
+describe('immediateScoring', () => {
+  const jams = {
+    [`${G}.Period(1).SuddenScoring`]: false,
+    [`${G}.Period(1).Jam(9).Id`]: 'last-of-1',
+    [`${G}.Period(1).Jam(9).Overtime`]: false,
+    [`${G}.Period(2).SuddenScoring`]: true,
+    [`${G}.Period(2).Jam(1).Id`]: 'first-of-2',
+    [`${G}.Period(2).Jam(1).Overtime`]: false
+  };
+
+  it('reads the period of the jam the team’s flags belong to, not the current one', () => {
+    const between = store({
+      ...jams,
+      [`${G}.CurrentPeriodNumber`]: 2,
+      [`${G}.Team(1).RunningOrEndedTeamJam`]: 'last-of-1_1'
+    });
+    const running = store({ ...jams, [`${G}.Team(1).RunningOrEndedTeamJam`]: 'first-of-2_1' });
+
+    assert.equal(immediateScoring(between, 1), false);
+    assert.equal(immediateScoring(running, 1), true);
+  });
+
+  it('reads false before CRG names the jam, or for a jam it has not sent', () => {
+    assert.equal(immediateScoring(store(jams), 1), false);
+    assert.equal(immediateScoring(store({ ...jams, [`${G}.Team(2).RunningOrEndedTeamJam`]: 'gone_2' }), 2), false);
   });
 });

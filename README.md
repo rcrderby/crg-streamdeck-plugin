@@ -189,8 +189,8 @@ Buttons that control one team take a `Team` setting, and display that team's nam
 
 | Action | Description |
 | ------ | ----------- |
-| `Lead` | Shows and sets whether a team's jammer is lead. |
-| `Lost Lead` | Shows and sets whether a team's jammer has lost lead.  Requires a one-second hold. |
+| `Lead` | Shows and sets whether a team's jammer is lead.  Disabled during overtime and sudden scoring jams, which have no lead jammer. |
+| `Lost Lead` | Shows and sets whether a team's jammer has lost lead.  Requires a one-second hold.  Disabled during overtime and sudden scoring jams, which have no lead jammer. |
 | `Star Pass` | Shows and sets whether the team has passed the star.  CRG disables the `Star Pass` button for a team when `No Pivot` is active. |
 | `No Pivot` | Shows and sets whether the team has no pivot in the current jam. |
 | `NI` | Shows and sets whether the team's jammer is still on their initial trip. |

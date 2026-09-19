@@ -9,7 +9,8 @@
 
 import { type KeyAction, type KeyDownEvent } from '@elgato/streamdeck';
 
-import { team } from '../crg/paths.ts';
+import { immediateScoring } from '../crg/game-state.ts';
+import { JAMS, PERIOD_SUDDEN_SCORING, type TeamNumber, team } from '../crg/paths.ts';
 import { type KeySpec } from '../render/key.ts';
 import { injuryKey, jammerKey, lostLeadKey, noInitialKey } from '../render/designs.ts';
 import { type TeamTheme } from '../render/theme.ts';
@@ -18,6 +19,9 @@ import { TeamKeyAction, type TeamSettings, teamOf, teamPaths, themeOf } from './
 
 /** The CRG field the Lost Lead key reads and flips. */
 const LOST = 'Lost';
+
+/** What tells whether CRG keeps lead for the jam a team's flags belong to. */
+const LEAD_RULE_PATHS = [...Object.values(JAMS), PERIOD_SUDDEN_SCORING];
 
 abstract class TeamFlagAction extends TeamKeyAction {
   /** The CRG field this key reads and flips. */
@@ -42,13 +46,33 @@ abstract class TeamFlagAction extends TeamKeyAction {
   }
 }
 
+/** Lead is darkened, and does nothing, in a jam where CRG keeps no lead. */
 export class Lead extends TeamFlagAction {
   protected override get field(): string {
     return 'Lead';
   }
 
+  protected override watchedPaths(): readonly string[] {
+    return [...this.teamPaths('Lead', 'RunningOrEndedTeamJam'), ...LEAD_RULE_PATHS];
+  }
+
+  protected override describe(settings: TeamSettings): KeySpec {
+    return {
+      ...super.describe(settings),
+      subdued: immediateScoring(this.context.client.state, this.teamOf(settings))
+    };
+  }
+
   protected override draw(theme: TeamTheme, active: boolean): KeySpec {
     return jammerKey(theme, 'lead', active);
+  }
+
+  override onKeyDown(event: KeyDownEvent<TeamSettings>): void {
+    if (immediateScoring(this.context.client.state, this.teamOf(event.payload.settings))) {
+      return;
+    }
+
+    super.onKeyDown(event);
   }
 }
 
@@ -57,21 +81,29 @@ export class Lead extends TeamFlagAction {
  *
  * Its top bar fills toward the state the hold will leave the key in,
  * rather than a corner dial, which would compete with whatever color
- * the team brings.
+ * the team brings. Like Lead, it is darkened and cannot be held in a jam
+ * where CRG keeps no lead.
  */
 export class LostLead extends HoldKeyAction<TeamSettings> {
   protected override watchedPaths(): readonly string[] {
-    return teamPaths(LOST);
+    return [...teamPaths(LOST, 'RunningOrEndedTeamJam'), ...LEAD_RULE_PATHS];
+  }
+
+  protected override canHold(settings: TeamSettings): boolean {
+    return !this.#refused(teamOf(settings));
   }
 
   protected override describe(settings: TeamSettings, actionId: string): KeySpec {
     const level = this.holdDone(actionId) ? 0 : this.holdLevel(actionId);
 
-    return lostLeadKey(
-      themeOf(this.context.client.state, settings),
-      this.shownValue(actionId, this.#lost(settings)),
-      level
-    );
+    return {
+      ...lostLeadKey(
+        themeOf(this.context.client.state, settings),
+        this.shownValue(actionId, this.#lost(settings)),
+        level
+      ),
+      subdued: this.#refused(teamOf(settings))
+    };
   }
 
   /** Sets the flag, and shows the value set until CRG sends it back. */
@@ -84,6 +116,10 @@ export class LostLead extends HoldKeyAction<TeamSettings> {
 
   #lost(settings: TeamSettings): boolean {
     return this.context.client.state.getBoolean(team(teamOf(settings), LOST));
+  }
+
+  #refused(number: TeamNumber): boolean {
+    return immediateScoring(this.context.client.state, number);
   }
 }
 
