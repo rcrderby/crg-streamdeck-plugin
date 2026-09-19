@@ -26,6 +26,9 @@
         "'Sudden Scoring' is activated automatically by the ruleset, so this button is informational only."
       ]
     },
+    'com.rcrderby.crg-streamdeck.end-of-period': {
+      summary: 'Opens a page of end of period controls.'
+    },
     'com.rcrderby.crg-streamdeck.jam-control': {
       summary: "Changes between 'Start Jam', 'Stop Jam', and 'End Timeout', based on the game state."
     },
@@ -111,7 +114,10 @@
     },
     'com.rcrderby.crg-streamdeck.back': {
       summary: 'Returns to your layout.',
-      details: ['Part of each page of buttons that the plugin opens.']
+      details: [
+        'Part of each page of buttons that the plugin opens.',
+        'On the Timeout Before Period End page, returns to the End of Period Controls page.'
+      ]
     },
     'com.rcrderby.crg-streamdeck.connection-toggle': {
       summary: 'Connects to or disconnects from CRG.',
@@ -141,6 +147,54 @@
       details: [
         'Part of the page that the Automation button opens.',
         'Changes the setting for every device connected to CRG.'
+      ]
+    },
+    'com.rcrderby.crg-streamdeck.official-score': {
+      summary: 'Makes the score official.',
+      details: [
+        'Part of the page that the End of Period Controls button opens.',
+        'Requires a 1-second hold.',
+        'Disabled if CRG delays the official score (EnforceTimeToOr).',
+        'Displays an estimate of the remaining wait time.'
+      ]
+    },
+    'com.rcrderby.crg-streamdeck.period-end-timeout': {
+      summary: 'Opens a page to insert a timeout before the end of a period.',
+      details: [
+        'Part of the page that the End of Period Controls button opens.',
+        'Sets the seconds remaining on the period clock.'
+      ]
+    },
+    'com.rcrderby.crg-streamdeck.overtime-lineup': {
+      summary: 'Starts the overtime lineup clock.',
+      details: [
+        'Part of the page that the End of Period Controls button opens.',
+        'Requires a 1-second hold.',
+        'Disabled until CRG allows overtime.'
+      ]
+    },
+    'com.rcrderby.crg-streamdeck.clock-during-final-score': {
+      summary: "Turns CRG's 'Show Clock During Final Score' setting on or off.",
+      details: ['Part of the page that the End of Period Controls button opens.']
+    },
+    'com.rcrderby.crg-streamdeck.period-end-seconds': {
+      summary: 'Shows the time the period clock will be set to when the timeout starts.',
+      details: ['Part of the page that the Timeout Before Period End button opens.', 'Informational only.']
+    },
+    'com.rcrderby.crg-streamdeck.period-end-seconds-down': {
+      summary: 'Removes 1 second from the time the period clock will be set to.',
+      details: ['Part of the page that the Timeout Before Period End button opens.']
+    },
+    'com.rcrderby.crg-streamdeck.period-end-seconds-up': {
+      summary: 'Adds 1 second to the time the period clock will be set to.',
+      details: ['Part of the page that the Timeout Before Period End button opens.']
+    },
+    'com.rcrderby.crg-streamdeck.start-period-end-timeout': {
+      summary: 'Starts an untyped timeout and sets the period clock to the chosen time.',
+      details: [
+        'Part of the page that the Timeout Before Period End button opens.',
+        'Requires a 1-second hold.',
+        'Returns to your layout afterward.'
       ]
     }
   };

@@ -16,7 +16,15 @@ const manifest = JSON.parse(readFileSync(new URL('manifest.json', PLUGIN), 'utf8
 const PAGE_KEYS: Readonly<Record<string, readonly string[]>> = {
   connection: ['back', 'connection-toggle'],
   undo: ['replace-info', 'replace-confirm', 'replace-choice', 'back'],
-  automation: ['back', 'auto-end-jams', 'auto-end-team-timeouts']
+  automation: ['back', 'auto-end-jams', 'auto-end-team-timeouts'],
+  'end-of-period': ['back', 'official-score', 'period-end-timeout', 'overtime-lineup', 'clock-during-final-score'],
+  'period-end-timeout': [
+    'back',
+    'period-end-seconds',
+    'start-period-end-timeout',
+    'period-end-seconds-down',
+    'period-end-seconds-up'
+  ]
 };
 
 type Named = { Name?: string | undefined };
@@ -51,7 +59,7 @@ describe('pages', () => {
   it('each hold the page’s keys', () => {
     for (const profile of manifest.Profiles ?? []) {
       const bytes = readFileSync(new URL(`${profile.Name}.streamDeckProfile`, PLUGIN));
-      const page = profile.Name.replace(/^profiles\//, '').split('-')[0] ?? '';
+      const page = PAGES.find((candidate) => profile.Name.startsWith(`profiles/${candidate}-`)) ?? '';
 
       assert.equal(bytes.subarray(0, 4).toString('hex'), '504b0304', profile.Name);
 
@@ -59,6 +67,10 @@ describe('pages', () => {
         assert.ok(bytes.includes(`"com.rcrderby.crg-streamdeck.${key}"`), `${profile.Name}: ${key}`);
       }
     }
+  });
+
+  it('cover every page the plugin ships', () => {
+    assert.deepEqual(Object.keys(PAGE_KEYS).sort(), [...PAGES].sort());
   });
 
   it('use keys hidden from the actions list', () => {

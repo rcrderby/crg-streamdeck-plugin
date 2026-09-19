@@ -12,6 +12,7 @@ import type { JsonObject } from '@elgato/utils';
 
 import { CrgClient, type ConnectionStatus, type SetFlag } from '../crg/client.ts';
 import { OperatorChoice } from '../operator-choice.ts';
+import { PeriodEndSeconds } from '../period-end-seconds.ts';
 import { RenderScheduler } from '../render/scheduler.ts';
 import { type StateValue } from '../crg/state.ts';
 import { type PluginContext } from '../context.ts';
@@ -101,6 +102,7 @@ export class FakeDeck {
   readonly client = new OfflineScoreboard();
   readonly scheduler = new RenderScheduler();
   readonly operator = new OperatorChoice();
+  readonly periodEndSeconds = new PeriodEndSeconds();
   readonly switched: Switched[] = [];
   readonly connection = {
     connect: (): Promise<void> => Promise.resolve(),
@@ -123,7 +125,13 @@ export class FakeDeck {
   }
 
   get context(): PluginContext {
-    return { client: this.client, scheduler: this.scheduler, connection: this.connection, operator: this.operator };
+    return {
+      client: this.client,
+      scheduler: this.scheduler,
+      connection: this.connection,
+      operator: this.operator,
+      periodEndSeconds: this.periodEndSeconds
+    };
   }
 
   /** What CRG holds, written straight into the store as a delta would. */

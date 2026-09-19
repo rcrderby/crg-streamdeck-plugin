@@ -65,6 +65,26 @@ const PAGES = {
       '1,0': { slug: 'auto-end-jams', name: 'Auto End Jams' },
       '2,0': { slug: 'auto-end-team-timeouts', name: 'Auto End Team Timeouts' }
     }
+  },
+  'end-of-period': {
+    title: 'CRG End of Period Controls',
+    keys: {
+      '0,0': { slug: 'back', name: 'Back' },
+      '1,0': { slug: 'official-score', name: 'Official Score' },
+      '2,0': { slug: 'period-end-timeout', name: 'Timeout Before Period End' },
+      '0,1': { slug: 'overtime-lineup', name: 'Start Overtime Lineup' },
+      '1,1': { slug: 'clock-during-final-score', name: 'Show Clock During Final Score' }
+    }
+  },
+  'period-end-timeout': {
+    title: 'CRG Timeout Before Period End',
+    keys: {
+      '0,0': { slug: 'back', name: 'Back', settings: { page: 'end-of-period' } },
+      '1,0': { slug: 'period-end-seconds', name: 'Seconds at Timeout' },
+      '2,0': { slug: 'start-period-end-timeout', name: 'Start Timeout' },
+      '1,1': { slug: 'period-end-seconds-down', name: 'Minus 1 Second' },
+      '2,1': { slug: 'period-end-seconds-up', name: 'Plus 1 Second' }
+    }
   }
 };
 

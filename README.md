@@ -175,6 +175,7 @@ Buttons that control one team take a `Team` setting, and display that team's nam
 | `CRG Connection` | Shows whether the plugin is connected to CRG: connected, connecting, offline, not allowed to write, or disconnected on purpose.  Pressing it opens the connection page.  This button holds the `CRG URL` and `CRG Operator` settings for every CRG button. |
 | `Automation` | Opens the `Automation` page, where `Auto End Jams` and `Auto End Team Timeouts` enable or disable those CRG settings. |
 | `JRDA Options` | Displays or sets a JRDA rule state, chosen with its `Function` setting.  `Continuation Upcoming` displays a continued jam's remaining time, and sets CRG's `Continuation Upcoming` after a one-second hold.  It is darkened unless the ruleset allows continuations and `INJ` is set.  `Sudden Scoring` is informational, and displays `ENABLED` or `DISABLED`.  It is darkened when the ruleset does not allow sudden scoring. |
+| `End of Period Controls` | Opens the `End of Period Controls` page. |
 | `Jam Control` | Starts a jam, stops a jam, or ends a timeout, and shows the relevant clock and jam data.  It turns orange five seconds before a jam should start, and pulses if the lineup clock goes past the prescribed time in the active CRG ruleset.  It shows a faded `Start Jam` and takes no action while CRG will not start or stop a jam, such as after the official score is set. |
 | `Timeout` | Starts an untyped timeout.  Its activity indicator turns green while a timeout runs without an assigned type. |
 | `Official Timeout` | Starts an official timeout.  Its activity indicator is green while an official timeout is running. |
@@ -244,13 +245,15 @@ Buttons that control one team take a `Team` setting, and display that team's nam
     <strong>Menu Button Pages</strong>
   </summary>
 
-The plugin includes three small pages of buttons and switches your Stream Deck to these menus as needed.  The first time a menu page opens on a Stream Deck, the Stream Deck software prompts the user to allow the page.
+The plugin includes five small pages of buttons and switches your Stream Deck to these menus as needed.  The first time a menu page opens on a Stream Deck, the Stream Deck software prompts the user to allow the page.
 
 | Page | Opens | Buttons |
 | ---- | ----- | ---- |
 | `Connection` | Pressing `CRG Connection` | Displays `Back`, and a button that shows the connection's state and allows manual connect and disconnect operations.  A Stream Deck that is manually disconnected remains in that state until it is connected again. |
 | `Undo` | Holding `Undo` with `Enable Replace on Undo` on | Displays buttons indicating the available CRG replace options and CRG's `No Action` button, which confirms the undo action.  Displays `Back`, which leaves the menu without answering CRG. |
 | `Automation` | Pressing `Automation` | Displays `Back`, `Auto End Jams`, and `Auto End Team Timeouts`.  Each button turns its CRG setting on or off with a press, and its activity indicator is green when the setting is on.  These are global CRG settings, so a change applies to every device connected to CRG. |
+| `End of Period Controls` | Pressing `End of Period Controls` | Displays `Back`, `Official Score`, `Timeout Before Period End`, `Start Overtime Lineup`, and `Show Clock During Final Score`.  `Official Score` requires a one-second hold, and displays `WAIT` with an estimated time if CRG delays the official score (`EnforceTimeToOr`).  `Start Overtime Lineup` requires a one-second hold, and is darkened until CRG allows overtime.  `Show Clock During Final Score` turns that CRG setting on or off. |
+| `Timeout Before Period End` | Pressing `Timeout Before Period End` on the `End of Period Controls` page | Displays `Back`, the time to leave on the period clock, `Start Timeout`, and buttons that remove or add one second.  The time starts at `0:01` each time the page opens.  A one-second hold of `Start Timeout` starts an untyped timeout, sets the period clock to the chosen time, and returns to your layout.  `Back` returns to the `End of Period Controls` page. |
 
 </details>
 
