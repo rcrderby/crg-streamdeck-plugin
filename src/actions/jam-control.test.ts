@@ -12,6 +12,11 @@ const NONE = '---';
 const TIMEOUT_RUNNING = { 'ScoreBoard.CurrentGame.Period(2).Timeout(7).Running': true };
 
 /** The words drawn on a key, read back out of the picture it holds. */
+/** The SVG a key was last drawn with, out of the data URI Stream Deck is sent. */
+function drawn(key: FakeKey): string {
+  return Buffer.from((key.image ?? '').split(',')[1] ?? '', 'base64').toString('utf8');
+}
+
 function words(key: FakeKey): string[] {
   const svg = Buffer.from((key.image ?? '').split(',')[1] ?? '', 'base64').toString('utf8');
 
@@ -256,6 +261,53 @@ describe('the Jam Control key', () => {
 
     // A key that pulses asks to be drawn again as soon as it is drawn.
     assert.equal(deck.scheduler.pending, 1, 'a lineup over its time should pulse');
+  });
+
+  it('turns red, and stays red without a pulse, when CRG says no jam is left in the period', () => {
+    deck.hold({
+      [label('Start')]: 'Start Jam',
+      [label('Stop')]: NONE,
+      [rule('Lineup.Duration')]: '0:30',
+      [game('NoMoreJam')]: true,
+      [clock('Lineup', 'Running')]: true,
+      [clock('Lineup', 'Direction')]: false,
+      [clock('Lineup', 'Time')]: 10_000
+    });
+    deck.draw();
+
+    assert.match(drawn(key), /fill="#dd3333"/);
+
+    deck.hold({ [clock('Lineup', 'Time')]: 32_000 });
+    deck.draw();
+
+    assert.match(drawn(key), /fill="#dd3333"/);
+    assert.equal(deck.scheduler.pending, 0, 'no jam is due, so nothing pulses');
+  });
+
+  it('runs an overtime lineup red, then gold, then pulses', () => {
+    deck.hold({
+      [label('Start')]: 'Start Jam',
+      [label('Stop')]: NONE,
+      [rule('Lineup.OvertimeDuration')]: '1:00',
+      [game('InOvertime')]: true,
+      [game('NoMoreJam')]: true,
+      [clock('Lineup', 'Running')]: true,
+      [clock('Lineup', 'Direction')]: false,
+      [clock('Lineup', 'Time')]: 20_000
+    });
+    deck.draw();
+
+    assert.match(drawn(key), /fill="#dd3333"/);
+
+    deck.hold({ [clock('Lineup', 'Time')]: 56_000 });
+    deck.draw();
+
+    assert.match(drawn(key), /fill="#a16207"/);
+
+    deck.hold({ [clock('Lineup', 'Time')]: 62_000 });
+    deck.draw();
+
+    assert.equal(deck.scheduler.pending, 1, 'an overtime lineup over its time should pulse');
   });
 
   it('stands still while the lineup is within its time', () => {
