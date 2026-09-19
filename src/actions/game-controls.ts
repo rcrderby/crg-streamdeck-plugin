@@ -7,7 +7,12 @@
  * since a stray press can undo something that matters.
  */
 
-import { type DidReceiveSettingsEvent, type KeyAction, type SendToPluginEvent } from '@elgato/streamdeck';
+import {
+  type DidReceiveSettingsEvent,
+  type KeyAction,
+  type KeyDownEvent,
+  type SendToPluginEvent
+} from '@elgato/streamdeck';
 import type { JsonObject, JsonValue } from '@elgato/utils';
 
 import { TIMEOUTS, game, isUnavailable, label } from '../crg/paths.ts';
@@ -87,9 +92,9 @@ function usesReplaceOnUndo(settings: UndoSettings): boolean {
  * Replace on Undo is CRG's setting, kept under the deck's own operator
  * profile, so the key's switch shows and changes what CRG holds. While
  * it is on, the hold undoes, asks CRG to wait for a replacement, and
- * opens the Undo page. When CRG is already waiting it only opens the
- * page. The key carries the top bar then, green while CRG waits. On a
- * model with no Undo page it simply undoes.
+ * opens the Undo page. While CRG is already waiting, a press reopens
+ * the page without a hold. The key carries the top bar then, green while
+ * CRG waits. On a model with no Undo page it simply undoes.
  */
 export class Undo extends HoldKeyAction<UndoSettings> {
   #unfollow: (() => void) | undefined;
@@ -184,6 +189,31 @@ export class Undo extends HoldKeyAction<UndoSettings> {
         void key.setSettings({ ...settings, replaceOnUndo: held });
       }
     }
+  }
+
+  /**
+   * Reopens the Undo page with a press while CRG is already waiting.
+   *
+   * The page only shows the choices CRG is waiting on, so reaching it
+   * again changes nothing in the game and needs no hold.
+   */
+  override async onKeyDown(event: KeyDownEvent<UndoSettings>): Promise<void> {
+    if (this.#reopens(event.action, event.payload.settings)) {
+      await openPage(event.action, 'undo');
+
+      return;
+    }
+
+    await super.onKeyDown(event);
+  }
+
+  /** True while CRG waits for a replacement and the model has an Undo page to show it on. */
+  #reopens(action: { device: { type: number } }, settings: UndoSettings): boolean {
+    return (
+      this.#replacing(settings) &&
+      replacePending(this.context.client.state) &&
+      pageProfile('undo', action.device.type) !== undefined
+    );
   }
 
   protected override async completeHold(action: KeyAction<UndoSettings>, settings: UndoSettings): Promise<void> {
