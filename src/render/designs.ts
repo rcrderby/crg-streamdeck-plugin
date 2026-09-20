@@ -16,6 +16,7 @@ import {
   ICON_REACH,
   TRIP_SIGN_RADIUS,
   backArrow,
+  hairlines,
   hazardStripes,
   holdDial,
   leadIcon,
@@ -677,13 +678,19 @@ export function blankKey(): KeySpec {
   return { background: '#000000' };
 }
 
-/** The dark gray of the keys that move between pages or change a setting, rather than act on the game. */
-const SETTINGS_BACKGROUND = '#27272a';
+export const PLUGIN_BACKGROUND = '#27272a';
+
+export const PLUGIN_EDGE = '#f97316';
+
+/** A key of the plugin's own: gray background, pinstripes, orange edge, and the key content. */
+function pluginKey(spec: KeySpec): KeySpec {
+  return { ...spec, background: PLUGIN_BACKGROUND, edge: PLUGIN_EDGE, shapes: [hairlines(), ...(spec.shapes ?? [])] };
+}
 
 /** Back, on every page the plugin opens. */
 export function backKey(): KeySpec {
   return {
-    background: SETTINGS_BACKGROUND,
+    background: PLUGIN_BACKGROUND,
     foreground: '#ffffff',
     shapes: [backArrow(50, 40, 18, '#ffffff')],
     texts: [{ text: 'Back', y: 80, size: 15, weight: 'bold' }]
@@ -737,16 +744,12 @@ export function connectionKey(status: ConnectionStatus, operator = ''): KeySpec 
 
 /** Automation: opens the page of CRG's automation settings. */
 export function automationKey(): KeySpec {
-  return {
-    background: SETTINGS_BACKGROUND,
+  return pluginKey({
     foreground: '#ffffff',
     texts: [{ text: 'Automation', y: 56, size: 15, weight: 'bold' }],
     opensPage: true
-  };
+  });
 }
-
-/** The dark neutral the JRDA keys stand on, since they speak for the game rather than a team. */
-const JRDA_BACKGROUND = '#26262b';
 
 /** Where sudden scoring stands: not in the ruleset, allowed but not reached, or under way this period. */
 export type SuddenScoring = 'off' | 'allowed' | 'active';
@@ -762,8 +765,7 @@ export type SuddenScoring = 'off' | 'allowed' | 'active';
 export function suddenScoringKey(state: SuddenScoring): KeySpec {
   const active = state === 'active';
 
-  return {
-    background: JRDA_BACKGROUND,
+  return pluginKey({
     foreground: '#ffffff',
     texts: [
       { text: 'Sudden', y: 40, size: 15, weight: 'bold' },
@@ -773,29 +775,31 @@ export function suddenScoringKey(state: SuddenScoring): KeySpec {
     bar: { active },
     informational: true,
     subdued: state === 'off'
-  };
+  });
 }
 
 /**
  * Continuation Upcoming: the time a continued jam would run, set with a hold.
  *
- * The time sits under a small CONTINUATION title, with JAM TIME REMAINING
- * beneath it and HOLD in the top bar. The key is darkened when conditions
- * for a continuation are not met.  Displays a dash when there is no time to show.
+ * The time sits under a small INJURY CONTINUATION title, on two lines
+ * since the phrase is half again as wide as the key at a readable size,
+ * with JAM TIME REMAINING beneath it and HOLD in the top bar. The key is
+ * darkened when conditions for a continuation are not met.  Displays a
+ * dash when there is no time to show.
  */
 export function continuationKey(time: string | undefined, on: boolean, available: boolean, level = 0): KeySpec {
-  return {
-    background: JRDA_BACKGROUND,
+  return pluginKey({
     foreground: '#ffffff',
     texts: [
-      { text: 'CONTINUATION', y: 26, size: 11, weight: 'bold', opacity: 0.75 },
-      { text: time ?? '—', y: 60, size: 30 },
-      { text: 'JAM TIME', y: 76, size: 9, weight: 'bold', opacity: 0.8 },
-      { text: 'REMAINING', y: 86, size: 9, weight: 'bold', opacity: 0.8 }
+      { text: 'INJURY', y: 20, size: 10, weight: 'bold', opacity: 0.75 },
+      { text: 'CONTINUATION', y: 31, size: 10, weight: 'bold', opacity: 0.75 },
+      { text: time ?? '—', y: 62, size: 28 },
+      { text: 'JAM TIME', y: 78, size: 9, weight: 'bold', opacity: 0.8 },
+      { text: 'REMAINING', y: 88, size: 9, weight: 'bold', opacity: 0.8 }
     ],
     bar: { active: on, progress: level, label: 'HOLD' },
     subdued: !available
-  };
+  });
 }
 
 /** The automation settings the Automation page can switch. */
@@ -821,17 +825,16 @@ function settingsName(lines: readonly string[], middle = 56): KeyText[] {
 
 /** Auto End Jams or Auto End Team Timeouts: the setting's name, with the top bar active while it is on. */
 export function automationToggleKey(setting: AutomationSetting, on: boolean): KeySpec {
-  return {
-    background: SETTINGS_BACKGROUND,
+  return pluginKey({
     foreground: '#ffffff',
     texts: settingsName(AUTOMATION_LABELS[setting]),
     bar: { active: on }
-  };
+  });
 }
 
-/** A gray key that opens one of the plugin's pages. */
+/** A key that opens one of the plugin's pages, on the plugin's own plum. */
 function pageOpenerKey(lines: readonly string[]): KeySpec {
-  return { background: SETTINGS_BACKGROUND, foreground: '#ffffff', texts: settingsName(lines), opensPage: true };
+  return pluginKey({ foreground: '#ffffff', texts: settingsName(lines), opensPage: true });
 }
 
 /** End of Period Controls: opens the page of end of period controls. */
@@ -865,8 +868,7 @@ export function officialScoreKey(state: OfficialScoreState, wait?: string, level
   const waiting = state === 'waiting';
   const note = official ? 'OFFICIAL' : state === 'ready' ? 'UNOFFICIAL' : wait === undefined ? 'WAIT' : `WAIT ${wait}`;
 
-  return {
-    background: SETTINGS_BACKGROUND,
+  return pluginKey({
     foreground: '#ffffff',
     texts: [
       { text: 'Official', y: 42, size: 15, weight: 'bold' },
@@ -879,7 +881,7 @@ export function officialScoreKey(state: OfficialScoreState, wait?: string, level
     ],
     bar: official ? { active: true } : { active: false, progress: level, label: 'HOLD' },
     subdued: waiting
-  };
+  });
 }
 
 /** Where overtime stands: not offered by CRG, offered, or under way. */
@@ -894,8 +896,7 @@ export type OvertimeState = 'unavailable' | 'ready' | 'overtime';
 export function overtimeLineupKey(state: OvertimeState, level = 0): KeySpec {
   const overtime = state === 'overtime';
 
-  return {
-    background: SETTINGS_BACKGROUND,
+  return pluginKey({
     foreground: '#ffffff',
     texts: [
       ...settingsName(['Start', 'Overtime', 'Lineup'], 51),
@@ -903,23 +904,21 @@ export function overtimeLineupKey(state: OvertimeState, level = 0): KeySpec {
     ],
     bar: overtime ? { active: true } : { active: false, progress: level, label: 'HOLD' },
     subdued: state === 'unavailable'
-  };
+  });
 }
 
 /** Show Clock During Final Score: a plain toggle, with the top bar active while it is on. */
 export function clockDuringFinalScoreKey(on: boolean): KeySpec {
-  return {
-    background: SETTINGS_BACKGROUND,
+  return pluginKey({
     foreground: '#ffffff',
     texts: settingsName(['Show Clock', 'During', 'Final Score']),
     bar: { active: on }
-  };
+  });
 }
 
 /** The seconds the Timeout Before Period End page will leave on the period clock. It only shows. */
 export function periodEndSecondsKey(time: string): KeySpec {
-  return {
-    background: SETTINGS_BACKGROUND,
+  return pluginKey({
     foreground: '#ffffff',
     texts: [
       { text: 'PERIOD CLOCK', y: 28, size: 10, weight: 'bold', opacity: 0.75 },
@@ -927,20 +926,19 @@ export function periodEndSecondsKey(time: string): KeySpec {
       { text: 'AT TIMEOUT', y: 84, size: 9, weight: 'bold', opacity: 0.75 }
     ],
     informational: true
-  };
+  });
 }
 
 /** +1 or −1 on the Timeout Before Period End page, darkened when it cannot go lower. */
 export function secondsStepKey(up: boolean, available = true): KeySpec {
-  return {
-    background: SETTINGS_BACKGROUND,
+  return pluginKey({
     foreground: '#ffffff',
     texts: [
       { text: up ? '+1' : '\u22121', y: 60, size: 34, weight: 'bold' },
       { text: 'SECOND', y: 82, size: 10, weight: 'bold', opacity: 0.75 }
     ],
     subdued: !available
-  };
+  });
 }
 
 /** Start Timeout on the Timeout Before Period End page: timeout red, with HOLD in the top bar. */
