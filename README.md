@@ -264,10 +264,17 @@ The plugin includes five small pages of buttons and switches your Stream Deck to
 
 CRG recognizes devices by their HTTP session, so the plugin fetches a session cookie before it connects and retains it.  Without a session cookie, CRG sees your Stream Deck as a new device on every restart.
 
-The Stream Deck software keeps the session cookie in the plugin settings, alongside the scoreboard that issued it.  This ensures that the plugin only offers a session cookie to the correct CRG instance.
+The plugin keeps the session cookie in a file of its own, alongside the scoreboard that issued it, so it only offers a session cookie to the CRG instance that issued it.  The file is readable only by your user account, and it is separate from the plugin settings, which every settings page in a plugin can read.  It lives in your account's application data folder:
+
+| Platform | Location |
+| -------- | -------- |
+| macOS | `~/Library/Application Support/com.rcrderby.crg-streamdeck/session.json` |
+| Windows | `%APPDATA%\com.rcrderby.crg-streamdeck\session.json` |
+
+Deleting the file makes CRG see your Stream Deck as a new device.  If you restrict write access for new devices that connect to your CRG instance, you will need to manually grant access in CRG's `devices` list.
 
 > [!WARNING]
-> The Stream Deck software stores plugin settings unencrypted on disk, and every settings page in a plugin can read them.  No protected store is available to a plugin, so treat the session cookie as readable by anything running as your user.  The plugin never writes the cookie to its log, and it includes its own copy of every library its settings pages use rather than loading code from the internet.
+> No protected store is available to a plugin, so treat the session cookie as readable by anything running as your user.  The plugin never writes the cookie to its log or to the plugin settings, and it includes its own copy of every library its settings pages use rather than loading code from the internet.
 
 </details>
 

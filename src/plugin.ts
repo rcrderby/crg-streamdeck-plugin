@@ -18,6 +18,7 @@ import { KeepAwake } from './system/keep-awake.ts';
 import { keyActions } from './actions/registry.ts';
 import { RenderScheduler } from './render/scheduler.ts';
 import { PluginSettings, type GlobalSettings } from './plugin-settings.ts';
+import { SessionFile } from './session-file.ts';
 import { isOnline } from './actions/key-action.ts';
 import { type PluginContext } from './context.ts';
 
@@ -55,6 +56,7 @@ const context: PluginContext = {
 
 const settings = new PluginSettings({
   store: streamDeck.settings,
+  session: new SessionFile(),
   client: context.client,
   operator: context.operator,
   warn: (message) => logger.warn(message)
@@ -170,6 +172,10 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const) {
 }
 
 await streamDeck.connect();
+
+// The session is read before the first connection, so the deck offers
+// CRG the identity it already has rather than asking for a new one.
+await settings.load();
 
 // The settings this returns also reach the listener above, which applies them.
 await streamDeck.settings.getGlobalSettings<GlobalSettings>();
