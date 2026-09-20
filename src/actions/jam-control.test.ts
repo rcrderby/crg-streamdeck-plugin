@@ -284,7 +284,7 @@ describe('the Jam Control key', () => {
     assert.equal(deck.scheduler.pending, 0, 'no jam is due, so nothing pulses');
   });
 
-  it('runs an overtime lineup red, then gold, then pulses', () => {
+  it('runs an overtime lineup red, then amber, then pulses', () => {
     deck.hold({
       [label('Start')]: 'Start Jam',
       [label('Stop')]: NONE,
@@ -302,7 +302,7 @@ describe('the Jam Control key', () => {
     deck.hold({ [clock('Lineup', 'Time')]: 56_000 });
     deck.draw();
 
-    assert.match(drawn(key), /fill="#a16207"/);
+    assert.match(drawn(key), /fill="#f59e0b"/);
 
     deck.hold({ [clock('Lineup', 'Time')]: 62_000 });
     deck.draw();

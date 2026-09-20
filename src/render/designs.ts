@@ -31,7 +31,7 @@ import {
   undoArrow,
   type ReviewMark
 } from './icons.ts';
-import { type TeamTheme, blend, panelColor, readableOpacity } from './theme.ts';
+import { type TeamTheme, blend, luminance, panelColor, readableOpacity } from './theme.ts';
 
 export const TIMEOUT_RED = '#b91c1c';
 
@@ -461,33 +461,38 @@ export const JAM_START = '#14532d';
 export const JAM_IDLE = '#26262b';
 
 /** What Start Jam turns once the lineup is nearly up. */
-export const JAM_LINEUP_DUE = '#9a3412';
+export const JAM_LINEUP_DUE = '#f59e0b';
 
 /** Start Jam through a lineup CRG shows red: no jam left in the period, or an overtime lineup. CRG's own red, a touch darker for white text. */
 export const JAM_LINEUP_RED = '#dd3333';
 
-/** What Start Jam turns once an overtime lineup is nearly up. */
-export const JAM_OVERTIME_DUE = '#a16207';
-
 /**
  * Start Jam as the lineup runs out.
  *
- * A regular lineup is green, then orange, then moves between them. With
+ * A regular lineup is green, then amber, then moves between them. With
  * no jam left in the period the key stays red, since no jam is due. An
- * overtime lineup is red, then gold, then moves between them.
+ * overtime lineup is red, then amber, then moves between them.
  */
 export function lineupBackground(warning: LineupWarning, phase = 0, kind: LineupKind = 'regular'): string {
   if (kind === 'noMoreJams') {
     return JAM_LINEUP_RED;
   }
 
-  const [base, due] = kind === 'overtime' ? [JAM_LINEUP_RED, JAM_OVERTIME_DUE] : [JAM_START, JAM_LINEUP_DUE];
+  const base = kind === 'overtime' ? JAM_LINEUP_RED : JAM_START;
 
   if (warning === 'none') {
     return base;
   }
 
-  return warning === 'due' ? due : blend(due, base, phase);
+  return warning === 'due' ? JAM_LINEUP_DUE : blend(JAM_LINEUP_DUE, base, phase);
+}
+
+/** How light a key has to be drawn before its words are set in the dark rather than in white. */
+const LIGHT_KEY = 0.35;
+
+/** The color a key's words are set in, which is whichever of the two reads on the key behind them. */
+function keyWords(background: string): string {
+  return luminance(background) > LIGHT_KEY ? '#0b0b0f' : '#ffffff';
 }
 
 /**
@@ -495,7 +500,9 @@ export function lineupBackground(warning: LineupWarning, phase = 0, kind: Lineup
  *
  * What a press does leads, since the key is a button before it is a
  * clock, and the clock's own name closes the key. With no clock running
- * the wording fills the key instead, as it does before a game.
+ * the wording fills the key instead, as it does before a game. A key
+ * drawn in a light color, such as the amber of a lineup warning, sets its
+ * words in the dark instead of in white.
  */
 export function jamControlKey(
   text: string,
@@ -505,6 +512,7 @@ export function jamControlKey(
   dimmed: boolean
 ): KeySpec {
   const opacity = dimmed ? 0.45 : 1;
+  const foreground = keyWords(background);
   const stacked = foot.length > 1;
 
   // Two lines start higher and leave the clock less room, so a long clock
@@ -524,7 +532,7 @@ export function jamControlKey(
 
     return {
       background,
-      foreground: '#ffffff',
+      foreground,
       texts: [
         ...lines.map((line, index) => ({
           text: line,
@@ -540,7 +548,7 @@ export function jamControlKey(
 
   return {
     background,
-    foreground: '#ffffff',
+    foreground,
     texts: [
       { text: text.toUpperCase(), y: 26, size: 13, weight: 'bold', opacity },
       { text: time, y: stacked ? 62 : 66, size: stacked ? 26 : 28, opacity },
@@ -588,7 +596,7 @@ export function undoKey(level = 0, waiting?: boolean): KeySpec {
       { text: 'Undo', y: 72, size: 14, weight: 'bold' },
       ...(waiting === true ? [] : [{ text: 'HOLD', y: 86, size: 10, weight: 'bold' as const, opacity: 0.8 }])
     ],
-    ...(carries ? { bar: { active: waiting, progress: level, fill: 'active' as const } } : {}),
+    ...(carries ? { bar: { active: waiting, progress: level } } : {}),
     ...(carries ? { opensPage: true } : {})
   };
 }
