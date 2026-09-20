@@ -54,6 +54,17 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
+      # Dependabot raises an advisory as a pull request; this fails the
+      # branch that still carries one, before it reaches a game
+      - name: Audit Dependencies
+        run: npm audit --audit-level=moderate
+
+      # Super Linter runs these rules too, but from a container without
+      # the packages the typed rules read, so the typed rules are enforced
+      # here, where the packages are installed
+      - name: Lint The Code
+        run: npm run lint
+
       - name: Check Types
         run: npm run typecheck
 
