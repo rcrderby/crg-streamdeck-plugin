@@ -3,6 +3,7 @@
 // https://eslint.org/docs/latest/use/configure/configuration-files
 
 import { defineConfig, globalIgnores } from 'eslint/config';
+import { join } from 'node:path';
 import eslintPluginJsonc from 'eslint-plugin-jsonc';
 import globals from 'globals';
 import js from '@eslint/js';
@@ -60,6 +61,44 @@ export default defineConfig([
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       eqeqeq: ['error', 'smart'],
       'no-console': 'error'
+    }
+  },
+
+  // Rules that need the compiler's types, which is what catches a promise
+  // nobody waits for. The project is named from this file's own folder, so
+  // the editor and Super Linter both find it wherever the checkout sits.
+  {
+    files: ['src/**/*.ts'],
+
+    plugins: {
+      '@typescript-eslint': tsPlugin
+    },
+
+    languageOptions: {
+      parser: tsParser,
+      parserOptions: {
+        project: './tsconfig.json',
+        tsconfigRootDir: join(import.meta.dirname, '..', '..')
+      }
+    },
+
+    rules: {
+      '@typescript-eslint/await-thenable': 'error',
+      '@typescript-eslint/no-misused-promises': 'error',
+      // The test runner's own describe and it return a promise nobody is
+      // meant to wait for, which is the one exception here
+      '@typescript-eslint/no-floating-promises': [
+        'error',
+        {
+          allowForKnownSafeCalls: [
+            {
+              from: 'package',
+              package: 'node:test',
+              name: ['after', 'afterEach', 'before', 'beforeEach', 'describe', 'it']
+            }
+          ]
+        }
+      ]
     }
   },
 

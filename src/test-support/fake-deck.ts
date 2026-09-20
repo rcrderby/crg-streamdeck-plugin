@@ -144,13 +144,19 @@ export class FakeDeck {
     return this.client.written;
   }
 
-  /** Places a key on the deck and tells the action it appeared. */
+  /**
+   * Places a key on the deck and tells the action it appeared.
+   *
+   * An action that answers these with a promise is not waited on, since
+   * the deck itself does not wait either. A test that needs the answer
+   * calls the handler itself.
+   */
   place<T extends JsonObject>(keyAction: SingletonAction<T>, settings: T = {} as T, deviceType = XL): FakeKey<T> {
     this.#keys += 1;
 
     const key = new FakeKey<T>(`key-${this.#keys}`, { id: 'device-1', type: deviceType });
 
-    keyAction.onWillAppear?.(event(key, settings));
+    void keyAction.onWillAppear?.(event(key, settings));
     this.scheduler.flush();
 
     return key;
@@ -158,12 +164,12 @@ export class FakeDeck {
 
   /** Takes a key off the deck, as changing profile does. */
   remove<T extends JsonObject>(keyAction: SingletonAction<T>, key: FakeKey<T>): void {
-    keyAction.onWillDisappear?.(event(key, {} as T));
+    void keyAction.onWillDisappear?.(event(key, {} as T));
   }
 
   /** Tells the action a key's settings changed, as the property inspector does. */
   resettle<T extends JsonObject>(keyAction: SingletonAction<T>, key: FakeKey<T>, settings: T): void {
-    keyAction.onDidReceiveSettings?.(event(key, settings));
+    void keyAction.onDidReceiveSettings?.(event(key, settings));
     this.scheduler.flush();
   }
 
