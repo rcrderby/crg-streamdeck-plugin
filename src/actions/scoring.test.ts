@@ -44,6 +44,18 @@ describe('the Score key', () => {
 
     assert.ok(across(key, '4') < across(key, '109'));
   });
+
+  it('drops the score when the plugin is pointed at another scoreboard', () => {
+    const key = deck.place(keyAction, { team: 1 });
+
+    deck.client.state.clear();
+    deck.draw();
+
+    const svg = Buffer.from((key.image ?? '').split(',')[1] ?? '', 'base64').toString('utf8');
+
+    assert.doesNotMatch(svg, />113</, 'the last scoreboard’s score should be gone');
+    assert.match(svg, />0</);
+  });
 });
 
 describe('the trip keys', () => {

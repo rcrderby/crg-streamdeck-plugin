@@ -65,6 +65,13 @@ describe('FinalScoreWait', () => {
     assert.equal(wait.remaining(), 0);
   });
 
+  it('starts no wait from the first reading after the plugin is pointed at another scoreboard', () => {
+    state.clear();
+    state.apply({ ...IN_LAST_JAM, [game('InJam')]: false });
+
+    assert.equal(wait.remaining(), undefined);
+  });
+
   it('forgets what it saw, as when the plugin loses CRG', () => {
     state.apply({ [game('InJam')]: false });
     wait.forget();

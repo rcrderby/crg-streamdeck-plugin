@@ -206,9 +206,16 @@ export class StateStore {
     return this.#merge(snapshot, gone);
   }
 
-  /** Forgets everything, so a reconnect starts from what CRG sends next. */
+  /**
+   * Forgets everything, so a reconnect starts from what CRG sends next. */
   clear(): void {
+    const gone = new Set(this.#values.keys());
+
     this.#values.clear();
+
+    if (gone.size > 0) {
+      this.#notify(gone);
+    }
   }
 
   /**
