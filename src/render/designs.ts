@@ -487,8 +487,14 @@ export function lineupBackground(warning: LineupWarning, phase = 0, kind: Lineup
   return warning === 'due' ? JAM_LINEUP_DUE : blend(JAM_LINEUP_DUE, base, phase);
 }
 
-/** How light a key has to be drawn before its words are set in the dark rather than in white. */
-const LIGHT_KEY = 0.35;
+/**
+ * How light a key has to be drawn before its words are set in the dark rather than in white.
+ *
+ * It sits just above the crossing point, where the two read equally well,
+ * so whichever is chosen holds about four and a half to one. The no more
+ * jams red falls below it and keeps its white words.
+ */
+const LIGHT_KEY = 0.19;
 
 /** The color a key's words are set in, which is whichever of the two reads on the key behind them. */
 function keyWords(background: string): string {
