@@ -53,6 +53,16 @@ describe('the jam flag keys', () => {
     assert.deepEqual(deck.written, [{ key: team(2, 'NoPivot'), value: true, flag: '' }]);
   });
 
+  it('set a star pass for a team that has a pivot', async () => {
+    const keyAction = new StarPass(deck.context);
+
+    deck.hold({ [team(1, 'NoPivot')]: false });
+
+    await deck.press(keyAction, deck.place(keyAction));
+
+    assert.deepEqual(deck.written, [{ key: team(1, 'StarPass'), value: true, flag: '' }]);
+  });
+
   it('leave Star Pass alone while the team skates without a pivot, which CRG ignores', async () => {
     const keyAction = new StarPass(deck.context);
 

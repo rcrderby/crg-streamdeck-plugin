@@ -36,6 +36,43 @@ describe('the Clock key', () => {
     assert.match(picture(deck.place(keyAction, { clock: 'Lineup' })), />0:12</);
   });
 
+  it('reads dashes, faded, while the plugin has no CRG', () => {
+    const key = deck.place(keyAction, { clock: 'Jam' });
+
+    deck.client.say('disconnected');
+    deck.draw();
+
+    assert.match(picture(key), />--:--</);
+    assert.ok(picture(key).includes('opacity="0.62"'), 'the key is veiled while CRG is gone');
+  });
+
+  it('draws again only for the clock it shows', () => {
+    const key = deck.place(keyAction, { clock: 'Lineup' });
+    const drawn = key.images.length;
+
+    deck.hold({ [clock('Jam', 'Time')]: 100_000 });
+    deck.draw();
+
+    assert.equal(key.images.length, drawn, 'the jam clock ticking says nothing about a lineup key');
+
+    deck.hold({ [clock('Lineup', 'Time')]: 13_600 });
+    deck.draw();
+
+    assert.equal(key.images.length, drawn + 1);
+  });
+
+  it('names the clock as CRG does, so a lineup after a timeout reads Post Timeout', () => {
+    deck.hold({ [clock('Lineup', 'Name')]: 'Post Timeout' });
+
+    assert.match(picture(deck.place(keyAction, { clock: 'Lineup' })), />POST TIMEOUT</);
+  });
+
+  it('shows the period number CRG holds, since a period key names which one', () => {
+    deck.hold({ [clock('Period', 'Number')]: 2, [clock('Period', 'Time')]: 1_800_000 });
+
+    assert.match(picture(deck.place(keyAction, { clock: 'Period' })), />PERIOD 2</);
+  });
+
   it('shows the jam clock for a setting that names no clock CRG has', () => {
     const key = deck.place(keyAction, { clock: 'Bogus' } as unknown as ClockSettings);
 

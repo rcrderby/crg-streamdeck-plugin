@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import streamDeck from '@elgato/streamdeck';
 import { afterEach, beforeEach, describe, it, mock } from 'node:test';
 import { setImmediate } from 'node:timers/promises';
 
@@ -6,6 +7,8 @@ import { FakeDeck, PEDAL, XL } from '../test-support/fake-deck.ts';
 import { HOLD_MS } from '../render/hold.ts';
 import { Connection } from './connection.ts';
 import { ConnectionToggle } from './connection-page.ts';
+import { OPERATOR_SOURCE } from './operator-messages.ts';
+import { replaceOnUndo } from '../crg/operators.ts';
 
 describe('the CRG Connection key', () => {
   let deck: FakeDeck;
@@ -53,6 +56,29 @@ describe('the CRG Connection key', () => {
         .toString('utf8')
         .includes('opacity="0.62"')
     );
+  });
+
+  it('answers a property inspector asking for the operator profiles', async () => {
+    const sent: unknown[] = [];
+
+    Object.defineProperty(streamDeck, 'ui', {
+      configurable: true,
+      value: { sendToPropertyInspector: (message: unknown) => Promise.resolve(void sent.push(message)) }
+    });
+    deck.hold({ [replaceOnUndo('Wheels')]: true });
+
+    await keyAction.onSendToPlugin?.({ payload: { event: OPERATOR_SOURCE } } as never);
+
+    // The deck's own profile leads the list until CRG lists it too.
+    assert.deepEqual(sent, [
+      {
+        event: OPERATOR_SOURCE,
+        items: [
+          { label: 'StreamDeck', value: 'StreamDeck' },
+          { label: 'Wheels', value: 'Wheels' }
+        ]
+      }
+    ]);
   });
 });
 
