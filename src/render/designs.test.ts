@@ -16,6 +16,7 @@ import {
   lineupBackground,
   lostLeadKey,
   noInitialKey,
+  officialScoreKey,
   officialReviewKey,
   reviewOptionKey,
   scoreKey,
@@ -466,6 +467,28 @@ describe('timeoutKey', () => {
       timeoutKey(['Official', 'Timeout'], false).texts?.map((line) => line.y),
       [46, 66]
     );
+  });
+});
+
+describe('officialScoreKey', () => {
+  it('draws the wait over the veil, larger, while the rest of the key stays under it', () => {
+    const waiting = officialScoreKey('waiting', '0:02');
+    const note = waiting.texts?.at(-1);
+
+    assert.equal(waiting.subdued, true);
+    assert.equal(note?.aboveVeil, true);
+    assert.equal(note?.opacity, undefined, 'the wait carries no fade of its own');
+    assert.ok((note?.size ?? 0) > 11, 'the wait is set larger than the note it replaces');
+    assert.ok(waiting.texts?.slice(0, -1).every((line) => line.aboveVeil !== true));
+  });
+
+  it('leaves the note under the veil when the key can be used', () => {
+    for (const state of ['ready', 'official'] as const) {
+      assert.ok(
+        officialScoreKey(state).texts?.every((line) => line.aboveVeil !== true),
+        state
+      );
+    }
   });
 });
 

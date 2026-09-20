@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { afterEach, beforeEach, describe, it } from 'node:test';
+import { afterEach, beforeEach, describe, it, mock } from 'node:test';
 
 import { FakeDeck } from '../test-support/fake-deck.ts';
 import { CrgKeyAction, isOnline, named } from './key-action.ts';
@@ -44,6 +44,84 @@ class NarrowKey extends CrgKeyAction<NarrowSettings> {
     };
   }
 }
+
+/** A key that keeps moving, on a period its test sets. */
+class MovingKey extends CrgKeyAction<Settings> {
+  drawn = 0;
+
+  period = 0;
+
+  protected override watchedPaths(): readonly string[] {
+    return ['Test.Word'];
+  }
+
+  protected override animates(): boolean {
+    return true;
+  }
+
+  protected override animationPeriodMs(): number {
+    return this.period;
+  }
+
+  protected override describe(): KeySpec {
+    this.drawn += 1;
+
+    return { background: '#000000', texts: [{ text: `${this.drawn}`, y: 50, size: 20 }] };
+  }
+}
+
+describe('a key that keeps moving', () => {
+  let deck: FakeDeck;
+  let keyAction: MovingKey;
+
+  beforeEach(() => {
+    mock.timers.enable({ apis: ['setTimeout', 'Date'] });
+    deck = new FakeDeck();
+    keyAction = new MovingKey(deck.context);
+  });
+
+  afterEach(() => {
+    deck.stop();
+    mock.timers.reset();
+  });
+
+  it('draws again on every tick when it names no period, as a pulse does', () => {
+    deck.place(keyAction);
+
+    assert.equal(deck.scheduler.pending, 1, 'the next drawing is already queued');
+
+    const drawn = keyAction.drawn;
+
+    deck.draw();
+
+    assert.equal(keyAction.drawn, drawn + 1);
+  });
+
+  it('waits out its own period when it names one, as a countdown does', () => {
+    keyAction.period = 1_000;
+
+    const key = deck.place(keyAction);
+    const drawn = keyAction.drawn;
+
+    assert.equal(deck.scheduler.pending, 0, 'nothing is queued while it waits');
+
+    mock.timers.tick(999);
+    deck.draw();
+
+    assert.equal(keyAction.drawn, drawn, 'it should not draw again within the second');
+
+    mock.timers.tick(1);
+    deck.draw();
+
+    assert.equal(keyAction.drawn, drawn + 1);
+
+    deck.remove(keyAction, key);
+    mock.timers.tick(5_000);
+    deck.draw();
+
+    assert.equal(keyAction.drawn, drawn + 1, 'a key that is gone stops moving');
+  });
+});
 
 describe('isOnline', () => {
   it('counts a refused write as online, because the game can still be read', () => {

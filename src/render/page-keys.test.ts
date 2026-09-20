@@ -12,6 +12,7 @@ import {
   replaceChoiceKey,
   replaceConfirmKey,
   replaceInfoKey,
+  PLUGIN_BACKGROUND,
   undoKey
 } from './designs.ts';
 import { type TeamTheme } from './theme.ts';
@@ -151,8 +152,10 @@ describe('connection page keys', () => {
     assert.deepEqual(words(connectionKey('disconnected').texts), ['NO CRG', 'Offline']);
   });
 
-  it('draw Back as an arrow and a word', () => {
+  it('draw Back as an arrow and a word, with no edge of its own', () => {
     assert.deepEqual(words(backKey().texts), ['Back']);
+    assert.equal(backKey().background, PLUGIN_BACKGROUND);
+    assert.equal(backKey().edge, undefined, 'Back carries no mark of its own');
     assert.equal(backKey().shapes?.length, 1);
   });
 });

@@ -46,6 +46,9 @@ export abstract class CrgKeyAction<T extends JsonObject = JsonObject> extends Si
   readonly #drawn = new Map<string, string>();
   readonly #visible = new Map<string, WillAppearEvent<T>['action']>();
 
+  /** The wait before a slowly moving key is drawn again, per key. */
+  readonly #waiting = new Map<string, NodeJS.Timeout>();
+
   constructor(context: PluginContext) {
     super();
 
@@ -72,6 +75,18 @@ export abstract class CrgKeyAction<T extends JsonObject = JsonObject> extends Si
   }
 
   /**
+   * How often a moving key is worth drawing again, in milliseconds.
+   *
+   * Zero, the default, is every tick, which is what a pulse needs. A key
+   * counting a clock down changes once a second, so it says so and the
+   * other nine tenths of the work is never done. A period that is a whole
+   * number of seconds also lands the redraw on the second.
+   */
+  protected animationPeriodMs(_actionId: string, _settings: T): number {
+    return 0;
+  }
+
+  /**
    * Whether one key's picture depends on any of the paths that changed.
    *
    * An action names the paths every key of its kind can draw from, since
@@ -91,6 +106,8 @@ export abstract class CrgKeyAction<T extends JsonObject = JsonObject> extends Si
   }
 
   override onWillDisappear(event: WillDisappearEvent<T>): void {
+    clearTimeout(this.#waiting.get(event.action.id));
+    this.#waiting.delete(event.action.id);
     this.#settings.delete(event.action.id);
     this.#drawn.delete(event.action.id);
     this.#visible.delete(event.action.id);
@@ -129,6 +146,27 @@ export abstract class CrgKeyAction<T extends JsonObject = JsonObject> extends Si
     }
   }
 
+  /** Queues the next drawing of a moving key: on the next tick, or on the next turn of its own period. */
+  #drawAgain(action: { id: string } & Partial<KeyAction<T>>, periodMs: number): void {
+    if (periodMs <= 0) {
+      this.redraw(action);
+
+      return;
+    }
+
+    clearTimeout(this.#waiting.get(action.id));
+    this.#waiting.set(
+      action.id,
+      setTimeout(
+        () => {
+          this.#waiting.delete(action.id);
+          this.redraw(action);
+        },
+        periodMs - (Date.now() % periodMs)
+      )
+    );
+  }
+
   /** Queues a redraw of one key. */
   protected redraw(action: { id: string } & Partial<KeyAction<T>>): void {
     this.context.scheduler.request(action.id, () => {
@@ -142,7 +180,7 @@ export abstract class CrgKeyAction<T extends JsonObject = JsonObject> extends Si
       const image = renderKey(offline ? { ...spec, subdued: true } : spec);
 
       if (this.animates(action.id, settings)) {
-        this.redraw(action);
+        this.#drawAgain(action, this.animationPeriodMs(action.id, settings));
       }
 
       if (this.#drawn.get(action.id) === image) {

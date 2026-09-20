@@ -207,6 +207,33 @@ export class StateStore {
   }
 
   /**
+   * Drops every path the test does not keep, and reports what went.
+   *
+   * This is how a snapshot finishes: everything CRG sent is already
+   * applied, and whatever CRG did not send while it was answering is
+   * gone from the scoreboard and goes from here too.
+   */
+  prune(keep: (path: string) => boolean): ReadonlySet<string> {
+    const gone = new Set<string>();
+
+    for (const path of this.#values.keys()) {
+      if (!keep(path)) {
+        gone.add(path);
+      }
+    }
+
+    for (const path of gone) {
+      this.#values.delete(path);
+    }
+
+    if (gone.size > 0) {
+      this.#notify(gone);
+    }
+
+    return gone;
+  }
+
+  /**
    * Forgets everything, so a reconnect starts from what CRG sends next. */
   clear(): void {
     const gone = new Set(this.#values.keys());

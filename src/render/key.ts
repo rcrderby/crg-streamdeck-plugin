@@ -32,6 +32,13 @@ export type KeyText = {
   readonly opacity?: number | undefined;
   /** A glow color, drawn as a copy of the text offset down and to the right. */
   readonly shadow?: string | undefined;
+  /**
+   * Whether the line is drawn over the veil rather than under it.
+   *
+   * A subdued key says it cannot be used, and one line on it may still
+   * carry something worth reading, such as how long the wait has left.
+   */
+  readonly aboveVeil?: boolean | undefined;
 };
 
 /** The bar across the top of a key that can be active. */
@@ -82,6 +89,8 @@ export type KeySpec = {
   readonly opensPage?: boolean | undefined;
   /** A dark veil over the whole key, while CRG is disconnected or the key has nothing to act on. */
   readonly subdued?: boolean | undefined;
+  /** A stripe down the left edge, marking a key as the plugin's own. */
+  readonly edge?: string | undefined;
 };
 
 const FONT_STACK = "'Helvetica Neue', Helvetica, Arial, sans-serif";
@@ -147,6 +156,23 @@ const MARK_GLYPH_DOT = '<circle cx="28.5" cy="11" r="10.8"/>';
 const MARK_GLYPH_STEM =
   'M 0.5 45 L 0 40.5 C 11 37.5 21 34 31 31 L 33 32 L 23.5 77 C 22.8 81 24.3 82.5 27 80.5 L 37.5 74.5 L 38.5 78.5 ' +
   'C 30 87 22 94.5 13.5 96 C 7.5 97 5 93 6 88 L 14.5 51 C 15.2 47 13 45.5 10 46 Z';
+
+/** How wide the edge stripe is drawn. */
+const EDGE_WIDTH = 4;
+
+/**
+ * The stripe down a key's left edge, between the top bar and the corner tab.
+ *
+ * The bar and the tab keep their own edges: the stripe starts below the
+ * bar's dark rule and stops above the tab, rather than running over
+ * either of them.
+ */
+function edgeStripe(spec: KeySpec, color: string): string {
+  const top = spec.bar === undefined ? 0 : BAR_HEIGHT + BAR_RULE_HEIGHT;
+  const bottom = spec.informational === true ? VIEWBOX - (MARK_SIZE + MARK_RULE) : VIEWBOX;
+
+  return `<rect y="${round(top)}" width="${EDGE_WIDTH}" height="${round(bottom - top)}" fill="${color}"/>`;
+}
 
 /** The page mark's chevron: how far its arms reach from its tip, across and up or down, and its stroke. */
 const CHEVRON_REACH_X = 4;
@@ -374,9 +400,15 @@ export function renderKeySvg(spec: KeySpec): string {
     );
   }
 
-  const content = [...(spec.shapes ?? []), ...(spec.texts ?? []).map((line) => text(line, foreground))].join('');
+  const veiled = (spec.texts ?? []).filter((line) => line.aboveVeil !== true);
+  const raised = (spec.texts ?? []).filter((line) => line.aboveVeil === true);
+  const content = [...(spec.shapes ?? []), ...veiled.map((line) => text(line, foreground))].join('');
 
-  parts.push(spec.bar === undefined ? content : `<g transform="translate(0 ${BAR_SHIFT})">${content}</g>`);
+  /** A key with a bar draws its content lower, so a raised line lands on the same line as the rest. */
+  const placed = (markup: string): string =>
+    spec.bar === undefined ? markup : `<g transform="translate(0 ${BAR_SHIFT})">${markup}</g>`;
+
+  parts.push(placed(content));
 
   // The bar is drawn over the content, so a full key drawing such as the
   // Undo key's hazard striping cannot show through it.
@@ -394,6 +426,14 @@ export function renderKeySvg(spec: KeySpec): string {
 
   if (spec.subdued === true) {
     parts.push(`<rect width="${VIEWBOX}" height="${VIEWBOX}" fill="#000000" opacity="${VEIL_OPACITY}"/>`);
+  }
+
+  if (spec.edge !== undefined) {
+    parts.push(edgeStripe(spec, safeColor(spec.edge, foreground)));
+  }
+
+  if (raised.length > 0) {
+    parts.push(placed(raised.map((line) => text(line, foreground)).join('')));
   }
 
   return (

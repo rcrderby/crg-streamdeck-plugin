@@ -22,6 +22,9 @@ class FakeCrg {
   /** What this scoreboard sends in answer to a Register. */
   holds: Record<string, unknown> = {};
 
+  /** Whether the answer arrives in two messages, which nothing says it will not. */
+  splitsAnswer = false;
+
   #http = createServer((_request, response) => {
     response.setHeader('Set-Cookie', 'CRG_SCOREBOARD=test; Path=/');
     response.end();
@@ -42,7 +45,14 @@ class FakeCrg {
         actions.push(action);
 
         if (action === 'Register') {
-          socket.send(JSON.stringify({ state: this.holds }));
+          if (this.splitsAnswer) {
+            const [first, ...rest] = Object.entries(this.holds);
+
+            socket.send(JSON.stringify({ state: Object.fromEntries(first === undefined ? [] : [first]) }));
+            setTimeout(() => socket.send(JSON.stringify({ state: Object.fromEntries(rest) })), 20);
+          } else {
+            socket.send(JSON.stringify({ state: this.holds }));
+          }
         } else if (action === 'Ping' && this.answersPings) {
           socket.send(JSON.stringify({ Pong: '' }));
         }
@@ -325,6 +335,37 @@ describe('CrgClient', () => {
     assert.equal(client.state.get(score), 4);
     assert.equal(client.state.get('WS.Device.Name'), 'Test deck');
     assert.equal(told, 2);
+  });
+
+  it('holds what it has while CRG answers a Register in more than one message', async () => {
+    const score = 'ScoreBoard.CurrentGame.Team(1).Score';
+    const jam = 'ScoreBoard.CurrentGame.Team(1).JamScore';
+    const settling = new CrgClient({ snapshotSettleMs: 200 });
+    let lost = 0;
+
+    crg.holds = { [score]: 4, [jam]: 1 };
+
+    try {
+      settling.connect(connection);
+      await until(() => settling.state.get(jam) === 1);
+
+      settling.state.subscribe([jam], () => {
+        lost += settling.state.get(jam) === undefined ? 1 : 0;
+      });
+
+      // CRG is under no promise to answer in one message, and a key that
+      // dropped to nothing between the two would redraw empty mid game.
+      crg.splitsAnswer = true;
+      crg.sockets[0]?.terminate();
+      await until(() => crg.sockets.length === 2 && settling.state.get(jam) === 1);
+      await delay(300);
+
+      assert.equal(lost, 0, 'no key should lose a value CRG is still sending');
+      assert.equal(settling.state.get(score), 4);
+      assert.equal(settling.state.get(jam), 1);
+    } finally {
+      await settling.disconnect();
+    }
   });
 
   it('applies what CRG sends after its snapshot as changes', async () => {

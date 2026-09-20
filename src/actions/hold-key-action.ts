@@ -52,6 +52,11 @@ export abstract class HoldKeyAction<T extends JsonObject = JsonObject> extends C
     return this.#holds.get(actionId)?.done === true;
   }
 
+  /** True from the moment a key is pressed until the hold ends, whether it acted or was let go. */
+  protected holding(actionId: string): boolean {
+    return this.#holds.has(actionId);
+  }
+
   /** How far along a key's hold is, from 0 when it is not held to 1 once the hold is complete. */
   protected holdLevel(actionId: string): number {
     const hold = this.#holds.get(actionId);

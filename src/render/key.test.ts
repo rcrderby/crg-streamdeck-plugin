@@ -49,6 +49,32 @@ describe('renderKeySvg', () => {
     assert.match(renderKeySvg({ shapes: ['<circle cx="50" cy="50" r="10"/>'] }), /<circle cx="50" cy="50" r="10"\/>/);
   });
 });
+describe('a line drawn over the veil', () => {
+  const spec = {
+    background: '#27272a',
+    foreground: '#ffffff',
+    subdued: true,
+    texts: [
+      { text: 'Under', y: 40, size: 12 },
+      { text: 'Over', y: 80, size: 12, aboveVeil: true }
+    ]
+  };
+
+  it('is drawn after the veil, and the rest of the key before it', () => {
+    const svg = renderKeySvg(spec);
+    const veil = svg.indexOf('opacity="0.62"');
+
+    assert.ok(veil > 0, 'the key should carry a veil');
+    assert.ok(svg.indexOf('>Under<') < veil, 'the rest of the key stays under the veil');
+    assert.ok(svg.indexOf('>Over<') > veil, 'the raised line reads over it');
+  });
+
+  it('lands on the same line whether or not the key carries a bar', () => {
+    const barred = renderKeySvg({ ...spec, bar: { active: false } });
+
+    assert.equal((barred.match(/translate\(0 4\)/g) ?? []).length, 2, 'both groups move down by the bar');
+  });
+});
 
 describe('text shadow', () => {
   it('draws a copy of the text in the shadow color, offset down and to the right', () => {

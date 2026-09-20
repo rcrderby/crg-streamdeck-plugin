@@ -313,6 +313,28 @@ export function undoArrow(cx: number, cy: number, radius: number, color: string)
 }
 
 /** Hazard striping across the whole key, faint enough to sit behind a drawing. */
+/** The key's own box, which the renderer draws these into. */
+const VIEWBOX = 100;
+
+/** How far apart the hairlines run, and how strongly they are drawn. */
+const HAIRLINE_GAP = 16;
+
+const HAIRLINE_OPACITY = 0.16;
+
+/** Fine diagonal hairlines across a key. */
+
+export function hairlines(color = '#ffffff'): string {
+  const lines: string[] = [];
+
+  for (let index = 0; index * HAIRLINE_GAP < VIEWBOX * 2; index += 1) {
+    const x = -VIEWBOX + index * HAIRLINE_GAP;
+
+    lines.push(`<path d="M ${x} ${VIEWBOX} L ${x + VIEWBOX} 0"/>`);
+  }
+
+  return `<g opacity="${HAIRLINE_OPACITY}" stroke="${hex(color)}" stroke-width="1">${lines.join('')}</g>`;
+}
+
 export function hazardStripes(color: string): string {
   const stripes: string[] = [];
 
