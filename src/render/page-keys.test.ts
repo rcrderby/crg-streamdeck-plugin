@@ -57,8 +57,14 @@ describe('undoKey', () => {
     assert.match(held, /<rect width="40" height="12" fill="#22c55e"\/>/);
   });
 
-  it('fills green from the left whether or not CRG is already waiting', () => {
-    assert.match(renderKeySvg(undoKey(0.4, true)), /<rect width="40" height="12" fill="#22c55e"\/>/);
+  it('fills green from the left while CRG is not waiting', () => {
+    assert.match(renderKeySvg(undoKey(0.4, false)), /<rect width="40" height="12" fill="#22c55e"\/>/);
+  });
+
+  it('empties the bar from the right once CRG is waiting, rather than filling green over green', () => {
+    const svg = renderKeySvg(undoKey(0.4, true));
+
+    assert.match(svg, /<rect x="60" width="40" height="12" fill="#52525b"\/>/);
   });
 });
 

@@ -13,7 +13,7 @@ import { jamControlClock, lineupKind, lineupWarning, runningTimeout } from '../c
 import { type KeySpec } from '../render/key.ts';
 import { JAM_IDLE, JAM_STOP, jamControlKey, lineupBackground } from '../render/designs.ts';
 import { clockTitle } from '../render/clock-title.ts';
-import { SECOND_PULSE_MS, pulsePhase } from '../render/pulse.ts';
+import { LINEUP_PULSE_MS, pulsePhase } from '../render/pulse.ts';
 import { formatClock } from '../render/time.ts';
 import { CrgKeyAction, isOnline } from './key-action.ts';
 
@@ -71,7 +71,7 @@ export class JamControl extends CrgKeyAction {
         ? JAM_STOP
         : lineupBackground(
             lineupWarning(this.context.client.state),
-            pulsePhase(Date.now(), SECOND_PULSE_MS),
+            pulsePhase(Date.now(), LINEUP_PULSE_MS),
             lineupKind(this.context.client.state)
           );
 

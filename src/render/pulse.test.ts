@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { PULSE_FAINTEST, PULSE_MS, SECOND_PULSE_MS, pulseOpacity, pulsePhase } from './pulse.ts';
+import { LINEUP_PULSE_MS, PULSE_FAINTEST, PULSE_MS, pulseOpacity, pulsePhase } from './pulse.ts';
 import { resourceDots } from './icons.ts';
 
 describe('pulseOpacity', () => {
@@ -42,10 +42,12 @@ describe('resourceDots while a timeout or review runs', () => {
 });
 
 describe('pulsePhase', () => {
-  it('keeps a whole swing to the second when asked for one', () => {
-    assert.equal(pulsePhase(0, SECOND_PULSE_MS), 0);
-    assert.equal(pulsePhase(SECOND_PULSE_MS / 2, SECOND_PULSE_MS), 1);
-    assert.equal(pulsePhase(SECOND_PULSE_MS, SECOND_PULSE_MS), 0);
+  it('swings the lineup pulse once every two seconds, landing on the second', () => {
+    assert.equal(LINEUP_PULSE_MS, 2_000);
+    assert.equal(pulsePhase(0, LINEUP_PULSE_MS), 0);
+    assert.equal(pulsePhase(1_000, LINEUP_PULSE_MS), 1);
+    assert.equal(pulsePhase(2_000, LINEUP_PULSE_MS), 0);
+    assert.equal(pulsePhase(3_000, LINEUP_PULSE_MS), 1, 'the swing keeps time with the clock beside it');
   });
 
   it('runs from nothing to all and back within one pulse', () => {

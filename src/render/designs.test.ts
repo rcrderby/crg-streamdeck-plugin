@@ -3,6 +3,7 @@ import { describe, it } from 'node:test';
 
 import { renderKeySvg } from './key.ts';
 import {
+  JAM_STOP,
   TIMEOUT_RED,
   automationKey,
   automationToggleKey,
@@ -25,7 +26,7 @@ import {
   tripPointsKey,
   undoKey
 } from './designs.ts';
-import { type TeamTheme, panelColor } from './theme.ts';
+import { type TeamTheme, contrastRatio, panelColor } from './theme.ts';
 
 const WHEELS: TeamTheme = { background: '#38205b', foreground: '#ffffff', glow: '#000000', name: 'Wheels' };
 
@@ -540,12 +541,16 @@ describe('the Jam Control key', () => {
     assert.ok((two[2]?.y ?? 0) < (two[3]?.y ?? 0), 'the clock name sits above the jam number');
   });
 
-  it('turns orange as the lineup falls due, and moves between the two once it is over', () => {
+  it('turns amber as the lineup falls due, and moves between the two once it is over', () => {
     assert.equal(lineupBackground('none'), '#14532d');
-    assert.equal(lineupBackground('due'), '#9a3412');
+    assert.equal(lineupBackground('due'), '#f59e0b');
     assert.equal(lineupBackground('over', 0), '#14532d');
-    assert.equal(lineupBackground('over', 1), '#9a3412');
+    assert.equal(lineupBackground('over', 1), '#f59e0b');
     assert.notEqual(lineupBackground('over', 0.5), lineupBackground('over', 0));
+  });
+
+  it('stands the warning apart from the lineup by brightness, not only by hue', () => {
+    assert.ok(contrastRatio(lineupBackground('none'), lineupBackground('due')) > 3);
   });
 
   it('stays red through a lineup with no jam left in the period', () => {
@@ -554,10 +559,21 @@ describe('the Jam Control key', () => {
     }
   });
 
-  it('runs an overtime lineup from red to gold, and moves between the two once it is over', () => {
+  it('runs an overtime lineup from red to amber, and moves between the two once it is over', () => {
     assert.equal(lineupBackground('none', 0, 'overtime'), '#dd3333');
-    assert.equal(lineupBackground('due', 0, 'overtime'), '#a16207');
+    assert.equal(lineupBackground('due', 0, 'overtime'), '#f59e0b');
     assert.equal(lineupBackground('over', 0, 'overtime'), '#dd3333');
-    assert.equal(lineupBackground('over', 1, 'overtime'), '#a16207');
+    assert.equal(lineupBackground('over', 1, 'overtime'), '#f59e0b');
+  });
+
+  it('sets the key’s words in the dark on the amber, and in white on every other Jam Control color', () => {
+    const wordsOn = (background: string): string | undefined =>
+      jamControlKey('Start Jam', '0:27', ['LINEUP'], background, false).foreground;
+
+    assert.equal(wordsOn(lineupBackground('due')), '#0b0b0f');
+    assert.equal(wordsOn(lineupBackground('none')), '#ffffff');
+    assert.equal(wordsOn(lineupBackground('none', 0, 'overtime')), '#ffffff', 'the no more jams red');
+    assert.equal(wordsOn(JAM_STOP), '#ffffff');
+    assert.equal(wordsOn(TIMEOUT_RED), '#ffffff');
   });
 });
