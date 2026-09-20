@@ -11,13 +11,15 @@
 import type { JsonObject } from '@elgato/utils';
 
 import { SettingsError, resolveConnection, type Connection, type ConnectionSettings } from './crg/settings.ts';
+import { type SessionStore, type StoredSession } from './session-file.ts';
 
-/** Everything the plugin keeps for the whole deck rather than for one key. */
+/**
+ * Everything the plugin keeps for the whole deck rather than for one key.
+ *
+ * The CRG session is not among them. A property inspector is handed
+ * these settings whole, so the session lives in a file of its own.
+ */
 export type GlobalSettings = ConnectionSettings & {
-  /** The CRG cookies this device is known by, kept so it stays one device. */
-  session?: string;
-  /** The scoreboard that issued the session, so it is never offered to another. */
-  sessionOrigin?: string;
   /** True once the deck is disconnected on purpose, until it is connected again. */
   stopped?: boolean;
   /** The CRG operator profile the deck keeps its settings under. */
@@ -47,6 +49,7 @@ export type Operator = {
 
 export type PluginSettingsParts = {
   readonly store: SettingsStore;
+  readonly session: SessionStore;
   readonly client: Scoreboard;
   readonly operator: Operator;
   /** Says why settings could not be used, without stopping the plugin. */
@@ -56,11 +59,25 @@ export type PluginSettingsParts = {
 export class PluginSettings {
   readonly #parts: PluginSettingsParts;
 
+  /** The stored session, read once at startup so a connection need not wait on the file. */
+  #stored: StoredSession | undefined;
+
   /** The write in progress, which the next one waits on. */
   #writing: Promise<void> = Promise.resolve();
 
   constructor(parts: PluginSettingsParts) {
     this.#parts = parts;
+  }
+
+  /** Reads the stored session, so the first connection offers CRG the identity the deck already has. */
+  async load(): Promise<void> {
+    const { session, warn } = this.#parts;
+
+    try {
+      this.#stored = await session.read();
+    } catch (cause) {
+      warn(`Could not read the stored CRG session: ${messageOf(cause)}`);
+    }
   }
 
   /** Opens or re-points the CRG connection from the stored settings, unless the deck was disconnected on purpose. */
@@ -78,7 +95,7 @@ export class PluginSettings {
     try {
       const connection = resolveConnection(settings);
 
-      client.connect(connection, sessionFor(settings, connection.origin));
+      client.connect(connection, sessionFor(this.#stored, connection.origin));
     } catch (cause) {
       if (cause instanceof SettingsError) {
         warn(`The CRG URL is not usable: ${cause.message}`);
@@ -93,23 +110,29 @@ export class PluginSettings {
   /**
    * Stores the session CRG issued, against the scoreboard that issued it.
    *
-   * The cookies identify this device to CRG, so they are written to
-   * settings and never to the log.
+   * The cookies identify this device to CRG, so they go to the session
+   * file, never to the settings a property inspector reads and never to
+   * the log.
    */
   async rememberSession(): Promise<void> {
-    const { client } = this.#parts;
-    const session = client.session;
-    const sessionOrigin = client.origin;
+    const { client, session, warn } = this.#parts;
+    const held = client.session;
+    const origin = client.origin;
 
-    if (session === undefined || sessionOrigin === undefined) {
+    if (held === undefined || origin === undefined) {
       return;
     }
 
-    await this.#update((settings) =>
-      settings.session !== session || settings.sessionOrigin !== sessionOrigin
-        ? { ...settings, session, sessionOrigin }
-        : undefined
-    );
+    if (this.#stored?.session === held && this.#stored.origin === origin) {
+      return;
+    }
+
+    try {
+      await session.write({ session: held, origin });
+      this.#stored = { session: held, origin };
+    } catch (cause) {
+      warn(`Could not store the CRG session: ${messageOf(cause)}`);
+    }
   }
 
   /**
@@ -176,8 +199,13 @@ export class PluginSettings {
  * first one's session to the second, in the page request and again on
  * the socket, handing it the identity the deck writes with.
  */
-export function sessionFor(settings: GlobalSettings, origin: string): string | undefined {
-  return settings.sessionOrigin === origin ? settings.session : undefined;
+export function sessionFor(stored: StoredSession | undefined, origin: string): string | undefined {
+  return stored?.origin === origin ? stored.session : undefined;
+}
+
+/** An error's message, whatever was thrown. */
+function messageOf(cause: unknown): string {
+  return cause instanceof Error ? cause.message : String(cause);
 }
 
 function same(held: readonly string[], names: readonly string[]): boolean {

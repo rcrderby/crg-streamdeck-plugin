@@ -3,6 +3,7 @@ import { describe, it } from 'node:test';
 
 import { PluginSettings, sessionFor, type GlobalSettings, type Scoreboard } from './plugin-settings.ts';
 import { type Connection } from './crg/settings.ts';
+import { type SessionStore, type StoredSession } from './session-file.ts';
 
 type Opened = { connection: Connection; session: string | undefined };
 
@@ -48,7 +49,28 @@ function store(held: GlobalSettings = {}): {
   return state;
 }
 
-function build(held: GlobalSettings, client = scoreboard()) {
+/** A stand-in for the session file, which a test can also make fail. */
+function sessionStore(stored?: StoredSession): SessionStore & { held: StoredSession | undefined; failing: boolean } {
+  const file = {
+    held: stored,
+    failing: false,
+    read: (): Promise<StoredSession | undefined> =>
+      file.failing ? Promise.reject(new Error('no such file')) : Promise.resolve(file.held),
+    write: (value: StoredSession): Promise<void> => {
+      if (file.failing) {
+        return Promise.reject(new Error('read-only folder'));
+      }
+
+      file.held = value;
+
+      return Promise.resolve();
+    }
+  };
+
+  return file;
+}
+
+function build(held: GlobalSettings, client = scoreboard(), session = sessionStore()) {
   const warnings: string[] = [];
   const chosen: (string | undefined)[] = [];
   const settings = store(held);
@@ -56,10 +78,12 @@ function build(held: GlobalSettings, client = scoreboard()) {
   return {
     settings,
     client,
+    session,
     warnings,
     chosen,
     plugin: new PluginSettings({
       store: settings,
+      session,
       client,
       operator: { set: (name) => void chosen.push(name) },
       warn: (message) => void warnings.push(message)
@@ -69,39 +93,59 @@ function build(held: GlobalSettings, client = scoreboard()) {
 
 describe('sessionFor', () => {
   it('offers a session back only to the scoreboard that issued it', () => {
-    const held: GlobalSettings = { session: 'CRG_SCOREBOARD=abc', sessionOrigin: 'http://scoreboard:8000' };
+    const stored: StoredSession = { session: 'CRG_SCOREBOARD=abc', origin: 'http://scoreboard:8000' };
 
-    assert.equal(sessionFor(held, 'http://scoreboard:8000'), 'CRG_SCOREBOARD=abc');
-    assert.equal(sessionFor(held, 'http://elsewhere:8000'), undefined);
+    assert.equal(sessionFor(stored, 'http://scoreboard:8000'), 'CRG_SCOREBOARD=abc');
+    assert.equal(sessionFor(stored, 'http://elsewhere:8000'), undefined);
   });
 
-  it('offers nothing when the stored session has no scoreboard, as an older setting has', () => {
-    assert.equal(sessionFor({ session: 'CRG_SCOREBOARD=abc' }, 'http://localhost:8000'), undefined);
+  it('offers nothing when nothing is stored', () => {
+    assert.equal(sessionFor(undefined, 'http://localhost:8000'), undefined);
+  });
+});
+
+describe('PluginSettings.load', () => {
+  it('reads the stored session, which the next connection offers CRG', async () => {
+    const stored: StoredSession = { session: 'CRG_SCOREBOARD=abc', origin: 'http://localhost:8000' };
+    const { plugin, client } = build({}, scoreboard(), sessionStore(stored));
+
+    await plugin.load();
+    plugin.apply({ url: 'http://localhost:8000' });
+
+    assert.equal(client.opened[0]?.session, 'CRG_SCOREBOARD=abc');
+  });
+
+  it('says why a session could not be read, and connects as a new device', async () => {
+    const session = sessionStore();
+    const { plugin, client, warnings } = build({}, scoreboard(), session);
+
+    session.failing = true;
+    await plugin.load();
+    plugin.apply({ url: 'http://localhost:8000' });
+
+    assert.match(warnings[0] ?? '', /Could not read the stored CRG session/);
+    assert.equal(client.opened[0]?.session, undefined);
   });
 });
 
 describe('PluginSettings.apply', () => {
-  it('opens the scoreboard in the settings, with the session that scoreboard issued', () => {
-    const { plugin, client } = build({});
+  it('opens the scoreboard in the settings, with the session that scoreboard issued', async () => {
+    const stored: StoredSession = { session: 'CRG_SCOREBOARD=abc', origin: 'http://localhost:8000' };
+    const { plugin, client } = build({}, scoreboard(), sessionStore(stored));
 
-    plugin.apply({
-      url: 'http://localhost:8000',
-      session: 'CRG_SCOREBOARD=abc',
-      sessionOrigin: 'http://localhost:8000'
-    });
+    await plugin.load();
+    plugin.apply({ url: 'http://localhost:8000' });
 
     assert.equal(client.opened[0]?.connection.origin, 'http://localhost:8000');
     assert.equal(client.opened[0]?.session, 'CRG_SCOREBOARD=abc');
   });
 
-  it('withholds a session issued by a different scoreboard', () => {
-    const { plugin, client } = build({});
+  it('withholds a session issued by a different scoreboard', async () => {
+    const stored: StoredSession = { session: 'CRG_SCOREBOARD=abc', origin: 'http://localhost:8000' };
+    const { plugin, client } = build({}, scoreboard(), sessionStore(stored));
 
-    plugin.apply({
-      url: 'http://scoreboard:8000',
-      session: 'CRG_SCOREBOARD=abc',
-      sessionOrigin: 'http://localhost:8000'
-    });
+    await plugin.load();
+    plugin.apply({ url: 'http://scoreboard:8000' });
 
     assert.equal(client.opened[0]?.connection.origin, 'http://scoreboard:8000');
     assert.equal(client.opened[0]?.session, undefined);
@@ -135,30 +179,46 @@ describe('PluginSettings.apply', () => {
 });
 
 describe('PluginSettings.rememberSession', () => {
-  it('stores the session against the scoreboard that issued it', async () => {
-    const { plugin, settings } = build({}, scoreboard('CRG_SCOREBOARD=abc', 'http://localhost:8000'));
+  it('stores the session in the file, against the scoreboard that issued it', async () => {
+    const { plugin, session, settings } = build({}, scoreboard('CRG_SCOREBOARD=abc', 'http://localhost:8000'));
 
     await plugin.rememberSession();
 
-    assert.equal(settings.held.session, 'CRG_SCOREBOARD=abc');
-    assert.equal(settings.held.sessionOrigin, 'http://localhost:8000');
+    assert.deepEqual(session.held, { session: 'CRG_SCOREBOARD=abc', origin: 'http://localhost:8000' });
+    assert.equal(settings.writes, 0, 'the session never reaches the settings a property inspector reads');
   });
 
   it('writes nothing when the stored session already matches', async () => {
-    const held: GlobalSettings = { session: 'CRG_SCOREBOARD=abc', sessionOrigin: 'http://localhost:8000' };
-    const { plugin, settings } = build(held, scoreboard('CRG_SCOREBOARD=abc', 'http://localhost:8000'));
+    const stored: StoredSession = { session: 'CRG_SCOREBOARD=abc', origin: 'http://localhost:8000' };
+    const { plugin, session } = build(
+      {},
+      scoreboard('CRG_SCOREBOARD=abc', 'http://localhost:8000'),
+      sessionStore(stored)
+    );
 
+    await plugin.load();
+    session.failing = true;
     await plugin.rememberSession();
 
-    assert.equal(settings.writes, 0);
+    assert.deepEqual(session.held, stored);
   });
 
   it('stores nothing until CRG has issued a session', async () => {
-    const { plugin, settings } = build({}, scoreboard(undefined, 'http://localhost:8000'));
+    const { plugin, session } = build({}, scoreboard(undefined, 'http://localhost:8000'));
 
     await plugin.rememberSession();
 
-    assert.equal(settings.writes, 0);
+    assert.equal(session.held, undefined);
+  });
+
+  it('says why a session could not be stored, and carries on', async () => {
+    const session = sessionStore();
+    const { plugin, warnings } = build({}, scoreboard('CRG_SCOREBOARD=abc', 'http://localhost:8000'), session);
+
+    session.failing = true;
+    await plugin.rememberSession();
+
+    assert.match(warnings[0] ?? '', /Could not store the CRG session/);
   });
 });
 
@@ -211,7 +271,6 @@ describe('PluginSettings writes', () => {
 
     await Promise.all([plugin.rememberSession(), plugin.rememberOperators(['Rose_City']), plugin.setStopped(true)]);
 
-    assert.equal(settings.held.session, 'CRG_SCOREBOARD=abc');
     assert.deepEqual(settings.held.operators, ['Rose_City']);
     assert.equal(settings.held.stopped, true);
     assert.equal(settings.held.url, 'http://localhost:8000');
