@@ -128,6 +128,28 @@ describe('a key that acts on a hold', () => {
     assert.deepEqual(keyAction.completed, [key.id, second.id]);
   });
 
+  it('drops the wait for CRG when a key leaves the deck, so no timer outlives it', async () => {
+    const waiting = new (class extends CountingHold {
+      protected override completeHold(action: { id: string }): void {
+        super.completeHold(action);
+        this.awaitValue(action, true);
+      }
+    })(deck.context);
+    const leaving = deck.place(waiting);
+
+    await deck.holdDown(waiting, leaving);
+    mock.timers.tick(HOLD_MS);
+    deck.draw();
+
+    const drawn = leaving.images.length;
+
+    deck.remove(waiting, leaving);
+    mock.timers.tick(5_000);
+
+    assert.equal(deck.scheduler.pending, 0, 'a key that is gone should have nothing waiting to draw');
+    assert.equal(leaving.images.length, drawn);
+  });
+
   it('shows an alert, rather than throwing, when the action fails at once', async () => {
     const failing = new (class extends CountingHold {
       protected override completeHold(): void {

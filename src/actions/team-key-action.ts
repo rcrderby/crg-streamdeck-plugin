@@ -33,6 +33,26 @@ export function teamPaths(...fields: string[]): string[] {
 }
 
 export abstract class TeamKeyAction<T extends TeamSettings = TeamSettings> extends CrgKeyAction<T> {
+  /**
+   * A key drawn for one team has nothing to draw again for the other.
+   *
+   * Both teams' paths are watched, since an action subscribes before any
+   * key has settings, so a key set to one team is told about the other's
+   * score, flags, and colors. Everything outside a team, such as a
+   * setting or a clock, still reaches every key.
+   */
+  protected override concerns(settings: T | undefined, changed: ReadonlySet<string>): boolean {
+    const mine = `.Team(${teamOf(settings ?? {})})`;
+
+    for (const path of changed) {
+      if (!path.includes('.Team(') || path.includes(mine)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   protected teamOf(settings: T): TeamNumber {
     return teamOf(settings);
   }

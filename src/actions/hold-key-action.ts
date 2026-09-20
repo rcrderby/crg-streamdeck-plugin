@@ -136,6 +136,7 @@ export abstract class HoldKeyAction<T extends JsonObject = JsonObject> extends C
 
   override onWillDisappear(event: WillDisappearEvent<T>): void {
     this.#cancel(event.action.id);
+    this.#stopWaiting(event.action.id);
     super.onWillDisappear(event);
   }
 
@@ -145,6 +146,16 @@ export abstract class HoldKeyAction<T extends JsonObject = JsonObject> extends C
       return Promise.resolve(this.completeHold(action, settings));
     } catch (cause) {
       return Promise.reject(cause instanceof Error ? cause : new Error(String(cause)));
+    }
+  }
+
+  /** Drops the wait for CRG's answer, so a key taken off the deck leaves no timer behind. */
+  #stopWaiting(actionId: string): void {
+    const awaiting = this.#awaiting.get(actionId);
+
+    if (awaiting !== undefined) {
+      clearTimeout(awaiting.timer);
+      this.#awaiting.delete(actionId);
     }
   }
 
