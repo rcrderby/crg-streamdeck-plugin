@@ -59,6 +59,12 @@ jobs:
       - name: Audit Dependencies
         run: npm audit --audit-level=moderate
 
+      # Super Linter runs these rules too, but from a container without
+      # the packages the typed rules read, so the typed rules are enforced
+      # here, where the packages are installed
+      - name: Lint The Code
+        run: npm run lint
+
       - name: Check Types
         run: npm run typecheck
 

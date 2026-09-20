@@ -3,6 +3,7 @@
 // https://eslint.org/docs/latest/use/configure/configuration-files
 
 import { defineConfig, globalIgnores } from 'eslint/config';
+import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import eslintPluginJsonc from 'eslint-plugin-jsonc';
 import globals from 'globals';
@@ -22,6 +23,12 @@ function jsoncFlatConfig(name) {
 
   return Array.isArray(config) ? config : [config];
 }
+
+/** The checkout this configuration file sits in. */
+const ROOT = join(import.meta.dirname, '..', '..');
+
+/** True where the packages the tsconfig builds on are installed, which the typed rules read. */
+const typesAvailable = existsSync(join(ROOT, 'node_modules', '@tsconfig', 'node24', 'tsconfig.json'));
 
 export default defineConfig([
   globalIgnores([
@@ -65,42 +72,49 @@ export default defineConfig([
   },
 
   // Rules that need the compiler's types, which is what catches a promise
-  // nobody waits for. The project is named from this file's own folder, so
-  // the editor and Super Linter both find it wherever the checkout sits.
-  {
-    files: ['src/**/*.ts'],
-
-    plugins: {
-      '@typescript-eslint': tsPlugin
-    },
-
-    languageOptions: {
-      parser: tsParser,
-      parserOptions: {
-        project: './tsconfig.json',
-        tsconfigRootDir: join(import.meta.dirname, '..', '..')
-      }
-    },
-
-    rules: {
-      '@typescript-eslint/await-thenable': 'error',
-      '@typescript-eslint/no-misused-promises': 'error',
-      // The test runner's own describe and it return a promise nobody is
-      // meant to wait for, which is the one exception here
-      '@typescript-eslint/no-floating-promises': [
-        'error',
+  // nobody waits for. They read the tsconfig, which builds on a package,
+  // so they are left out where the packages are not installed: Super
+  // Linter lints from a container of its own and never installs them. The
+  // test workflow runs this same configuration after installing, which is
+  // where these rules are enforced.
+  ...(typesAvailable
+    ? [
         {
-          allowForKnownSafeCalls: [
-            {
-              from: 'package',
-              package: 'node:test',
-              name: ['after', 'afterEach', 'before', 'beforeEach', 'describe', 'it']
+          files: ['src/**/*.ts'],
+
+          plugins: {
+            '@typescript-eslint': tsPlugin
+          },
+
+          languageOptions: {
+            parser: tsParser,
+            parserOptions: {
+              project: './tsconfig.json',
+              tsconfigRootDir: ROOT
             }
-          ]
+          },
+
+          rules: {
+            '@typescript-eslint/await-thenable': 'error',
+            '@typescript-eslint/no-misused-promises': 'error',
+            // The test runner's own describe and it return a promise
+            // nobody is meant to wait for, which is the one exception here
+            '@typescript-eslint/no-floating-promises': [
+              'error',
+              {
+                allowForKnownSafeCalls: [
+                  {
+                    from: 'package',
+                    package: 'node:test',
+                    name: ['after', 'afterEach', 'before', 'beforeEach', 'describe', 'it']
+                  }
+                ]
+              }
+            ]
+          }
         }
       ]
-    }
-  },
+    : []),
 
   {
     files: ['**/*.mjs'],
