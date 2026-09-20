@@ -7,8 +7,13 @@
 
 export const PULSE_MS = 1600;
 
-/** A pulse that keeps time with a clock, one full swing to the second. */
-export const SECOND_PULSE_MS = 1000;
+/**
+ * The pulse on a lineup that has run long: one full swing every two seconds.
+ *
+ * It is a whole number of seconds, so it keeps time with the clock beside
+ * it rather than drifting against it.
+ */
+export const LINEUP_PULSE_MS = 2000;
 
 export const PULSE_FAINTEST = 0.2;
 
