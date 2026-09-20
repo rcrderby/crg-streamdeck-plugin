@@ -1,11 +1,12 @@
 /**
  * Where the CRG session is kept between runs.
  *
- * The session names this deck to CRG, and held in a file only the logged-
- * on user account can read.  Session file contents are are plain text and
- * are handed whole to every property inspector the * plugin opens.
- * The file sits in user account's application data, so it survives a plugin
- * update and CRG recognizes the Stream Deck as one device.
+ * The session names this deck to CRG, and is held in a file only the
+ * logged-on user account can read. Its contents are plain text, so it is
+ * kept out of the plugin settings, which are handed whole to every
+ * property inspector the plugin opens. The file sits in the user
+ * account's application data folder, so it survives a plugin update and
+ * CRG recognizes the Stream Deck as one device.
  */
 
 import { homedir } from 'node:os';

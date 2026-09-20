@@ -213,3 +213,27 @@ describe('StateStore.replace', () => {
     assert.equal(store.replace({ 'A.One': 1 }).size, 0);
   });
 });
+
+describe('clear', () => {
+  it('tells the subscriptions what went, so no key draws the last scoreboard', () => {
+    const store = new StateStore();
+    const seen: string[][] = [];
+
+    store.apply({ 'ScoreBoard.CurrentGame.Team(1).Score': 113 });
+    store.subscribe(['ScoreBoard.CurrentGame.Team(*).Score'], (changed) => seen.push([...changed]));
+    store.clear();
+
+    assert.deepEqual(seen, [['ScoreBoard.CurrentGame.Team(1).Score']]);
+    assert.equal(store.get('ScoreBoard.CurrentGame.Team(1).Score'), undefined);
+  });
+
+  it('tells them nothing when it held nothing', () => {
+    const store = new StateStore();
+    let told = 0;
+
+    store.subscribe(['ScoreBoard.CurrentGame.Team(*).Score'], () => (told += 1));
+    store.clear();
+
+    assert.equal(told, 0);
+  });
+});
