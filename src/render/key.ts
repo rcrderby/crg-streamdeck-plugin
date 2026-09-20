@@ -32,6 +32,13 @@ export type KeyText = {
   readonly opacity?: number | undefined;
   /** A glow color, drawn as a copy of the text offset down and to the right. */
   readonly shadow?: string | undefined;
+  /**
+   * Whether the line is drawn over the veil rather than under it.
+   *
+   * A subdued key says it cannot be used, and one line on it may still
+   * carry something worth reading, such as how long the wait has left.
+   */
+  readonly aboveVeil?: boolean | undefined;
 };
 
 /** The bar across the top of a key that can be active. */
@@ -374,9 +381,15 @@ export function renderKeySvg(spec: KeySpec): string {
     );
   }
 
-  const content = [...(spec.shapes ?? []), ...(spec.texts ?? []).map((line) => text(line, foreground))].join('');
+  const veiled = (spec.texts ?? []).filter((line) => line.aboveVeil !== true);
+  const raised = (spec.texts ?? []).filter((line) => line.aboveVeil === true);
+  const content = [...(spec.shapes ?? []), ...veiled.map((line) => text(line, foreground))].join('');
 
-  parts.push(spec.bar === undefined ? content : `<g transform="translate(0 ${BAR_SHIFT})">${content}</g>`);
+  /** A key with a bar draws its content lower, so a raised line lands on the same line as the rest. */
+  const placed = (markup: string): string =>
+    spec.bar === undefined ? markup : `<g transform="translate(0 ${BAR_SHIFT})">${markup}</g>`;
+
+  parts.push(placed(content));
 
   // The bar is drawn over the content, so a full key drawing such as the
   // Undo key's hazard striping cannot show through it.
@@ -394,6 +407,10 @@ export function renderKeySvg(spec: KeySpec): string {
 
   if (spec.subdued === true) {
     parts.push(`<rect width="${VIEWBOX}" height="${VIEWBOX}" fill="#000000" opacity="${VEIL_OPACITY}"/>`);
+  }
+
+  if (raised.length > 0) {
+    parts.push(placed(raised.map((line) => text(line, foreground)).join('')));
   }
 
   return (

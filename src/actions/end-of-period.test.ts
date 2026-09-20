@@ -118,6 +118,46 @@ describe('the Official Score key', () => {
     assert.match(drawn(key), />WAIT 0:18</);
   });
 
+  it('counts the wait down once a second, not on every tick', () => {
+    deck.hold({
+      [game('OfficialScore')]: false,
+      [game('InhibitFinalScore')]: true,
+      [game('InJam')]: true,
+      [rule('Lineup.Duration')]: '0:30',
+      [team(1, 'OfficialReviews')]: 1
+    });
+
+    const key = deck.place(keyAction);
+
+    deck.hold({ [game('InJam')]: false });
+    deck.draw();
+
+    assert.match(drawn(key), />WAIT 0:30</);
+    assert.equal(deck.scheduler.pending, 0, 'the next second is a timer, not a tick');
+
+    mock.timers.tick(1_000);
+    deck.draw();
+
+    assert.match(drawn(key), />WAIT 0:29</);
+  });
+
+  it('fills its hold on every tick, rather than once a second', async () => {
+    deck.hold({ [game('OfficialScore')]: false, [game('InhibitFinalScore')]: false });
+
+    const key = deck.place(keyAction);
+
+    await deck.holdDown(keyAction, key);
+
+    assert.equal(deck.scheduler.pending, 1, 'the next drawing of the fill is already queued');
+
+    const filling = key.images.length;
+
+    mock.timers.tick(HOLD_MS / 4);
+    deck.draw();
+
+    assert.ok(key.images.length > filling, 'the bar should move within the first quarter second');
+  });
+
   it('stays set, and ignores a hold, once the score is official', async () => {
     deck.hold({ [game('OfficialScore')]: true, [game('InhibitFinalScore')]: false });
 

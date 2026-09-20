@@ -853,10 +853,16 @@ export type OfficialScoreState = 'waiting' | 'ready' | 'official';
  * Its note reads UNOFFICIAL, or OFFICIAL with the top bar green once set,
  * when a hold does nothing more. While CRG holds the score back the key
  * is darkened and reads WAIT, with the time left when the plugin can
- * tell it.
+ * tell it. That line is set a little larger and drawn over the veil, so
+ * the wait reads while the key still says it cannot be used.
  */
+
+/** How large the wait is set, which is larger than the note it replaces. */
+const WAIT_SIZE = 13;
+
 export function officialScoreKey(state: OfficialScoreState, wait?: string, level = 0): KeySpec {
   const official = state === 'official';
+  const waiting = state === 'waiting';
   const note = official ? 'OFFICIAL' : state === 'ready' ? 'UNOFFICIAL' : wait === undefined ? 'WAIT' : `WAIT ${wait}`;
 
   return {
@@ -865,10 +871,14 @@ export function officialScoreKey(state: OfficialScoreState, wait?: string, level
     texts: [
       { text: 'Official', y: 42, size: 15, weight: 'bold' },
       { text: 'Score', y: 59, size: 15, weight: 'bold' },
-      { text: note, y: 81, size: 11, weight: 'bold', ...(official ? {} : { opacity: 0.75 }) }
+      // The wait is the one thing left to read on a key that cannot be
+      // used yet, so it is drawn over the veil rather than under it.
+      waiting
+        ? { text: note, y: 81, size: WAIT_SIZE, weight: 'bold', aboveVeil: true }
+        : { text: note, y: 81, size: 11, weight: 'bold', ...(official ? {} : { opacity: 0.75 }) }
     ],
     bar: official ? { active: true } : { active: false, progress: level, label: 'HOLD' },
-    subdued: state === 'waiting'
+    subdued: waiting
   };
 }
 

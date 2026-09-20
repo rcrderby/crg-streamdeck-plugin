@@ -85,6 +85,16 @@ export class OfficialScore extends HoldKeyAction {
     return (this.#state() === 'waiting' && (this.#wait.remaining() ?? 0) > 0) || super.animates(actionId, settings);
   }
 
+  /**
+   * The wait is counted in whole seconds, so it is drawn once a second.
+   *
+   * A hold is not: its bar has to fill smoothly, so it draws on every
+   * tick like every other held key.
+   */
+  protected override animationPeriodMs(actionId: string): number {
+    return this.holding(actionId) ? 0 : 1_000;
+  }
+
   protected override canHold(): boolean {
     return this.#state() === 'ready';
   }

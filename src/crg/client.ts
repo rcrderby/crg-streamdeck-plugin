@@ -43,6 +43,16 @@ const PING_INTERVAL_MS = 10_000;
  */
 const SILENCE_LIMIT_MS = 25_000;
 
+/**
+ * How long CRG is given to finish answering a Register.
+ *
+ * CRG answers with everything it holds under the registered paths, but
+ * nothing says it arrives in one message, so what it sends in this window
+ * is taken as the answer. Whatever the deck still holds afterward was
+ * deleted while it was away, and goes.
+ */
+const SNAPSHOT_SETTLE_MS = 1_000;
+
 /** How long the session request and the socket handshake may each take before the attempt is retried. */
 const OPEN_TIMEOUT_MS = 10_000;
 
@@ -73,6 +83,7 @@ export type CrgClientOptions = {
   refusalShownMs?: number;
   pingIntervalMs?: number;
   silenceLimitMs?: number;
+  snapshotSettleMs?: number;
 };
 
 /** Device details CRG sends on its own when a socket opens, ahead of anything registered. */
@@ -163,10 +174,14 @@ export class CrgClient extends EventEmitter<CrgClientEvents> {
   readonly #refusalShownMs: number;
   readonly #pingIntervalMs: number;
   readonly #silenceLimitMs: number;
+  readonly #snapshotSettleMs: number;
   /** When CRG last sent anything on the current socket. */
   #lastHeard = 0;
-  /** True from a socket opening until CRG answers its Register with what it holds. */
-  #awaitingSnapshot = false;
+  /** The paths CRG has sent since the socket opened, while its answer to Register is still arriving. */
+  #snapshotPaths: Set<string> | undefined;
+
+  /** Closes the window CRG's answer to Register is collected in. */
+  #settling: NodeJS.Timeout | undefined;
 
   /**
    * Reports failures rather than throwing them.
@@ -181,6 +196,7 @@ export class CrgClient extends EventEmitter<CrgClientEvents> {
     this.#refusalShownMs = options.refusalShownMs ?? REFUSAL_SHOWN_MS;
     this.#pingIntervalMs = options.pingIntervalMs ?? PING_INTERVAL_MS;
     this.#silenceLimitMs = options.silenceLimitMs ?? SILENCE_LIMIT_MS;
+    this.#snapshotSettleMs = options.snapshotSettleMs ?? SNAPSHOT_SETTLE_MS;
     this.on('error', () => undefined);
   }
 
@@ -405,7 +421,7 @@ export class CrgClient extends EventEmitter<CrgClientEvents> {
 
       this.#reconnectDelayMs = RECONNECT_MIN_MS;
       this.#lastHeard = Date.now();
-      this.#awaitingSnapshot = true;
+      this.#collectSnapshot();
       this.#setStatus('connected');
       this.#send({ action: 'Register', paths: [...REGISTERED_PATHS] });
       this.#ping = setInterval(() => this.#keepAlive(socket), this.#pingIntervalMs);
@@ -469,14 +485,8 @@ export class CrgClient extends EventEmitter<CrgClientEvents> {
 
     const delta = state as Record<string, StateValue>;
 
-    // CRG answers Register with everything it holds under those paths,
-    // and says nothing of paths deleted while the deck was away, so that
-    // answer replaces what the store held rather than adding to it.
-    if (this.#awaitingSnapshot && Object.keys(delta).some((path) => !path.startsWith(DEVICE_PREFIX))) {
-      this.#awaitingSnapshot = false;
-      this.state.replace(delta, (path) => path.startsWith(DEVICE_PREFIX));
-
-      return;
+    for (const path of Object.keys(delta)) {
+      this.#snapshotPaths?.add(path);
     }
 
     this.state.apply(delta);
@@ -541,7 +551,39 @@ export class CrgClient extends EventEmitter<CrgClientEvents> {
     this.#refusal.unref();
   }
 
+  /**
+   * Collects CRG's answer to Register, and drops what CRG did not send.
+   *
+   * CRG says nothing of a path deleted while the deck was away, so a path
+   * the deck still holds once the answer has settled is gone from the
+   * scoreboard. Its own device details are kept, since CRG sends those
+   * once, ahead of the answer.
+   */
+  #collectSnapshot(): void {
+    const paths = new Set<string>();
+
+    this.#snapshotPaths = paths;
+    clearTimeout(this.#settling);
+
+    this.#settling = setTimeout(() => {
+      this.#settling = undefined;
+
+      if (this.#snapshotPaths !== paths) {
+        return;
+      }
+
+      this.#snapshotPaths = undefined;
+      this.state.prune((path) => paths.has(path) || path.startsWith(DEVICE_PREFIX));
+    }, this.#snapshotSettleMs);
+  }
+
   #clearTimers(): void {
+    if (this.#settling !== undefined) {
+      clearTimeout(this.#settling);
+      this.#settling = undefined;
+      this.#snapshotPaths = undefined;
+    }
+
     if (this.#refusal !== undefined) {
       clearTimeout(this.#refusal);
       this.#refusal = undefined;
