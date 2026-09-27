@@ -56,9 +56,7 @@ Each button holds its own action, and you can customize a button layout that mee
 | Operating System     | Description        |
 | -------------------- | ------------------ |
 | macOS 12 or later    | :white_check_mark: |
-| Windows 10 or later  | Not Tested         |
-
-On Windows, keeping the computer awake while connected to CRG is a beta feature.
+| Windows 11 or later  | :white_check_mark: |
 
 The plugin buttons should work with any Stream Deck Platform, although they've only been tested on a Stream Deck XL.  The plugin includes expandable menu profiles for the following Stream Deck platforms:
 

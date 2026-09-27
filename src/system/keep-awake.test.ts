@@ -52,8 +52,17 @@ describe('holdCommand', () => {
     const command = holdCommand('win32', 4242, 'D:\\Windows\\');
 
     assert.equal(command?.command, 'D:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe');
-    assert.match(command?.args.at(-1) ?? '', /SetThreadExecutionState\(0x80000003\)/);
+    // Windows PowerShell would read 0x80000003 as a negative number and refuse it
+    assert.match(command?.args.at(-1) ?? '', /SetThreadExecutionState\(\[uint32\]2147483651\)/);
+    assert.doesNotMatch(command?.args.at(-1) ?? '', /0x8/);
     assert.match(command?.args.at(-1) ?? '', /Get-Process -Id 4242/);
+  });
+
+  it('ends the Windows helper on any error, or when Windows refuses the request', () => {
+    const script = holdCommand('win32', 4242)?.args.at(-1) ?? '';
+
+    assert.match(script, /^\$ErrorActionPreference = 'Stop'; /);
+    assert.match(script, /-eq 0\) \{ exit 1 \}/);
   });
 
   it('has nothing for other platforms, or for a process id that is not one', () => {
@@ -93,15 +102,45 @@ describe('KeepAwake', () => {
     assert.equal(keepAwake.holding, false);
   });
 
-  it('holds again after its helper exits on its own', () => {
+  it('reports a helper that stops on its own, and holds again when asked', () => {
     const fake = new FakeSpawn();
-    const keepAwake = new KeepAwake({ platform: 'darwin', pid: 7, spawn: fake.spawn });
+    const errors: Error[] = [];
+    const keepAwake = new KeepAwake({
+      platform: 'win32',
+      pid: 7,
+      spawn: fake.spawn,
+      onError: (cause) => errors.push(cause)
+    });
 
     keepAwake.hold();
     fake.calls[0]?.exit();
+
+    assert.equal(keepAwake.holding, false);
+    assert.deepEqual(
+      errors.map((cause) => cause.message),
+      ['the helper stopped on its own']
+    );
+
     keepAwake.hold();
 
     assert.equal(fake.calls.length, 2);
+  });
+
+  it('says nothing when a released helper exits', () => {
+    const fake = new FakeSpawn();
+    const errors: Error[] = [];
+    const keepAwake = new KeepAwake({
+      platform: 'darwin',
+      pid: 7,
+      spawn: fake.spawn,
+      onError: (cause) => errors.push(cause)
+    });
+
+    keepAwake.hold();
+    keepAwake.release();
+    fake.calls[0]?.exit();
+
+    assert.deepEqual(errors, []);
   });
 
   it('reports a helper that cannot start, and stops holding', () => {
@@ -130,11 +169,6 @@ describe('KeepAwake', () => {
 
     assert.equal(keepAwake.supported, false);
     assert.equal(fake.calls.length, 0);
-  });
-
-  it('marks Windows as a beta', () => {
-    assert.equal(new KeepAwake({ platform: 'win32', pid: 7 }).beta, true);
-    assert.equal(new KeepAwake({ platform: 'darwin', pid: 7 }).beta, false);
   });
 
   it('declares activity on a key press while holding, at most once per interval', () => {

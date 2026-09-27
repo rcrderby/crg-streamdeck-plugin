@@ -10,7 +10,7 @@
  */
 
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { join, posix, win32 } from 'node:path';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 
 /** The session CRG issued, and the scoreboard that issued it. */
@@ -35,21 +35,21 @@ const FILE_MODE = 0o600;
 
 const FOLDER_MODE = 0o700;
 
-/** Where the session file sits on this platform. */
+/** Where the session file sits on a platform, written with that platform's separators. */
 export function sessionPath(
   platform: NodeJS.Platform = process.platform,
   env: NodeJS.ProcessEnv = process.env,
   home: string = homedir()
 ): string {
   if (platform === 'win32') {
-    return join(env['APPDATA'] ?? join(home, 'AppData', 'Roaming'), FOLDER, FILE);
+    return win32.join(env['APPDATA'] ?? win32.join(home, 'AppData', 'Roaming'), FOLDER, FILE);
   }
 
   if (platform === 'darwin') {
-    return join(home, 'Library', 'Application Support', FOLDER, FILE);
+    return posix.join(home, 'Library', 'Application Support', FOLDER, FILE);
   }
 
-  return join(env['XDG_STATE_HOME'] ?? join(home, '.local', 'state'), FOLDER, FILE);
+  return posix.join(env['XDG_STATE_HOME'] ?? posix.join(home, '.local', 'state'), FOLDER, FILE);
 }
 
 /** Reads a stored session out of the file's contents, and nothing from a file that holds anything else. */

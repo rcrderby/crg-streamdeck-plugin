@@ -9,6 +9,9 @@ import { SessionFile, readStored, sessionPath } from './session-file.ts';
 
 const FOLDER = 'com.rcrderby.crg-streamdeck';
 
+/** Windows keeps no POSIX file modes, so the account's own folder is what protects the file there. */
+const noModes = process.platform === 'win32' && 'Windows has no POSIX file modes';
+
 const folders: string[] = [];
 
 /** A folder of its own for one test, removed once they have all run. */
@@ -37,11 +40,8 @@ describe('sessionPath', () => {
   it('follows APPDATA on Windows, and falls back to its usual place', () => {
     const roaming = 'C:\\Users\\tim\\AppData\\Roaming';
 
-    assert.equal(sessionPath('win32', { APPDATA: roaming }, 'C:\\Users\\tim'), join(roaming, FOLDER, 'session.json'));
-    assert.equal(
-      sessionPath('win32', {}, 'C:\\Users\\tim'),
-      join('C:\\Users\\tim', 'AppData', 'Roaming', FOLDER, 'session.json')
-    );
+    assert.equal(sessionPath('win32', { APPDATA: roaming }, 'C:\\Users\\tim'), `${roaming}\\${FOLDER}\\session.json`);
+    assert.equal(sessionPath('win32', {}, 'C:\\Users\\tim'), `${roaming}\\${FOLDER}\\session.json`);
   });
 
   it('follows the state folder elsewhere, as a development container is', () => {
@@ -78,7 +78,7 @@ describe('SessionFile', () => {
     assert.deepEqual(await file.read(), stored);
   });
 
-  it('keeps the file to this account, since the session is what CRG knows the deck by', async () => {
+  it('keeps the file to this account, since the session is what CRG knows the deck by', { skip: noModes }, async () => {
     const path = join(await scratch(), 'session.json');
     const file = new SessionFile(path);
 

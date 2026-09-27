@@ -7,10 +7,9 @@ import { Runtime, type Awakener } from './runtime.ts';
 import { operatorSetting, replaceOnUndo } from './crg/operators.ts';
 
 /** A stand-in for the keep awake helper, recording what it was asked to do. */
-function awakener(supported = true, beta = false): Awakener & { held: number; released: number } {
+function awakener(supported = true): Awakener & { held: number; released: number } {
   const helper = {
     supported,
-    beta,
     held: 0,
     released: 0,
     get holding(): boolean {
@@ -64,9 +63,9 @@ function settings(): {
   return held;
 }
 
-function build(options: { supported?: boolean; beta?: boolean } = {}) {
+function build(options: { supported?: boolean } = {}) {
   const client = new OfflineScoreboard();
-  const keepAwake = awakener(options.supported ?? true, options.beta ?? false);
+  const keepAwake = awakener(options.supported ?? true);
   const stored = settings();
   const logged: string[] = [];
   const log = {
@@ -125,12 +124,14 @@ describe('the plugin runtime', () => {
     assert.ok(!elsewhere.logged.some((line) => line.includes('awake')));
   });
 
-  it('marks the Windows helper as a beta, since it ships untried', () => {
-    const windows = build({ beta: true });
+  it('says once that it is keeping the computer awake', () => {
+    parts.client.say('connected');
+    parts.client.say('connected');
 
-    windows.client.say('connected');
-
-    assert.ok(windows.logged.some((line) => line.includes('awake') && line.includes('beta on Windows')));
+    assert.equal(
+      parts.logged.filter((line) => line === 'info Keeping this computer awake while connected to CRG').length,
+      1
+    );
   });
 
   it('stores the session once CRG answers', async () => {
