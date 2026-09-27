@@ -12,13 +12,14 @@
     "build": "rollup -c",
     "watch": "rollup -c -w",
     "typecheck": "tsc --noEmit",
-    "test": "node --test \"src/**/*.test.ts\"",
+    "test": "node --test \"src/**/*.test.ts\" \"scripts/**/*.test.mjs\"",
     "lint": "eslint --config .github/linters/eslint.config.mjs .",
     "format": "prettier --check .",
     "format:write": "prettier --write .",
     "validate": "streamdeck validate com.rcrderby.crg-streamdeck.sdPlugin",
     "pack": "streamdeck pack com.rcrderby.crg-streamdeck.sdPlugin --output dist --force",
     "probe": "node scripts/probe-crg.mjs",
+    "node-kit": "node scripts/build-node-kit.mjs",
     "install-plugin": "scripts/install-plugin.sh"
   },
   "dependencies": {
