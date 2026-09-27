@@ -678,6 +678,62 @@ export function blankKey(): KeySpec {
   return { background: '#000000' };
 }
 
+/** Sizes a name is tried at, largest first, until it fits in three lines. */
+const IDLE_SIZES = [13, 11, 10];
+
+const IDLE_MOST_LINES = 3;
+
+/** Room for the name inside the dashed outline. */
+const IDLE_ROOM = 70;
+
+const IDLE_WORDS = '#a1a1aa';
+
+/** Breaks an action's name into lines that each fit inside the outline at a size. */
+function idleLines(name: string, size: number): string[] {
+  const lines: string[] = [];
+
+  for (const word of name.split(/\s+/).filter(Boolean)) {
+    const last = lines.at(-1);
+
+    if (last !== undefined && estimateTextWidth(`${last} ${word}`, size, 'bold') <= IDLE_ROOM) {
+      lines[lines.length - 1] = `${last} ${word}`;
+    } else {
+      lines.push(word);
+    }
+  }
+
+  return lines;
+}
+
+/**
+ * What a key shows while the plugin is not running: an empty slot drawn in
+ * dashes, with the action's name inside.
+ *
+ * Stream Deck shows it from the manifest until the plugin draws the key,
+ * so a deck whose plugin never started cannot pass for a working one.
+ */
+export function idleKey(name: string): KeySpec {
+  const size = IDLE_SIZES.find((tried) => idleLines(name, tried).length <= IDLE_MOST_LINES) ?? IDLE_SIZES.at(-1) ?? 10;
+  const lines = idleLines(name, size);
+  const gap = size * 1.15;
+  const first = VIEWBOX / 2 + capHeight(size) / 2 - ((lines.length - 1) * gap) / 2;
+
+  return {
+    background: '#000000',
+    shapes: [
+      '<rect x="9" y="9" width="82" height="82" rx="10" fill="none" stroke="#52525b" stroke-width="2.5" stroke-dasharray="7 6"/>'
+    ],
+    texts: lines.map((text, index) => ({
+      text,
+      y: hundredths(first + index * gap),
+      size,
+      weight: 'bold',
+      width: IDLE_ROOM,
+      color: IDLE_WORDS
+    }))
+  };
+}
+
 export const PLUGIN_BACKGROUND = '#27272a';
 
 export const PLUGIN_EDGE = '#f97316';
