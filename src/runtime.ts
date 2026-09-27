@@ -28,7 +28,6 @@ export type RuntimeLog = {
 /** The part of the keep awake helper this drives. */
 export type Awakener = {
   readonly supported: boolean;
-  readonly beta: boolean;
   readonly holding: boolean;
   hold: () => void;
   release: () => void;
@@ -111,7 +110,7 @@ export class Runtime {
 
     if (keepAwake.supported && !keepAwake.holding) {
       keepAwake.hold();
-      log.info(`Keeping this computer awake while connected to CRG${keepAwake.beta ? ' (beta on Windows)' : ''}`);
+      log.info('Keeping this computer awake while connected to CRG');
     }
   }
 

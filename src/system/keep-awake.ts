@@ -8,7 +8,7 @@
  *
  * macOS uses the built-in caffeinate tool, told to exit with the plugin,
  * and each key press also declares user activity. Windows holds a power
- * request through PowerShell, and is a beta until tried on Windows.
+ * request through PowerShell.
  */
 
 import { spawn } from 'node:child_process';
@@ -42,8 +42,12 @@ export const ACTIVITY_INTERVAL_MS = 10_000;
 /**
  * Windows execution state flags: continuous, system required, display
  * required. The request lasts as long as the process that set it.
+ *
+ * Written in decimal: Windows PowerShell reads a hex literal that fits
+ * in 32 bits as a signed number, and refuses a negative one for the
+ * unsigned flags.
  */
-const WINDOWS_STAY_AWAKE = '0x80000003';
+const WINDOWS_STAY_AWAKE = 0x80000003;
 
 /** How often the Windows helper checks that the plugin is still running. */
 const WINDOWS_WATCH_SECONDS = 15;
@@ -71,12 +75,18 @@ function spawnHelper(command: string, args: readonly string[]): Helper {
   };
 }
 
-/** The PowerShell script that holds the request, and exits once the plugin is gone. */
+/**
+ * The PowerShell script that holds the request, and exits once the plugin is gone.
+ *
+ * Any error ends it, and so does a request Windows refuses, so a helper
+ * that holds nothing does not stay running as though it did.
+ */
 function windowsScript(pid: number): string {
   return [
+    "$ErrorActionPreference = 'Stop'",
     '$signature = \'[DllImport("kernel32.dll")] public static extern uint SetThreadExecutionState(uint flags);\'',
     '$power = Add-Type -MemberDefinition $signature -Name PowerRequest -Namespace CrgStreamDeck -PassThru',
-    `$null = $power::SetThreadExecutionState(${WINDOWS_STAY_AWAKE})`,
+    `if ($power::SetThreadExecutionState([uint32]${WINDOWS_STAY_AWAKE}) -eq 0) { exit 1 }`,
     `while (Get-Process -Id ${pid} -ErrorAction SilentlyContinue) { Start-Sleep -Seconds ${WINDOWS_WATCH_SECONDS} }`
   ].join('; ');
 }
@@ -133,11 +143,6 @@ export class KeepAwake {
     return holdCommand(this.#platform, this.#pid) !== undefined;
   }
 
-  /** True where keeping awake has not yet been tried on real hardware. */
-  get beta(): boolean {
-    return this.#platform === 'win32';
-  }
-
   get holding(): boolean {
     return this.#helper !== undefined;
   }
@@ -166,9 +171,12 @@ export class KeepAwake {
       this.#onError(cause);
     });
 
+    // A helper released on purpose is no longer the one held, so only one
+    // that stops by itself is reported
     helper.onExit(() => {
       if (this.#helper === helper) {
         this.#helper = undefined;
+        this.#onError(new Error('the helper stopped on its own'));
       }
     });
   }
