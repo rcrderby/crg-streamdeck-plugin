@@ -4,7 +4,8 @@
  * The page starts an untyped timeout and leaves the period clock at a
  * number of seconds the operator picks, as CRG's own dialog does: the
  * timeout first, which stops the period clock, then the time. The
- * seconds start at one each time the page opens and go down to zero.
+ * seconds start at one each time the page opens, go down to zero, and
+ * up to a minute.
  */
 
 import type { JsonObject } from '@elgato/utils';
@@ -16,6 +17,7 @@ import { periodEndSecondsKey, secondsStepKey, startPeriodEndTimeoutKey } from '.
 import { formatClock } from '../render/time.ts';
 import { type PluginContext } from '../context.ts';
 import { CrgKeyAction } from './key-action.ts';
+import { PERIOD_END_MAX_SECONDS } from '../period-end-seconds.ts';
 import { HoldKeyAction } from './hold-key-action.ts';
 import { returnToLayout } from './navigation.ts';
 
@@ -46,8 +48,11 @@ export class SecondsAtTimeout extends SecondsKey {
 abstract class SecondsStep extends SecondsKey {
   protected abstract get by(): number;
 
+  /** A step darkens once it can go no further: −1 at 0:00, and +1 at the minute the count stops at. */
   protected override describe(): KeySpec {
-    return secondsStepKey(this.by > 0, this.by > 0 || this.context.periodEndSeconds.value > 0);
+    const value = this.context.periodEndSeconds.value;
+
+    return secondsStepKey(this.by > 0, this.by > 0 ? value < PERIOD_END_MAX_SECONDS : value > 0);
   }
 
   override onKeyDown(): void {

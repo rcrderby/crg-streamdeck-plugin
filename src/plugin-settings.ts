@@ -12,17 +12,17 @@ import type { JsonObject } from '@elgato/utils';
 
 import { SettingsError, resolveConnection, type Connection, type ConnectionSettings } from './crg/settings.ts';
 import { type SessionStore, type StoredSession } from './session-file.ts';
+import { type StoppedStore } from './connection-file.ts';
 import { messageOf } from './errors.ts';
 
 /**
  * Everything the plugin keeps for the whole deck rather than for one key.
  *
- * The CRG session is not among them. A property inspector is handed
- * these settings whole, so the session lives in a file of its own.
+ * A property inspector is handed these settings whole and writes them
+ * back whole, so the CRG session and whether the deck was disconnected
+ * on purpose live in files of the plugin's own instead.
  */
 export type GlobalSettings = ConnectionSettings & {
-  /** True once the deck is disconnected on purpose, until it is connected again. */
-  stopped?: boolean;
   /** The CRG operator profile the deck keeps its settings under. */
   operator?: string;
 };
@@ -49,6 +49,8 @@ export type Operator = {
 export type PluginSettingsParts = {
   readonly store: SettingsStore;
   readonly session: SessionStore;
+  /** Whether the deck was disconnected on purpose. */
+  readonly stopped: StoppedStore;
   readonly client: Scoreboard;
   readonly operator: Operator;
   /** Says why settings could not be used, without stopping the plugin. */
@@ -61,6 +63,12 @@ export class PluginSettings {
   /** The stored session, read once at startup so a connection need not wait on the file. */
   #stored: StoredSession | undefined;
 
+  /** True while the deck is disconnected on purpose, read once at startup. */
+  #stopped = false;
+
+  /** The settings last applied, which connecting on purpose applies again. */
+  #settings: GlobalSettings = {};
+
   /** The write in progress, which the next one waits on. */
   #writing: Promise<void> = Promise.resolve();
 
@@ -68,14 +76,24 @@ export class PluginSettings {
     this.#parts = parts;
   }
 
-  /** Reads the stored session, so the first connection offers CRG the identity the deck already has. */
+  /**
+   * Reads what the plugin keeps in its own files: the stored session, so
+   * the first connection offers CRG the identity the deck already has,
+   * and whether the deck was disconnected on purpose.
+   */
   async load(): Promise<void> {
-    const { session, warn } = this.#parts;
+    const { session, stopped, warn } = this.#parts;
 
     try {
       this.#stored = await session.read();
     } catch (cause) {
       warn(`Could not read the stored CRG session: ${messageOf(cause)}`);
+    }
+
+    try {
+      this.#stopped = await stopped.read();
+    } catch (cause) {
+      warn(`Could not read whether the deck was disconnected on purpose: ${messageOf(cause)}`);
     }
   }
 
@@ -83,9 +101,10 @@ export class PluginSettings {
   apply(settings: GlobalSettings): void {
     const { client, operator, warn } = this.#parts;
 
+    this.#settings = settings;
     operator.set(settings.operator);
 
-    if (settings.stopped === true) {
+    if (this.#stopped) {
       void client.stop();
 
       return;
@@ -148,18 +167,22 @@ export class PluginSettings {
   /**
    * Connects or disconnects on purpose, and remembers the choice.
    *
-   * A deck disconnected on purpose stays disconnected across restarts
-   * until someone connects it again.
+   * The choice takes effect at once. A deck disconnected on purpose stays
+   * disconnected across restarts until someone connects it again; if the
+   * choice cannot be saved, it lasts until the plugin restarts, and the
+   * log says so.
    */
   async setStopped(stopped: boolean): Promise<void> {
-    let next: GlobalSettings = {};
+    const { warn } = this.#parts;
 
-    await this.#update((settings) => {
-      next = { ...settings, stopped };
+    this.#stopped = stopped;
+    this.apply(this.#settings);
 
-      return next;
-    });
-    this.apply(next);
+    try {
+      await this.#parts.stopped.write(stopped);
+    } catch (cause) {
+      warn(`Could not remember that the deck was ${stopped ? 'disconnected' : 'connected'}: ${messageOf(cause)}`);
+    }
   }
 
   /**

@@ -54,6 +54,26 @@ describe('the Timeout Before Period End page', () => {
     assert.ok(drawn(minus).includes('opacity="0.62"'));
   });
 
+  it('goes up to 1:00 and no further, darkening +1 there', async () => {
+    const shown = new SecondsAtTimeout(deck.context);
+    const up = new SecondsUp(deck.context);
+    const seconds = deck.place(shown);
+    const plus = deck.place(up);
+
+    deck.periodEndSeconds.step(58);
+    deck.draw();
+
+    assert.ok(!drawn(plus).includes('opacity="0.62"'), '+1 stays bright below the minute');
+
+    await deck.press(up, plus);
+    await deck.press(up, plus);
+    deck.draw();
+
+    assert.equal(deck.periodEndSeconds.value, 60);
+    assert.match(drawn(seconds), />1:00</);
+    assert.ok(drawn(plus).includes('opacity="0.62"'));
+  });
+
   it('starts the timeout, then sets the period clock, then returns to the layout', async () => {
     const start = new StartPeriodEndTimeout(deck.context);
     const key = deck.place(start);

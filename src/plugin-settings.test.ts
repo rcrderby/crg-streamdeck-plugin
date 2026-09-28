@@ -4,6 +4,7 @@ import { describe, it } from 'node:test';
 import { PluginSettings, sessionFor, type GlobalSettings, type Scoreboard } from './plugin-settings.ts';
 import { type Connection } from './crg/settings.ts';
 import { type SessionStore, type StoredSession } from './session-file.ts';
+import { type StoppedStore } from './connection-file.ts';
 
 type Opened = { connection: Connection; session: string | undefined };
 
@@ -70,7 +71,27 @@ function sessionStore(stored?: StoredSession): SessionStore & { held: StoredSess
   return file;
 }
 
-function build(held: GlobalSettings, client = scoreboard(), session = sessionStore()) {
+/** A stand-in for the file that says whether the deck was disconnected on purpose. */
+function stoppedStore(stopped = false): StoppedStore & { held: boolean; failing: boolean } {
+  const file = {
+    held: stopped,
+    failing: false,
+    read: (): Promise<boolean> => Promise.resolve(file.held),
+    write: (value: boolean): Promise<void> => {
+      if (file.failing) {
+        return Promise.reject(new Error('read-only folder'));
+      }
+
+      file.held = value;
+
+      return Promise.resolve();
+    }
+  };
+
+  return file;
+}
+
+function build(held: GlobalSettings, client = scoreboard(), session = sessionStore(), stopped = stoppedStore()) {
   const warnings: string[] = [];
   const chosen: (string | undefined)[] = [];
   const settings = store(held);
@@ -79,11 +100,13 @@ function build(held: GlobalSettings, client = scoreboard(), session = sessionSto
     settings,
     client,
     session,
+    stopped,
     warnings,
     chosen,
     plugin: new PluginSettings({
       store: settings,
       session,
+      stopped,
       client,
       operator: { set: (name) => void chosen.push(name) },
       warn: (message) => void warnings.push(message)
@@ -151,10 +174,11 @@ describe('PluginSettings.apply', () => {
     assert.equal(client.opened[0]?.session, undefined);
   });
 
-  it('stays disconnected when the deck was disconnected on purpose', () => {
-    const { plugin, client } = build({});
+  it('stays disconnected when the deck was disconnected on purpose', async () => {
+    const { plugin, client } = build({}, scoreboard(), sessionStore(), stoppedStore(true));
 
-    plugin.apply({ url: 'http://localhost:8000', stopped: true });
+    await plugin.load();
+    plugin.apply({ url: 'http://localhost:8000' });
 
     assert.equal(client.stopped, 1);
     assert.equal(client.opened.length, 0);
@@ -236,23 +260,49 @@ describe('PluginSettings.chooseOperator', () => {
 });
 
 describe('PluginSettings.setStopped', () => {
-  it('remembers a deck disconnected on purpose, and stops it', async () => {
-    const { plugin, settings, client } = build({ url: 'http://localhost:8000' });
+  it('remembers a deck disconnected on purpose in its own file, and stops it', async () => {
+    const { plugin, settings, stopped, client } = build({ url: 'http://localhost:8000' });
 
+    plugin.apply({ url: 'http://localhost:8000' });
     await plugin.setStopped(true);
 
-    assert.equal(settings.held.stopped, true);
+    assert.equal(stopped.held, true);
     assert.equal(client.stopped, 1);
+    assert.equal(settings.writes, 0, 'nothing goes to the settings every property inspector writes');
   });
 
-  it('connects again, keeping the settings around the choice', async () => {
-    const { plugin, settings, client } = build({ url: 'http://localhost:8000', stopped: true });
+  it('connects again to the scoreboard the settings name', async () => {
+    const { plugin, stopped, client } = build({}, scoreboard(), sessionStore(), stoppedStore(true));
 
+    await plugin.load();
+    plugin.apply({ url: 'http://scoreboard:8000' });
     await plugin.setStopped(false);
 
-    assert.equal(settings.held.stopped, false);
-    assert.equal(settings.held.url, 'http://localhost:8000');
-    assert.equal(client.opened[0]?.connection.origin, 'http://localhost:8000');
+    assert.equal(stopped.held, false);
+    assert.equal(client.opened[0]?.connection.origin, 'http://scoreboard:8000');
+  });
+
+  it('keeps a property inspector from undoing the choice by writing an older copy of the settings', async () => {
+    const { plugin, client } = build({ url: 'http://localhost:8000' });
+
+    plugin.apply({ url: 'http://localhost:8000' });
+    await plugin.setStopped(true);
+    plugin.apply({ url: 'http://localhost:8000', operator: 'StreamDeck' });
+
+    assert.equal(client.opened.length, 1, 'only the connection made before the deck was disconnected');
+    assert.equal(client.stopped, 2);
+  });
+
+  it('acts on the choice even when it cannot be saved, and says so', async () => {
+    const stopped = stoppedStore();
+    const { plugin, client, warnings } = build({}, scoreboard(), sessionStore(), stopped);
+
+    stopped.failing = true;
+    plugin.apply({ url: 'http://localhost:8000' });
+    await plugin.setStopped(true);
+
+    assert.equal(client.stopped, 1);
+    assert.ok(warnings.some((line) => line.startsWith('Could not remember that the deck was disconnected')));
   });
 });
 
@@ -266,7 +316,6 @@ describe('PluginSettings writes', () => {
     await Promise.all([plugin.rememberSession(), plugin.chooseOperator('Rose_City'), plugin.setStopped(true)]);
 
     assert.equal(settings.held.operator, 'Rose_City');
-    assert.equal(settings.held.stopped, true);
     assert.equal(settings.held.url, 'http://localhost:8000');
   });
 });

@@ -5,6 +5,7 @@
  * the operating system does not count a Stream Deck press as activity.
  * While connected, a helper process holds the system's own stay-awake
  * request; when it is released, or the plugin exits, the request ends.
+ * A helper that stops on its own is started again a few times.
  *
  * macOS uses the built-in caffeinate tool, told to exit with the plugin,
  * and each key press also declares user activity. Windows holds a power
@@ -34,7 +35,15 @@ export type KeepAwakeOptions = {
   readonly spawn?: Spawn | undefined;
   readonly now?: (() => number) | undefined;
   readonly onError?: ((cause: Error) => void) | undefined;
+  /** How long a stopped helper waits before starting again, which a test shortens. */
+  readonly retryMs?: number | undefined;
 };
+
+/** How long a helper that stopped on its own waits before it is started again. */
+export const RETRY_MS = 5_000;
+
+/** How many times a stopped helper is started again before it stays off until the next connection. */
+export const RETRY_LIMIT = 3;
 
 /** Key presses closer together than this declare activity once. */
 export const ACTIVITY_INTERVAL_MS = 10_000;
@@ -126,9 +135,18 @@ export class KeepAwake {
   readonly #spawn: Spawn;
   readonly #now: () => number;
   readonly #onError: (cause: Error) => void;
+  readonly #retryMs: number;
 
   #helper: Helper | undefined;
   #lastActivity = -Infinity;
+
+  /** True from a hold until the release, whether or not a helper is running. */
+  #wanted = false;
+
+  /** Starts since the last hold, counted so a helper that cannot run is not started all game. */
+  #retries = 0;
+
+  #retry: NodeJS.Timeout | undefined;
 
   constructor(options: KeepAwakeOptions) {
     this.#platform = options.platform;
@@ -136,6 +154,7 @@ export class KeepAwake {
     this.#spawn = options.spawn ?? spawnHelper;
     this.#now = options.now ?? Date.now;
     this.#onError = options.onError ?? (() => undefined);
+    this.#retryMs = options.retryMs ?? RETRY_MS;
   }
 
   /** True when this platform has a way to keep the computer awake. */
@@ -153,6 +172,23 @@ export class KeepAwake {
       return;
     }
 
+    this.#wanted = true;
+    this.#retries = 0;
+    this.#cancelRetry();
+    this.#start();
+  }
+
+  /** Lets the computer sleep again on its own settings. */
+  release(): void {
+    const helper = this.#helper;
+
+    this.#wanted = false;
+    this.#cancelRetry();
+    this.#helper = undefined;
+    helper?.kill();
+  }
+
+  #start(): void {
     const command = holdCommand(this.#platform, this.#pid);
 
     if (command === undefined) {
@@ -162,31 +198,51 @@ export class KeepAwake {
     const helper = this.#spawn(command.command, command.args);
 
     this.#helper = helper;
-
-    helper.onError((cause) => {
-      if (this.#helper === helper) {
-        this.#helper = undefined;
-      }
-
-      this.#onError(cause);
-    });
-
-    // A helper released on purpose is no longer the one held, so only one
-    // that stops by itself is reported
-    helper.onExit(() => {
-      if (this.#helper === helper) {
-        this.#helper = undefined;
-        this.#onError(new Error('the helper stopped on its own'));
-      }
-    });
+    helper.onError((cause) => this.#lost(helper, cause));
+    helper.onExit(() => this.#lost(helper, new Error('the helper stopped on its own')));
   }
 
-  /** Lets the computer sleep again on its own settings. */
-  release(): void {
-    const helper = this.#helper;
+  /**
+   * Starts a helper that stopped by itself again, a few times at most.
+   *
+   * A helper released on purpose is no longer the one held, so only one
+   * that stops by itself counts, once even when it both fails and exits.
+   * One that cannot run at all, such as a PowerShell the computer blocks,
+   * stays off until the next connection rather than failing all game.
+   */
+  #lost(helper: Helper, cause: Error): void {
+    if (this.#helper !== helper) {
+      return;
+    }
 
     this.#helper = undefined;
-    helper?.kill();
+
+    if (this.#retries >= RETRY_LIMIT) {
+      this.#onError(new Error(`${cause.message}, and stays off until CRG connects again`));
+
+      return;
+    }
+
+    this.#retries += 1;
+    this.#onError(
+      new Error(
+        `${cause.message}; starting it again in ${Math.round(this.#retryMs / 1000)} seconds ` +
+          `(${this.#retries} of ${RETRY_LIMIT})`
+      )
+    );
+    this.#retry = setTimeout(() => {
+      this.#retry = undefined;
+
+      if (this.#wanted && this.#helper === undefined) {
+        this.#start();
+      }
+    }, this.#retryMs);
+    this.#retry.unref();
+  }
+
+  #cancelRetry(): void {
+    clearTimeout(this.#retry);
+    this.#retry = undefined;
   }
 
   /**
