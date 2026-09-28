@@ -36,7 +36,6 @@ export type Awakener = {
 
 /** The part of the plugin settings this drives. */
 export type RuntimeSettings = {
-  rememberOperators: (names: readonly string[]) => Promise<void>;
   chooseOperator: (name: string) => Promise<void>;
   rememberSession: () => Promise<void>;
 };
@@ -48,6 +47,8 @@ export type RuntimeParts = {
   readonly log: RuntimeLog;
   /** The operator profile the deck uses. */
   readonly operator: { readonly name: string };
+  /** Sends CRG's profiles to an open property inspector. */
+  readonly showOperators: () => Promise<void>;
   /** How long the operator list settles for, which a test shortens. */
   readonly operatorSettleMs?: number;
 };
@@ -132,10 +133,6 @@ export class Runtime {
   }
 
   #operatorsChanged(): void {
-    const { client, settings } = this.#parts;
-
-    settings.rememberOperators(operatorNames(client.state)).catch((cause: unknown) => this.#settingsFailed(cause));
-
     clearTimeout(this.#settling);
     this.#settling = setTimeout(() => this.#operatorsSettled(), this.#parts.operatorSettleMs ?? OPERATOR_SETTLE_MS);
   }
@@ -159,6 +156,10 @@ export class Runtime {
       log.info(`CRG has no operator profile '${operator.name}', so the deck uses ${STREAM_DECK_OPERATOR}`);
       settings.chooseOperator(STREAM_DECK_OPERATOR).catch((cause: unknown) => this.#settingsFailed(cause));
     }
+
+    this.#parts
+      .showOperators()
+      .catch((cause: unknown) => log.warn(`Could not update the open settings: ${messageOf(cause)}`));
   }
 
   /** Logs a settings write that failed, which would otherwise go unhandled. */

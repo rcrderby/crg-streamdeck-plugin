@@ -25,8 +25,6 @@ export type GlobalSettings = ConnectionSettings & {
   stopped?: boolean;
   /** The CRG operator profile the deck keeps its settings under. */
   operator?: string;
-  /** The profiles CRG holds, kept here because a property inspector cannot read CRG itself. */
-  operators?: string[];
 };
 
 /** The part of Stream Deck's settings this works through. */
@@ -137,22 +135,6 @@ export class PluginSettings {
   }
 
   /**
-   * Keeps the operator profiles CRG holds where a property inspector can read them.
-   *
-   * A property inspector sees only the plugin's settings, never CRG, so
-   * the list is copied into them whenever it changes.
-   */
-  async rememberOperators(names: readonly string[]): Promise<void> {
-    if (names.length === 0) {
-      return;
-    }
-
-    await this.#update((settings) =>
-      same(settings.operators ?? [], names) ? undefined : { ...settings, operators: [...names] }
-    );
-  }
-
-  /**
    * Operator selection; remembered for a session restart.
    *
    * The choice is used at once, and stored so a restart keeps it.
@@ -213,8 +195,4 @@ export class PluginSettings {
  */
 export function sessionFor(stored: StoredSession | undefined, origin: string): string | undefined {
   return stored?.origin === origin ? stored.session : undefined;
-}
-
-function same(held: readonly string[], names: readonly string[]): boolean {
-  return held.length === names.length && held.every((name, index) => name === names[index]);
 }

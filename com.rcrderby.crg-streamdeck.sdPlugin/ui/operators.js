@@ -47,11 +47,13 @@
 
   let settings = {};
 
-  /** The profiles CRG holds, without its own default or a blank. */
-  function profiles() {
-    const held = Array.isArray(settings.operators) ? settings.operators : [];
+  // The profiles the plugin last sent for the dropdown. They come from
+  // CRG through the plugin, and are never stored in the plugin settings.
+  let known = [];
 
-    return held.filter((name) => typeof name === 'string' && name.trim() !== '' && name !== 'default');
+  /** CRG's profiles, as the plugin last listed them. */
+  function profiles() {
+    return known;
   }
 
   /** The profile in use, which is the deck's own until somebody picks another. */
@@ -180,6 +182,15 @@
       recheck();
     }
   }
+
+  client.sendToPropertyInspector.subscribe((message) => {
+    const payload = message?.payload;
+
+    if (payload?.event === 'operators' && Array.isArray(payload.items)) {
+      known = payload.items.map((item) => item?.value).filter((name) => typeof name === 'string');
+      render();
+    }
+  });
 
   client.didReceiveGlobalSettings.subscribe((message) => {
     settings = message?.payload?.settings ?? {};

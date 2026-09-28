@@ -30,28 +30,16 @@ function awakener(supported = true): Awakener & { held: number; released: number
 
 /** A stand-in for the plugin settings, which a test can also make fail. */
 function settings(): {
-  operators: string[][];
   chosen: string[];
   sessions: number;
   failing: boolean;
-  rememberOperators: (names: readonly string[]) => Promise<void>;
   chooseOperator: (name: string) => Promise<void>;
   rememberSession: () => Promise<void>;
 } {
   const held = {
-    operators: [] as string[][],
     chosen: [] as string[],
     sessions: 0,
     failing: false,
-    rememberOperators: (names: readonly string[]): Promise<void> => {
-      if (held.failing) {
-        return Promise.reject(new Error('the disk is full'));
-      }
-
-      held.operators.push([...names]);
-
-      return Promise.resolve();
-    },
     chooseOperator: (name: string): Promise<void> => {
       if (held.failing) {
         return Promise.reject(new Error('the disk is full'));
@@ -85,11 +73,20 @@ function build(options: { supported?: boolean; operator?: string } = {}) {
     warn: (message: string) => void logged.push(`warn ${message}`)
   };
   const operator = { name: options.operator ?? 'StreamDeck' };
-  const runtime = new Runtime({ client, keepAwake, settings: stored, log, operator, operatorSettleMs: 20 });
+  const shown = { count: 0 };
+  const runtime = new Runtime({
+    client,
+    keepAwake,
+    settings: stored,
+    log,
+    operator,
+    showOperators: () => Promise.resolve(void (shown.count += 1)),
+    operatorSettleMs: 20
+  });
 
   runtime.start();
 
-  return { client, keepAwake, settings: stored, logged, runtime };
+  return { client, keepAwake, settings: stored, logged, runtime, shown };
 }
 
 describe('the plugin runtime', () => {
@@ -187,11 +184,16 @@ describe('the plugin runtime', () => {
     assert.equal(parts.logged.filter((line) => line.includes('ECONNREFUSED')).length, 2);
   });
 
-  it('copies the operator profiles CRG holds into the settings', async () => {
+  it('sends an open settings page CRG\u2019s profiles once they settle, and stores none of them', async () => {
+    parts.client.say('connected');
     parts.client.state.apply({ [operatorSetting('Rose_City', 'ReplaceButton')]: 'true' });
-    await delay(0);
 
-    assert.deepEqual(parts.settings.operators.at(-1), ['Rose_City']);
+    assert.equal(parts.shown.count, 0, 'nothing is sent while the list is still arriving');
+
+    await delay(40);
+
+    assert.equal(parts.shown.count, 1);
+    assert.ok(!('operators' in parts.settings));
   });
 
   it('creates the deck’s own profile once the list has settled', async () => {
@@ -267,7 +269,7 @@ describe('the plugin runtime', () => {
     parts.client.state.apply({ [operatorSetting('Rose_City', 'ReplaceButton')]: 'true' });
     await delay(0);
 
-    assert.equal(parts.logged.filter((line) => line.includes('Could not save the plugin settings')).length, 2);
+    assert.equal(parts.logged.filter((line) => line.includes('Could not save the plugin settings')).length, 1);
   });
 
   it('lets the computer sleep and closes CRG when it stops', async () => {
