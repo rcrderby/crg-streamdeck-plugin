@@ -26,6 +26,10 @@ jobs:
       # https://github.com/marketplace/actions/checkout
       - name: Checkout Repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          # The token this job can write with stays out of the checkout, so
+          # nothing run after this can push with it
+          persist-credentials: false
 
       # Stream Deck shows the manifest version, and npm reads package.json,
       # so a release that disagrees with either would misreport itself
@@ -55,8 +59,10 @@ jobs:
           node-version: '24'
           cache: npm
 
+      # No package the plugin uses needs an install script, so none runs
+      # in the job that holds a token able to write releases
       - name: Install Dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       # The same checks as the test workflow, so a release is never packed
       # from a commit that would fail them

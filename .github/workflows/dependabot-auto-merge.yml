@@ -41,7 +41,11 @@ jobs:
       # Super Linter v6 to v8 moved ESLint to flat configuration and
       # failed until the configuration moved with it
       - name: Enable Auto-merge For Patch And Minor Updates
-        if: steps.metadata.outputs.update-type != 'version-update:semver-major'
+        # Named rather than excluded, so an update type the metadata leaves
+        # empty is reviewed by hand instead of merged
+        if: >-
+          steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
+          steps.metadata.outputs.update-type == 'version-update:semver-minor'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_URL: ${{ github.event.pull_request.html_url }}
