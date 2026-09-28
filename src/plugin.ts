@@ -17,7 +17,7 @@ import { keyActions } from './actions/registry.ts';
 import { RenderScheduler } from './render/scheduler.ts';
 import { PluginSettings, type GlobalSettings } from './plugin-settings.ts';
 import { SessionFile } from './session-file.ts';
-import { runStartup } from './startup.ts';
+import { runStartup, startupSteps } from './startup.ts';
 import { detailOf, messageOf } from './errors.ts';
 import { type PluginContext } from './context.ts';
 
@@ -78,13 +78,11 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const) {
 }
 
 await runStartup(
-  [
-    { name: 'Connecting to Stream Deck', run: () => streamDeck.connect() },
-    // The session is read before the first connection, so the deck offers
-    // CRG the identity it already has rather than asking for a new one.
-    { name: 'Reading the stored CRG session', run: () => settings.load() },
-    // The settings this returns also reach the listener above, which applies them.
-    { name: 'Reading the plugin settings', run: () => streamDeck.settings.getGlobalSettings<GlobalSettings>() }
-  ],
+  startupSteps({
+    connect: () => streamDeck.connect(),
+    loadSession: () => settings.load(),
+    readSettings: () => streamDeck.settings.getGlobalSettings<GlobalSettings>(),
+    applySettings: (stored) => settings.apply(stored)
+  }),
   logger
 );

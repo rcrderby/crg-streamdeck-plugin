@@ -110,7 +110,7 @@ export class OfficialScore extends HoldKeyAction {
   }
 
   /** Sets the score official, and shows it so until CRG sends it back. */
-  protected override completeHold(action: KeyAction): void {
+  protected override completeHold(action: KeyAction<JsonObject>): void {
     this.awaitValue(action, true);
     this.context.client.set(OFFICIAL_SCORE, true);
   }
@@ -172,7 +172,7 @@ export class OvertimeLineup extends HoldKeyAction {
   }
 
   /** Starts the lineup, and shows the game in overtime until CRG sends it back. */
-  protected override completeHold(action: KeyAction): void {
+  protected override completeHold(action: KeyAction<JsonObject>): void {
     this.awaitValue(action, true);
     this.context.client.trigger(game('StartOvertime'));
   }

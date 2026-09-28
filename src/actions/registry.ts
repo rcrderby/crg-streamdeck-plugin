@@ -14,6 +14,7 @@
  */
 
 import { type SingletonAction } from '@elgato/streamdeck';
+import type { JsonObject } from '@elgato/utils';
 
 import { ActiveClock } from './active-clock.ts';
 import { AutoEndJams, AutoEndTeamTimeouts, Automation } from './automation.ts';
@@ -44,7 +45,7 @@ import { type PluginContext } from '../context.ts';
 const UUID = 'com.rcrderby.crg-streamdeck';
 
 /** Builds every action, named as the manifest names it. */
-export function keyActions(context: PluginContext): SingletonAction<never>[] {
+export function keyActions(context: PluginContext): SingletonAction<JsonObject>[] {
   return [
     named(`${UUID}.connection`, new Connection(context)),
     named(`${UUID}.jam-control`, new JamControl(context)),

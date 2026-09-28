@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { runStartup, type StartupStep } from './startup.ts';
+import { runStartup, startupSteps, type StartupStep } from './startup.ts';
 
 function recorder() {
   const logged: string[] = [];
@@ -84,5 +84,26 @@ describe('starting the plugin', () => {
 
     assert.equal(await runStartup([throwing], parts.log, parts.exit), false);
     assert.deepEqual(parts.exits, [1]);
+  });
+});
+
+describe('the steps that start the plugin', () => {
+  it('connects, reads the session, then applies the settings it reads', async () => {
+    const done: string[] = [];
+    const parts = recorder();
+
+    await runStartup(
+      startupSteps({
+        connect: () => Promise.resolve(void done.push('connect')),
+        loadSession: () => Promise.resolve(void done.push('session')),
+        readSettings: () => Promise.resolve({ url: 'http://scoreboard:8000' }),
+        applySettings: (settings) => void done.push(`apply ${settings.url}`)
+      }),
+      parts.log,
+      parts.exit
+    );
+
+    assert.deepEqual(done, ['connect', 'session', 'apply http://scoreboard:8000']);
+    assert.deepEqual(parts.exits, []);
   });
 });

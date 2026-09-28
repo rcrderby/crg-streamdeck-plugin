@@ -7,6 +7,7 @@
  * seconds start at one each time the page opens and go down to zero.
  */
 
+import type { JsonObject } from '@elgato/utils';
 import { type KeyAction } from '@elgato/streamdeck';
 
 import { clock, game } from '../crg/paths.ts';
@@ -76,7 +77,7 @@ export class StartPeriodEndTimeout extends HoldKeyAction {
     return startPeriodEndTimeoutKey(this.holdDone(actionId) ? 0 : this.holdLevel(actionId));
   }
 
-  protected override async completeHold(action: KeyAction): Promise<void> {
+  protected override async completeHold(action: KeyAction<JsonObject>): Promise<void> {
     this.context.client.trigger(game('Timeout'));
     this.context.client.set(clock('Period', 'Time'), this.context.periodEndSeconds.value * 1000);
     await returnToLayout(action);
