@@ -10,7 +10,7 @@
 import streamDeck, { type SendToPluginEvent } from '@elgato/streamdeck';
 import type { JsonObject, JsonValue } from '@elgato/utils';
 
-import { crgOperatorName, operatorNames, replaceOnUndo } from '../crg/operators.ts';
+import { STREAM_DECK_OPERATOR, crgOperatorName, operatorNames, replaceOnUndo } from '../crg/operators.ts';
 import { type PluginContext } from '../context.ts';
 
 /** The name the dropdown asks for its items under. */
@@ -46,11 +46,19 @@ export async function answerOperatorMessage<T extends JsonObject>(
   }
 }
 
-/** The profiles the dropdown offers, with the one in use among them even before CRG lists it. */
+/**
+ * The profiles the dropdown offers: the ones in CRG, plus  the deck's default.
+ *
+ * The deck's default profile is offered to CRG even before CRG lists its profiles,
+ * since the plugin creates the default profile CRG as soon as the plugin receives the
+ * profile list from CRG. A profile from a different CRG instance that doesn't exist
+ * in the current CRG instance is not available in the dropdown.
+ */
 function offered(context: PluginContext): { label: string; value: string }[] {
   const names = operatorNames(context.client.state);
-  const chosen = context.operator.name;
-  const listed = names.includes(chosen) ? names : [chosen, ...names];
+  const listed = names.includes(STREAM_DECK_OPERATOR)
+    ? names
+    : [...names, STREAM_DECK_OPERATOR].sort((first, second) => first.localeCompare(second));
 
   return listed.map((name) => ({ label: name, value: name }));
 }
