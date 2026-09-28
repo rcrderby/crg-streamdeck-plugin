@@ -20,6 +20,10 @@
   // as 'Rose_City'.
   const REWRITTEN = /[.() ]/g;
 
+  // src/crg/operators.ts drops the same characters and keeps the same length
+  const CONTROL = /\p{Cc}/gu;
+  const NAME_LIMIT = 64;
+
   const FORM_STYLE = `
     .operator-row { display: flex; gap: 8px; align-items: center; width: 100%; }
     .operator-row input {
@@ -59,7 +63,7 @@
 
   /** The name CRG will store, which is not always the name typed. */
   function crgName(typed) {
-    return typed.trim().replace(REWRITTEN, '_');
+    return typed.replace(CONTROL, '').trim().slice(0, NAME_LIMIT).trim().replace(REWRITTEN, '_');
   }
 
   /** Splits each {operator} out of the page once, leaving an italic element to fill. */

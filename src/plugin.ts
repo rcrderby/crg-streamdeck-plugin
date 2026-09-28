@@ -18,20 +18,16 @@ import { RenderScheduler } from './render/scheduler.ts';
 import { PluginSettings, type GlobalSettings } from './plugin-settings.ts';
 import { SessionFile } from './session-file.ts';
 import { runStartup } from './startup.ts';
+import { detailOf, messageOf } from './errors.ts';
 import { type PluginContext } from './context.ts';
 
 const logger = streamDeck.logger.createScope('plugin');
 
-/** An error's message, whatever was thrown. */
-function messageOf(cause: unknown): string {
-  return cause instanceof Error ? cause.message : String(cause);
-}
-
 // A game is running, so an unexpected error is logged and the plugin
 // carries on. Stream Deck's own handler logs only the first one, and
 // with it gone the next would end the plugin.
-process.on('uncaughtException', (cause) => logger.error(`Unexpected error: ${messageOf(cause)}`));
-process.on('unhandledRejection', (cause) => logger.error(`Unhandled failure: ${messageOf(cause)}`));
+process.on('uncaughtException', (cause) => logger.error(`Unexpected error: ${detailOf(cause)}`));
+process.on('unhandledRejection', (cause) => logger.error(`Unhandled failure: ${detailOf(cause)}`));
 
 const context: PluginContext = {
   client: new CrgClient(),

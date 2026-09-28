@@ -76,6 +76,11 @@ export class RenderScheduler {
     }
   }
 
+  /** Reports a key that could not be drawn after its turn has run, as Stream Deck answers later. */
+  report(key: string, cause: unknown): void {
+    this.#onError(key, cause);
+  }
+
   /** Drops everything queued and stops the tick. */
   clear(): void {
     this.#pending.clear();

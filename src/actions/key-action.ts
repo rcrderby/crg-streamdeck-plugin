@@ -188,7 +188,15 @@ export abstract class CrgKeyAction<T extends JsonObject = JsonObject> extends Si
       }
 
       this.#drawn.set(action.id, image);
-      void action.setImage(image);
+
+      // A picture Stream Deck refused is forgotten, so the next redraw sends it again
+      void action.setImage(image).catch((cause: unknown) => {
+        if (this.#drawn.get(action.id) === image) {
+          this.#drawn.delete(action.id);
+        }
+
+        this.context.scheduler.report(action.id, cause);
+      });
     });
   }
 }

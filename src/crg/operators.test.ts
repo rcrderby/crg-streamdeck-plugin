@@ -3,7 +3,14 @@ import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 
 import { SETTINGS_ROOT, REGISTERED_PATHS } from './paths.ts';
-import { STREAM_DECK_OPERATOR, crgOperatorName, operatorNames, operatorSetting, replaceOnUndo } from './operators.ts';
+import {
+  OPERATOR_NAME_LIMIT,
+  STREAM_DECK_OPERATOR,
+  crgOperatorName,
+  operatorNames,
+  operatorSetting,
+  replaceOnUndo
+} from './operators.ts';
 import { StateStore } from './state.ts';
 
 /** A scoreboard holding one setting for each name given. */
@@ -34,6 +41,11 @@ describe('operator settings', () => {
 });
 
 describe('crgOperatorName', () => {
+  it('drops control characters and keeps a pasted wall of text to a name', () => {
+    assert.equal(crgOperatorName('Rose\u0000\tCity\n'), 'RoseCity');
+    assert.equal(crgOperatorName('x'.repeat(200)).length, OPERATOR_NAME_LIMIT);
+  });
+
   it('makes the name CRG will store, not always the one typed', () => {
     assert.equal(crgOperatorName('Rose City'), 'Rose_City');
     assert.equal(crgOperatorName(' Tara.Byte '), 'Tara_Byte');

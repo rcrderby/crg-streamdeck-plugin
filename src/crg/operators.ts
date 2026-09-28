@@ -28,6 +28,9 @@ export function replaceOnUndo(operator: string): string {
   return operatorSetting(operator, 'ReplaceButton');
 }
 
+/** The longest name a new profile is given, which keeps a stray paste from becoming a CRG setting. */
+export const OPERATOR_NAME_LIMIT = 64;
+
 /**
  * The name CRG will store, which is not always the name typed.
  *
@@ -35,7 +38,12 @@ export function replaceOnUndo(operator: string): string {
  * so 'Rose City' is kept as 'Rose_City'.
  */
 export function crgOperatorName(typed: string): string {
-  return typed.trim().replaceAll(/[.() ]/g, '_');
+  return typed
+    .replaceAll(/\p{Cc}/gu, '')
+    .trim()
+    .slice(0, OPERATOR_NAME_LIMIT)
+    .trim()
+    .replaceAll(/[.() ]/g, '_');
 }
 
 /**

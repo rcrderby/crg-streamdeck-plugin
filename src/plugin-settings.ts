@@ -12,6 +12,7 @@ import type { JsonObject } from '@elgato/utils';
 
 import { SettingsError, resolveConnection, type Connection, type ConnectionSettings } from './crg/settings.ts';
 import { type SessionStore, type StoredSession } from './session-file.ts';
+import { messageOf } from './errors.ts';
 
 /**
  * Everything the plugin keeps for the whole deck rather than for one key.
@@ -201,11 +202,6 @@ export class PluginSettings {
  */
 export function sessionFor(stored: StoredSession | undefined, origin: string): string | undefined {
   return stored?.origin === origin ? stored.session : undefined;
-}
-
-/** An error's message, whatever was thrown. */
-function messageOf(cause: unknown): string {
-  return cause instanceof Error ? cause.message : String(cause);
 }
 
 function same(held: readonly string[], names: readonly string[]): boolean {

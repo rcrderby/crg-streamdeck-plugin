@@ -6,6 +6,8 @@
  * be in progress. A plugin that never starts leaves every key unusable.
  */
 
+import { messageOf } from './errors.ts';
+
 /** One step of starting, named for the log. */
 export type StartupStep = {
   readonly name: string;
@@ -15,11 +17,6 @@ export type StartupStep = {
 export type StartupLog = {
   error: (message: string) => void;
 };
-
-/** An error's message, whatever was thrown. */
-function messageOf(cause: unknown): string {
-  return cause instanceof Error ? cause.message : String(cause);
-}
 
 /**
  * Runs each step after the last, and exits with status 1 at the first

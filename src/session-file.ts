@@ -11,7 +11,7 @@
 
 import { homedir } from 'node:os';
 import { join, posix, win32 } from 'node:path';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 
 /** The session CRG issued, and the scoreboard that issued it. */
 export type StoredSession = {
@@ -91,9 +91,17 @@ export class SessionFile implements SessionStore {
     }
   }
 
-  /** Writes the session, creating the folder the first time. */
+  /**
+   * Writes the session, creating the folder the first time.
+   *
+   * It goes to a file beside this one first and is then moved into
+   * place, so a plugin stopped partway through never leaves half a file.
+   */
   async write(stored: StoredSession): Promise<void> {
+    const partial = `${this.#path}.partial`;
+
     await mkdir(join(this.#path, '..'), { recursive: true, mode: FOLDER_MODE });
-    await writeFile(this.#path, `${JSON.stringify(stored, undefined, 2)}\n`, { encoding: 'utf8', mode: FILE_MODE });
+    await writeFile(partial, `${JSON.stringify(stored, undefined, 2)}\n`, { encoding: 'utf8', mode: FILE_MODE });
+    await rename(partial, this.#path);
   }
 }
