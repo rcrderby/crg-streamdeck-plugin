@@ -18,6 +18,7 @@ import { sendOperators } from './actions/operator-messages.ts';
 import { RenderScheduler } from './render/scheduler.ts';
 import { PluginSettings, type GlobalSettings } from './plugin-settings.ts';
 import { SessionFile } from './session-file.ts';
+import { ConnectionFile } from './connection-file.ts';
 import { runStartup, startupSteps } from './startup.ts';
 import { detailOf, messageOf } from './errors.ts';
 import { type PluginContext } from './context.ts';
@@ -46,6 +47,7 @@ const context: PluginContext = {
 const settings = new PluginSettings({
   store: streamDeck.settings,
   session: new SessionFile(),
+  stopped: new ConnectionFile(),
   client: context.client,
   operator: context.operator,
   warn: (message) => logger.warn(message)

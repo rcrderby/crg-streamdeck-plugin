@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
+import { describe, it, mock } from 'node:test';
 
 import { ACTIVITY_INTERVAL_MS, KeepAwake, activityCommand, holdCommand, type Helper } from './keep-awake.ts';
 
@@ -102,28 +102,95 @@ describe('KeepAwake', () => {
     assert.equal(keepAwake.holding, false);
   });
 
-  it('reports a helper that stops on its own, and holds again when asked', () => {
+  it('starts a helper that stops on its own again, after a wait, saying so', (t) => {
+    mock.timers.enable({ apis: ['setTimeout'] });
+    t.after(() => mock.timers.reset());
     const fake = new FakeSpawn();
-    const errors: Error[] = [];
+    const errors: string[] = [];
     const keepAwake = new KeepAwake({
       platform: 'win32',
       pid: 7,
       spawn: fake.spawn,
-      onError: (cause) => errors.push(cause)
+      onError: (cause) => void errors.push(cause.message),
+      retryMs: 10
     });
 
     keepAwake.hold();
     fake.calls[0]?.exit();
 
     assert.equal(keepAwake.holding, false);
-    assert.deepEqual(
-      errors.map((cause) => cause.message),
-      ['the helper stopped on its own']
-    );
+    assert.deepEqual(errors, ['the helper stopped on its own; starting it again in 0 seconds (1 of 3)']);
+
+    mock.timers.tick(20);
+
+    assert.equal(fake.calls.length, 2);
+    assert.equal(keepAwake.holding, true);
+  });
+
+  it('counts a helper that both fails and exits once', (t) => {
+    mock.timers.enable({ apis: ['setTimeout'] });
+    t.after(() => mock.timers.reset());
+    const fake = new FakeSpawn();
+    const errors: string[] = [];
+    const keepAwake = new KeepAwake({
+      platform: 'darwin',
+      pid: 7,
+      spawn: fake.spawn,
+      onError: (cause) => void errors.push(cause.message),
+      retryMs: 10
+    });
+
+    keepAwake.hold();
+    fake.calls[0]?.fail(new Error('spawn caffeinate ENOENT'));
+    fake.calls[0]?.exit();
+    mock.timers.tick(20);
+
+    assert.equal(errors.length, 1);
+    assert.equal(fake.calls.length, 2);
+  });
+
+  it('stays off after three starts that stop, until it is held again', (t) => {
+    mock.timers.enable({ apis: ['setTimeout'] });
+    t.after(() => mock.timers.reset());
+    const fake = new FakeSpawn();
+    const errors: string[] = [];
+    const keepAwake = new KeepAwake({
+      platform: 'win32',
+      pid: 7,
+      spawn: fake.spawn,
+      onError: (cause) => void errors.push(cause.message),
+      retryMs: 5
+    });
 
     keepAwake.hold();
 
-    assert.equal(fake.calls.length, 2);
+    for (let stop = 0; stop < 4; stop += 1) {
+      fake.calls.at(-1)?.exit();
+      mock.timers.tick(15);
+    }
+
+    assert.equal(fake.calls.length, 4, 'the first start and three more');
+    assert.equal(keepAwake.holding, false);
+    assert.equal(errors.at(-1), 'the helper stopped on its own, and stays off until CRG connects again');
+
+    keepAwake.hold();
+
+    assert.equal(fake.calls.length, 5, 'a new connection starts it afresh');
+  });
+
+  it('does not start a helper again once released', (t) => {
+    mock.timers.enable({ apis: ['setTimeout'] });
+    t.after(() => mock.timers.reset());
+    const fake = new FakeSpawn();
+    const keepAwake = new KeepAwake({ platform: 'win32', pid: 7, spawn: fake.spawn, retryMs: 10 });
+
+    keepAwake.hold();
+    fake.calls[0]?.exit();
+    keepAwake.release();
+    mock.timers.tick(20);
+
+    assert.equal(fake.calls.length, 1);
+    assert.equal(keepAwake.holding, false);
   });
 
   it('says nothing when a released helper exits', () => {
