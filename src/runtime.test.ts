@@ -31,13 +31,16 @@ function awakener(supported = true): Awakener & { held: number; released: number
 /** A stand-in for the plugin settings, which a test can also make fail. */
 function settings(): {
   operators: string[][];
+  chosen: string[];
   sessions: number;
   failing: boolean;
   rememberOperators: (names: readonly string[]) => Promise<void>;
+  chooseOperator: (name: string) => Promise<void>;
   rememberSession: () => Promise<void>;
 } {
   const held = {
     operators: [] as string[][],
+    chosen: [] as string[],
     sessions: 0,
     failing: false,
     rememberOperators: (names: readonly string[]): Promise<void> => {
@@ -46,6 +49,15 @@ function settings(): {
       }
 
       held.operators.push([...names]);
+
+      return Promise.resolve();
+    },
+    chooseOperator: (name: string): Promise<void> => {
+      if (held.failing) {
+        return Promise.reject(new Error('the disk is full'));
+      }
+
+      held.chosen.push(name);
 
       return Promise.resolve();
     },
@@ -63,7 +75,7 @@ function settings(): {
   return held;
 }
 
-function build(options: { supported?: boolean } = {}) {
+function build(options: { supported?: boolean; operator?: string } = {}) {
   const client = new OfflineScoreboard();
   const keepAwake = awakener(options.supported ?? true);
   const stored = settings();
@@ -72,7 +84,8 @@ function build(options: { supported?: boolean } = {}) {
     info: (message: string) => void logged.push(`info ${message}`),
     warn: (message: string) => void logged.push(`warn ${message}`)
   };
-  const runtime = new Runtime({ client, keepAwake, settings: stored, log, operatorSettleMs: 20 });
+  const operator = { name: options.operator ?? 'StreamDeck' };
+  const runtime = new Runtime({ client, keepAwake, settings: stored, log, operator, operatorSettleMs: 20 });
 
   runtime.start();
 
@@ -198,6 +211,46 @@ describe('the plugin runtime', () => {
     await delay(40);
 
     assert.deepEqual(parts.client.written, []);
+  });
+
+  it('goes back to the deck\u2019s own profile when CRG does not hold the one chosen', async () => {
+    const elsewhere = build({ operator: 'Elsewhere' });
+
+    elsewhere.client.say('connected');
+    elsewhere.client.state.apply({
+      [operatorSetting('Rose_City', 'ReplaceButton')]: 'true',
+      [operatorSetting('StreamDeck', 'ReplaceButton')]: 'false'
+    });
+    await delay(40);
+
+    assert.deepEqual(elsewhere.settings.chosen, ['StreamDeck']);
+    assert.ok(elsewhere.logged.some((line) => line.includes("no operator profile 'Elsewhere'")));
+    await elsewhere.runtime.stop('TEST');
+  });
+
+  it('keeps a chosen profile CRG holds', async () => {
+    const chosen = build({ operator: 'Rose_City' });
+
+    chosen.client.say('connected');
+    chosen.client.state.apply({
+      [operatorSetting('Rose_City', 'ReplaceButton')]: 'true',
+      [operatorSetting('StreamDeck', 'ReplaceButton')]: 'false'
+    });
+    await delay(40);
+
+    assert.deepEqual(chosen.settings.chosen, []);
+    await chosen.runtime.stop('TEST');
+  });
+
+  it('keeps the choice while the deck is not connected, since it cannot see CRG\u2019s profiles', async () => {
+    const offline = build({ operator: 'Elsewhere' });
+
+    offline.client.say('disconnected');
+    offline.client.state.apply({ [operatorSetting('Rose_City', 'ReplaceButton')]: 'true' });
+    await delay(40);
+
+    assert.deepEqual(offline.settings.chosen, []);
+    await offline.runtime.stop('TEST');
   });
 
   it('writes no profile while the deck is not connected', async () => {

@@ -222,6 +222,19 @@ describe('PluginSettings.rememberSession', () => {
   });
 });
 
+describe('PluginSettings.chooseOperator', () => {
+  it('uses the profile at once and stores it, once', async () => {
+    const { plugin, settings, chosen } = build({ url: 'http://localhost:8000', operator: 'Elsewhere' });
+
+    await plugin.chooseOperator('StreamDeck');
+    await plugin.chooseOperator('StreamDeck');
+
+    assert.deepEqual(chosen, ['StreamDeck', 'StreamDeck']);
+    assert.deepEqual(settings.held, { url: 'http://localhost:8000', operator: 'StreamDeck' });
+    assert.equal(settings.writes, 1);
+  });
+});
+
 describe('PluginSettings.rememberOperators', () => {
   it('copies the profiles CRG holds where a property inspector can read them', async () => {
     const { plugin, settings } = build({});

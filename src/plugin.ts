@@ -56,7 +56,7 @@ const keepAwake = new KeepAwake({
   onError: (cause) => logger.warn(`Could not keep this computer awake: ${cause.message}`)
 });
 
-const runtime = new Runtime({ client: context.client, keepAwake, settings, log: logger });
+const runtime = new Runtime({ client: context.client, keepAwake, settings, log: logger, operator: context.operator });
 
 for (const keyAction of keyActions(context)) {
   streamDeck.actions.registerAction(keyAction);

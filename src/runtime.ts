@@ -37,6 +37,7 @@ export type Awakener = {
 /** The part of the plugin settings this drives. */
 export type RuntimeSettings = {
   rememberOperators: (names: readonly string[]) => Promise<void>;
+  chooseOperator: (name: string) => Promise<void>;
   rememberSession: () => Promise<void>;
 };
 
@@ -45,6 +46,8 @@ export type RuntimeParts = {
   readonly keepAwake: Awakener;
   readonly settings: RuntimeSettings;
   readonly log: RuntimeLog;
+  /** The operator profile the deck uses. */
+  readonly operator: { readonly name: string };
   /** How long the operator list settles for, which a test shortens. */
   readonly operatorSettleMs?: number;
 };
@@ -134,25 +137,28 @@ export class Runtime {
     settings.rememberOperators(operatorNames(client.state)).catch((cause: unknown) => this.#settingsFailed(cause));
 
     clearTimeout(this.#settling);
-    this.#settling = setTimeout(() => this.#createOwnOperator(), this.#parts.operatorSettleMs ?? OPERATOR_SETTLE_MS);
+    this.#settling = setTimeout(() => this.#operatorsSettled(), this.#parts.operatorSettleMs ?? OPERATOR_SETTLE_MS);
   }
 
-  /**
-   * Creates the deck's own profile in CRG, once the profiles have settled.
-   *
-   * CRG has no command for this: a profile exists as soon as one setting
-   * is written under its name. The wait matters because a profile that
-   * has not arrived yet would look missing, and writing would erase it.
-   */
-  #createOwnOperator(): void {
-    const { client, log } = this.#parts;
+  /** Once CRG's profiles known, makes the deck's own and drops any choice that's not in CRG. */
+  #operatorsSettled(): void {
+    const { client, log, operator, settings } = this.#parts;
 
-    if (client.status !== 'connected' || operatorNames(client.state).includes(STREAM_DECK_OPERATOR)) {
+    if (client.status !== 'connected') {
       return;
     }
 
-    log.info(`Creating the ${STREAM_DECK_OPERATOR} operator profile in CRG`);
-    client.set(replaceOnUndo(STREAM_DECK_OPERATOR), false);
+    const names = operatorNames(client.state);
+
+    if (!names.includes(STREAM_DECK_OPERATOR)) {
+      log.info(`Creating the ${STREAM_DECK_OPERATOR} operator profile in CRG`);
+      client.set(replaceOnUndo(STREAM_DECK_OPERATOR), false);
+    }
+
+    if (operator.name !== STREAM_DECK_OPERATOR && !names.includes(operator.name)) {
+      log.info(`CRG has no operator profile '${operator.name}', so the deck uses ${STREAM_DECK_OPERATOR}`);
+      settings.chooseOperator(STREAM_DECK_OPERATOR).catch((cause: unknown) => this.#settingsFailed(cause));
+    }
   }
 
   /** Logs a settings write that failed, which would otherwise go unhandled. */

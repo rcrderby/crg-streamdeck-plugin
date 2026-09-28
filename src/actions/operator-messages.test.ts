@@ -26,8 +26,25 @@ describe('the operator messages a property inspector sends', () => {
 
   afterEach(() => deck.stop());
 
-  it('lists the profiles CRG holds, with the one in use first until CRG lists it', async () => {
+  it('lists the profiles CRG holds, with the deck\u2019s own among them before CRG lists it', async () => {
     deck.hold({ [replaceOnUndo('Wheels')]: true, [replaceOnUndo('default')]: false });
+
+    await ask(deck, { event: OPERATOR_SOURCE });
+
+    assert.deepEqual(sent, [
+      {
+        event: OPERATOR_SOURCE,
+        items: [
+          { label: 'StreamDeck', value: 'StreamDeck' },
+          { label: 'Wheels', value: 'Wheels' }
+        ]
+      }
+    ]);
+  });
+
+  it('never offers a profile chosen against another scoreboard', async () => {
+    deck.context.operator.set('Elsewhere');
+    deck.hold({ [replaceOnUndo('Wheels')]: true, [replaceOnUndo('StreamDeck')]: false });
 
     await ask(deck, { event: OPERATOR_SOURCE });
 

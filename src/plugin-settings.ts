@@ -153,6 +153,17 @@ export class PluginSettings {
   }
 
   /**
+   * Operator selection; remembered for a session restart.
+   *
+   * The choice is used at once, and stored so a restart keeps it.
+   */
+  async chooseOperator(name: string): Promise<void> {
+    this.#parts.operator.set(name);
+
+    await this.#update((settings) => (settings.operator === name ? undefined : { ...settings, operator: name }));
+  }
+
+  /**
    * Connects or disconnects on purpose, and remembers the choice.
    *
    * A deck disconnected on purpose stays disconnected across restarts
