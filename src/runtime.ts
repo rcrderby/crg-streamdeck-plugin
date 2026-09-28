@@ -12,6 +12,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { OPERATOR_PREFIX, STREAM_DECK_OPERATOR, operatorNames, replaceOnUndo } from './crg/operators.ts';
 import { type CrgClient, type ConnectionStatus, describeError } from './crg/client.ts';
 import { isOnline } from './actions/key-action.ts';
+import { messageOf } from './errors.ts';
 
 /** How long the operator list is left to settle before the deck's own profile is created. */
 export const OPERATOR_SETTLE_MS = 1_000;
@@ -47,11 +48,6 @@ export type RuntimeParts = {
   /** How long the operator list settles for, which a test shortens. */
   readonly operatorSettleMs?: number;
 };
-
-/** An error's message, whatever was thrown. */
-function messageOf(cause: unknown): string {
-  return cause instanceof Error ? cause.message : String(cause);
-}
 
 export class Runtime {
   readonly #parts: RuntimeParts;

@@ -67,7 +67,7 @@ export function readShasums(text) {
 /**
  * Throws an exception unless the bytes are the file nodejs.org
  * lists under that name.
- * */
+ */
 export function verify(name, bytes, sums) {
   const expected = sums.get(name);
 

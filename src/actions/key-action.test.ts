@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
 import { afterEach, beforeEach, describe, it, mock } from 'node:test';
+import { setImmediate } from 'node:timers/promises';
 
 import { FakeDeck } from '../test-support/fake-deck.ts';
 import { CrgKeyAction, isOnline, named } from './key-action.ts';
 import { type KeySpec } from '../render/key.ts';
+import { RenderScheduler } from '../render/scheduler.ts';
 
 type Settings = { word?: string };
 
@@ -130,6 +132,33 @@ describe('isOnline', () => {
     assert.equal(isOnline('connecting'), false);
     assert.equal(isOnline('disconnected'), false);
     assert.equal(isOnline('stopped'), false);
+  });
+});
+
+describe('a picture Stream Deck refuses', () => {
+  it('is reported, and sent again next time rather than skipped as already drawn', async () => {
+    const failures: string[] = [];
+    const deck = new FakeDeck();
+    const scheduler = new RenderScheduler(undefined, undefined, (key) => void failures.push(key));
+    const keyAction = new WordKey({ ...deck.context, scheduler });
+    const key = deck.place(keyAction, { word: 'Hi' });
+    let refusals = 1;
+
+    key.setImage = (image: string) => {
+      key.images.push(image);
+
+      return refusals-- > 0 ? Promise.reject(new Error('the deck went away')) : Promise.resolve();
+    };
+
+    scheduler.flush();
+    await setImmediate();
+    deck.resettle(keyAction, key, { word: 'Hi' });
+    scheduler.flush();
+
+    assert.equal(key.images.length, 2, 'the same picture is sent again');
+    assert.deepEqual(failures, [key.id]);
+    scheduler.clear();
+    deck.stop();
   });
 });
 

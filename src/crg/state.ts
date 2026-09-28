@@ -183,30 +183,6 @@ export class StateStore {
   }
 
   /**
-   * Replaces what is held with a full snapshot, and tells the subscriptions every path that changed or went.
-   *
-   * A path the snapshot leaves out is deleted, unless it is one to keep.
-   */
-  replace(
-    snapshot: Readonly<Record<string, StateValue>>,
-    keep: (path: string) => boolean = () => false
-  ): ReadonlySet<string> {
-    const gone = new Set<string>();
-
-    for (const path of this.#values.keys()) {
-      if (!Object.hasOwn(snapshot, path) && !keep(path)) {
-        gone.add(path);
-      }
-    }
-
-    for (const path of gone) {
-      this.#values.delete(path);
-    }
-
-    return this.#merge(snapshot, gone);
-  }
-
-  /**
    * Drops every path the test does not keep, and reports what went.
    *
    * This is how a snapshot finishes: everything CRG sent is already
@@ -274,13 +250,28 @@ export class StateStore {
     };
   }
 
+  /**
+   * Tells every subscription a change reached.
+   *
+   * One that throws does not keep the rest from hearing it: the first
+   * failure is thrown once all of them have been told.
+   */
   #notify(changed: ReadonlySet<string>): void {
     const paths = [...changed];
+    const failures: unknown[] = [];
 
     for (const subscription of this.#subscriptions) {
       if (paths.some((path) => subscription.matches(path))) {
-        subscription.listener(changed);
+        try {
+          subscription.listener(changed);
+        } catch (cause) {
+          failures.push(cause);
+        }
       }
+    }
+
+    if (failures.length > 0) {
+      throw failures[0];
     }
   }
 }

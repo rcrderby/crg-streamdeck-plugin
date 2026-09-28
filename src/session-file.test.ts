@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, stat, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, readdir, stat, writeFile } from 'node:fs/promises';
 import { after, describe, it } from 'node:test';
 import { join } from 'node:path';
 import { rm } from 'node:fs/promises';
@@ -85,6 +85,16 @@ describe('SessionFile', () => {
     await file.write({ session: 'CRG_SCOREBOARD=abc', origin: 'http://localhost:8000' });
 
     assert.equal((await stat(path)).mode & 0o777, 0o600);
+  });
+
+  it('moves a finished file into place, leaving nothing half written beside it', async () => {
+    const folder = await scratch();
+    const file = new SessionFile(join(folder, 'session.json'));
+
+    await file.write({ session: 'CRG_SCOREBOARD=abc', origin: 'http://localhost:8000' });
+    await file.write({ session: 'CRG_SCOREBOARD=def', origin: 'http://localhost:8000' });
+
+    assert.deepEqual(await readdir(folder), ['session.json']);
   });
 
   it('reads nothing when the file is missing or holds something else', async () => {

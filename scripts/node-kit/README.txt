@@ -11,8 +11,8 @@ checks the runtime's sha256 hash and its code signature before copying
 and needs no administrator rights.
 
 Before you start: install the Stream Deck software and CRG plugin,
-and start Stream Deck once, so its folder structure exist. Then, quit the
-Stream Deck software and run the applicable instal script for your platform.
+and start Stream Deck once, so its folder structure exists. Then, quit the
+Stream Deck software and run the applicable install script for your platform.
 
 
 Windows (x64 and ARM)
@@ -81,4 +81,4 @@ Undoing it
 ----------
 
 Quit Stream Deck and delete the NodeJS folder named above. The next time
-Stream Deck starts with with Internet access, it will downloads Node.js.
+Stream Deck starts with Internet access, it will download Node.js.
