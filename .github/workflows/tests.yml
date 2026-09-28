@@ -41,6 +41,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       # setup-node action documentation
       # https://github.com/marketplace/actions/setup-node-js-environment
@@ -52,7 +53,7 @@ jobs:
           cache: npm
 
       - name: Install Dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       # Dependabot raises an advisory as a pull request; this fails the
       # branch that still carries one, before it reaches a game
@@ -118,7 +119,7 @@ jobs:
           cache: npm
 
       - name: Install Dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       # Auditing, linting, type checking, and formatting read the same
       # files on any system, so they run once, in the job above
