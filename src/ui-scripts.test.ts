@@ -12,6 +12,9 @@ const SCRIPTS = ['ui/operators.js', 'ui/toggle.js', 'ui/descriptions.js'];
 type Element = Record<string, unknown>;
 
 /** Enough of a page for the scripts to run against, which is all this needs to prove. */
+/** What the scripts subscribed to hear from the plugin. */
+const heard: ((message: unknown) => void)[] = [];
+
 function page(): Record<string, unknown> {
   const element = (): Element => {
     const node: Element = {
@@ -46,10 +49,13 @@ function page(): Record<string, unknown> {
     getConnectionInfo: async () => ({ actionInfo: { action: 'com.rcrderby.crg-streamdeck.undo' } }),
     getSettings: async () => ({ settings: {} }),
     setSettings: async () => undefined,
-    getGlobalSettings: async () => ({ operator: 'StreamDeck', operators: ['Andy', 'StreamDeck'] }),
+    getGlobalSettings: async () => ({ operator: 'StreamDeck' }),
     setGlobalSettings: async () => undefined,
     send: () => undefined,
-    didReceiveGlobalSettings: { subscribe: () => undefined }
+    didReceiveGlobalSettings: { subscribe: () => undefined },
+    sendToPropertyInspector: {
+      subscribe: (listener: (message: unknown) => void) => void heard.push(listener)
+    }
   };
 
   return {
@@ -79,6 +85,19 @@ describe('the property inspector scripts', () => {
     }
 
     await setImmediate();
+  });
+
+  it('take the profiles from what the plugin sends, rather than from the settings', async () => {
+    heard.length = 0;
+    runInNewContext(readFileSync(new URL('ui/operators.js', PLUGIN), 'utf8'), page());
+    await setImmediate();
+
+    assert.equal(heard.length, 1, 'operators.js listens to the plugin');
+    assert.doesNotThrow(() =>
+      heard[0]?.({ payload: { event: 'operators', items: [{ label: 'Wheels', value: 'Wheels' }] } })
+    );
+    assert.doesNotThrow(() => heard[0]?.({ payload: { event: 'somethingElse' } }));
+    assert.doesNotMatch(readFileSync(new URL('ui/operators.js', PLUGIN), 'utf8'), /settings\.operators/);
   });
 
   it('keep their names to themselves, apart from the descriptions the build reads', () => {

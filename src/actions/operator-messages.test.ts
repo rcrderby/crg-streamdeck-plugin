@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { afterEach, beforeEach, describe, it } from 'node:test';
 
 import { FakeDeck } from '../test-support/fake-deck.ts';
-import { OPERATOR_SOURCE, answerOperatorMessage } from './operator-messages.ts';
+import { OPERATOR_SOURCE, answerOperatorMessage, sendOperators } from './operator-messages.ts';
 import { replaceOnUndo } from '../crg/operators.ts';
 
 /** Asks the plugin something, as a property inspector does. */
@@ -57,6 +57,21 @@ describe('the operator messages a property inspector sends', () => {
         ]
       }
     ]);
+  });
+
+  it('sends the list as CRG holds it now, which an open dropdown takes in place of its own', async () => {
+    deck.hold({ [replaceOnUndo('Wheels')]: true });
+    await sendOperators(deck.context);
+    deck.hold({ [replaceOnUndo('Wheels')]: null, [replaceOnUndo('Rose_City')]: false });
+    await sendOperators(deck.context);
+
+    assert.deepEqual(
+      sent.map((message) => (message as { items: { value: string }[] }).items.map((item) => item.value)),
+      [
+        ['StreamDeck', 'Wheels'],
+        ['Rose_City', 'StreamDeck']
+      ]
+    );
   });
 
   it('makes a new profile under the name CRG will store', async () => {

@@ -29,7 +29,7 @@ export async function answerOperatorMessage<T extends JsonObject>(
   const message = event.payload as Message;
 
   if (message.event === OPERATOR_SOURCE) {
-    await streamDeck.ui.sendToPropertyInspector({ event: OPERATOR_SOURCE, items: offered(context) });
+    await sendOperators(context);
 
     return;
   }
@@ -44,6 +44,17 @@ export async function answerOperatorMessage<T extends JsonObject>(
       context.client.set(replaceOnUndo(name), false);
     }
   }
+}
+
+/**
+ * Sends the profiles to the open property inspector.
+ *
+ * Its dropdown takes a list sent under its own name in place of the one
+ * it has, so a profile added or deleted in CRG shows while the settings
+ * are open. Stream Deck sends nothing when no property inspector is open.
+ */
+export function sendOperators(context: PluginContext): Promise<void> {
+  return streamDeck.ui.sendToPropertyInspector({ event: OPERATOR_SOURCE, items: offered(context) });
 }
 
 /**

@@ -14,6 +14,7 @@ import { OperatorChoice } from './operator-choice.ts';
 import { PeriodEndSeconds } from './period-end-seconds.ts';
 import { KeepAwake } from './system/keep-awake.ts';
 import { keyActions } from './actions/registry.ts';
+import { sendOperators } from './actions/operator-messages.ts';
 import { RenderScheduler } from './render/scheduler.ts';
 import { PluginSettings, type GlobalSettings } from './plugin-settings.ts';
 import { SessionFile } from './session-file.ts';
@@ -56,7 +57,14 @@ const keepAwake = new KeepAwake({
   onError: (cause) => logger.warn(`Could not keep this computer awake: ${cause.message}`)
 });
 
-const runtime = new Runtime({ client: context.client, keepAwake, settings, log: logger, operator: context.operator });
+const runtime = new Runtime({
+  client: context.client,
+  keepAwake,
+  settings,
+  log: logger,
+  operator: context.operator,
+  showOperators: () => sendOperators(context)
+});
 
 for (const keyAction of keyActions(context)) {
   streamDeck.actions.registerAction(keyAction);

@@ -235,25 +235,6 @@ describe('PluginSettings.chooseOperator', () => {
   });
 });
 
-describe('PluginSettings.rememberOperators', () => {
-  it('copies the profiles CRG holds where a property inspector can read them', async () => {
-    const { plugin, settings } = build({});
-
-    await plugin.rememberOperators(['Rose_City', 'StreamDeck']);
-
-    assert.deepEqual(settings.held.operators, ['Rose_City', 'StreamDeck']);
-  });
-
-  it('writes nothing when the list has not changed, or has not arrived', async () => {
-    const { plugin, settings } = build({ operators: ['StreamDeck'] });
-
-    await plugin.rememberOperators(['StreamDeck']);
-    await plugin.rememberOperators([]);
-
-    assert.equal(settings.writes, 0);
-  });
-});
-
 describe('PluginSettings.setStopped', () => {
   it('remembers a deck disconnected on purpose, and stops it', async () => {
     const { plugin, settings, client } = build({ url: 'http://localhost:8000' });
@@ -282,9 +263,9 @@ describe('PluginSettings writes', () => {
       scoreboard('CRG_SCOREBOARD=abc', 'http://localhost:8000')
     );
 
-    await Promise.all([plugin.rememberSession(), plugin.rememberOperators(['Rose_City']), plugin.setStopped(true)]);
+    await Promise.all([plugin.rememberSession(), plugin.chooseOperator('Rose_City'), plugin.setStopped(true)]);
 
-    assert.deepEqual(settings.held.operators, ['Rose_City']);
+    assert.equal(settings.held.operator, 'Rose_City');
     assert.equal(settings.held.stopped, true);
     assert.equal(settings.held.url, 'http://localhost:8000');
   });
