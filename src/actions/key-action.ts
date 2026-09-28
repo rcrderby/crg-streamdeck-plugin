@@ -33,7 +33,7 @@ export function isOnline(status: ConnectionStatus): boolean {
  * one cannot be loaded by the test runner at all, which is what left this
  * whole layer without a test.
  */
-export function named<T extends SingletonAction<never>>(uuid: string, keyAction: T): T {
+export function named<T extends SingletonAction<JsonObject>>(uuid: string, keyAction: T): T {
   Object.defineProperty(keyAction, 'manifestId', { value: uuid, writable: false, enumerable: true });
 
   return keyAction;

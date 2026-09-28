@@ -66,7 +66,7 @@ export class ConnectionToggle extends HoldKeyAction {
     return connectionToggleKey(this.context.client.status, level);
   }
 
-  protected override completeHold(_action: KeyAction): Promise<void> {
+  protected override completeHold(_action: KeyAction<JsonObject>): Promise<void> {
     return this.context.client.status === 'stopped'
       ? this.context.connection.connect()
       : this.context.connection.disconnect();
