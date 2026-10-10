@@ -3,7 +3,7 @@
 {
   // Docker build instructions
   "build": {
-    "dockerfile": "../Dockerfile.dev",
+    "dockerfile": "../dev.Dockerfile",
     "context": ".."
   },
   "name": "crg-streamdeck-plugin",
