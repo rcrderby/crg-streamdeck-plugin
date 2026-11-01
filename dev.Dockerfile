@@ -1,7 +1,7 @@
 # VS Code Development Dockerfile for the CRG Stream Deck plugin
 # Base image, pinned by digest so every developer builds the same one
 # mcr.microsoft.com/devcontainers/typescript-node:24-bookworm
-FROM mcr.microsoft.com/devcontainers/typescript-node@sha256:cba90c28e53ac2f5a8a5a0388b71b8e98bbe1a4711e0faaa6ef48b137037d4ae
+FROM mcr.microsoft.com/devcontainers/typescript-node@sha256:85bf802bec074be0be2fc4229ca4d3882c6f9c9bfda1de7995d025257778514c
 
 # Node.js 24 is the runtime the plugin manifest asks Stream Deck for.
 # Only pre-commit is missing from the base image.
